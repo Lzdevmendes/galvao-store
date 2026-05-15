@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import { ProductCard, type ProductCardData } from '@/components/catalog/product-card'
+import { queryBrandsWithCount, queryCategoriesWithCount } from '@/lib/catalog-query'
 import { fmt } from '@/lib/utils'
 
 export const revalidate = 300
@@ -61,10 +62,22 @@ function SectionHead({ pre, title, accent, href, linkLabel }: {
   )
 }
 
+const CATEGORY_ICON: Record<string, string> = {
+  campo:        '⚽',
+  society:      '🏟️',
+  futsal:       '🏅',
+  'tenis-casual':'👟',
+  corrida:      '🏃',
+  camisas:      '👕',
+  meias:        '🧦',
+}
+
 export default async function HomePage() {
-  const [arrivals, bestSellers] = await Promise.all([
+  const [arrivals, bestSellers, brands, categories] = await Promise.all([
     getFeatured(4, 'new'),
     getFeatured(8),
+    queryBrandsWithCount(4),
+    queryCategoriesWithCount(),
   ])
 
   const heroProduct = arrivals[0]
@@ -129,39 +142,28 @@ export default async function HomePage() {
           </>
         )}
 
-        {/* ── Marcas ── */}
+        {/* ── Marcas — contagens reais da DB ── */}
         <SectionHead pre="Compre por marca" title="SUA " accent="MARCA." />
         <div className="brand-row">
-          {[
-            { slug:'nike',   cls:'nike',   label:'NIKE',   count:142 },
-            { slug:'adidas', cls:'adidas', label:'ADIDAS', count:98  },
-            { slug:'puma',   cls:'puma',   label:'PUMA',   count:64  },
-            { slug:'umbro',  cls:'umbro',  label:'UMBRO',  count:38  },
-          ].map(b => (
-            <Link key={b.slug} href={`/${b.slug}`} className={`brand-banner ${b.cls}`}>
-              <div className="logo">{b.label}</div>
+          {brands.map(b => (
+            <Link key={b.slug} href={`/${b.slug}`} className={`brand-banner ${b.slug}`}>
+              <div className="logo">{b.name.toUpperCase()}</div>
               <div className="meta">
-                <div className="count">{b.count} produtos</div>
+                <div className="count">{b.count} {b.count === 1 ? 'produto' : 'produtos'}</div>
                 <div className="arrow">→</div>
               </div>
             </Link>
           ))}
         </div>
 
-        {/* ── Categorias ── */}
+        {/* ── Categorias — contagens reais da DB ── */}
         <SectionHead pre="Onde você joga?" title="POR " accent="CATEGORIA." />
         <div className="cat-row">
-          {[
-            { slug:'campo',        name:'Campo (FG)',   count:'189 modelos', icon:'⚽' },
-            { slug:'society',      name:'Society (SG)', count:'76 modelos',  icon:'🏟️' },
-            { slug:'futsal',       name:'Futsal',       count:'54 modelos',  icon:'🏅' },
-            { slug:'tenis-casual', name:'Tênis Casual', count:'123 modelos', icon:'👟' },
-            { slug:'corrida',      name:'Corrida',      count:'87 modelos',  icon:'🏃' },
-          ].map(c => (
+          {categories.slice(0, 5).map(c => (
             <Link key={c.slug} href={`/categoria/${c.slug}`} className="cat-tile" style={{ display:'block' }}>
-              <div className="ico" style={{ fontSize:28 }}>{c.icon}</div>
+              <div className="ico" style={{ fontSize:28 }}>{CATEGORY_ICON[c.slug] ?? '👟'}</div>
               <div className="name">{c.name}</div>
-              <div className="count">{c.count}</div>
+              <div className="count">{c.count} {c.count === 1 ? 'modelo' : 'modelos'}</div>
             </Link>
           ))}
         </div>

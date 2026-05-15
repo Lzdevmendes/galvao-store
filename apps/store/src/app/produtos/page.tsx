@@ -1,7 +1,10 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
-import { ProductCard, type ProductCardData } from '@/components/catalog/product-card'
+import { queryProducts, queryAvailableSizes, type CatalogFilters } from '@/lib/catalog-query'
+import { ProductCard } from '@/components/catalog/product-card'
+import { FilterSortBar } from '@/components/catalog/filter-sort-bar'
 
 export const revalidate = 300
 
@@ -10,47 +13,121 @@ export const metadata: Metadata = {
   description: 'Chuteiras, tênis e acessórios Nike, Adidas, Puma, Umbro. Frete grátis acima de R$ 399.',
 }
 
-export default async function ProdutosPage() {
-  const products = db.all<ProductCardData>(sql`
-    SELECT p.id, p.slug, p.name, b.name as brand_name, p.badge,
-           COALESCE(pi.url, '') as image_url,
-           COALESCE(pi.alt, p.name) as image_alt,
-           MIN(v.price_in_cents) as min_price,
-           MIN(v.price_promo_in_cents) as min_promo
-    FROM products p
-    JOIN brands b ON b.id = p.brand_id
-    LEFT JOIN product_images pi ON pi.product_id = p.id AND pi.is_primary = 1
-    LEFT JOIN product_variants v ON v.product_id = p.id AND v.available = 1
-    WHERE p.status = 'published'
-    GROUP BY p.id
-    ORDER BY p.rating DESC, p.review_count DESC, p.created_at DESC
-  `)
+type SearchParams = Promise<{ marca?: string; categoria?: string; tamanho?: string; sort?: string }>
+
+export default async function ProdutosPage({
+  searchParams,
+}: {
+  searchParams: SearchParams
+}) {
+  const { marca = '', categoria = '', tamanho = '', sort = 'relevancia' } = await searchParams
+
+  // Resolve IDs a partir de slugs
+  const brandId = marca
+    ? db.all<{ id: string }>(sql`SELECT id FROM brands WHERE slug = ${marca} AND active = 1`)[0]?.id
+    : undefined
+  const categoryId = categoria
+    ? db.all<{ id: string }>(sql`SELECT id FROM categories WHERE slug = ${categoria}`)[0]?.id
+    : undefined
+
+  const filters: CatalogFilters = {
+    brandId, categoryId,
+    size: tamanho || undefined,
+    sort,
+  }
+
+  const [products, sizes, brands, categories] = await Promise.all([
+    Promise.resolve(queryProducts(filters)),
+    Promise.resolve(queryAvailableSizes({ brandId, categoryId })),
+    Promise.resolve(db.all<{ slug: string; name: string }>(sql`
+      SELECT slug, name FROM brands WHERE active = 1 ORDER BY name
+    `)),
+    Promise.resolve(db.all<{ slug: string; name: string }>(sql`
+      SELECT c.slug, c.name FROM categories c
+      JOIN products p ON p.category_id = c.id AND p.status = 'published'
+      GROUP BY c.id ORDER BY c.sort_order
+    `)),
+  ])
 
   return (
     <>
-      {/* Page header */}
-      <div style={{ background: 'linear-gradient(135deg,#0B0E12,#1F252E)', color: '#fff', padding: '48px 0 40px' }}>
+      {/* Header */}
+      <div style={{ background:'linear-gradient(135deg,#0B0E12,#1F252E)', color:'#fff', padding:'48px 0 40px' }}>
         <div className="container">
-          <div style={{ fontFamily: 'var(--font-ui)', fontSize: 11, letterSpacing: '.32em', textTransform: 'uppercase', color: 'rgba(255,255,255,.5)', marginBottom: 12, fontWeight: 700 }}>
+          <div style={{ fontFamily:'var(--font-ui)', fontSize:11, letterSpacing:'.32em', textTransform:'uppercase', color:'rgba(255,255,255,.5)', marginBottom:12, fontWeight:700 }}>
             Catálogo completo
           </div>
-          <h1 style={{ fontFamily: 'var(--font-stencil)', fontSize: 'clamp(56px,8vw,112px)', lineHeight: .9, margin: 0 }}>
-            TODOS OS<br /><span style={{ color: 'var(--brand-orange)' }}>PRODUTOS.</span>
+          <h1 style={{ fontFamily:'var(--font-stencil)', fontSize:'clamp(56px,8vw,108px)', lineHeight:.9, margin:0 }}>
+            TODOS OS<br /><span style={{ color:'var(--brand-orange)' }}>PRODUTOS.</span>
           </h1>
         </div>
       </div>
 
-      {/* Grid */}
-      <div className="container" style={{ paddingTop: 48, paddingBottom: 96 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <div style={{ fontFamily: 'var(--font-ui)', fontSize: 13, color: 'var(--fg-muted)' }}>
-            {products.length} {products.length === 1 ? 'produto' : 'produtos'}
-          </div>
-        </div>
-        <div className="grid-products" data-density="4">
-          {products.map(p => <ProductCard key={p.id} p={p} />)}
+      {/* Filtros de marca + categoria */}
+      <div style={{ background:'var(--bg-elev)', borderBottom:'1px solid var(--border)', padding:'12px 0' }}>
+        <div className="container" style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
+          <span style={{ fontFamily:'var(--font-ui)', fontSize:12, fontWeight:700, color:'var(--fg-muted)', marginRight:4 }}>Marca:</span>
+          <BrandFilter slug={''} label="Todas" active={!marca} />
+          {brands.map(b => <BrandFilter key={b.slug} slug={b.slug} label={b.name} active={marca === b.slug} />)}
+          <span style={{ fontFamily:'var(--font-ui)', fontSize:12, fontWeight:700, color:'var(--fg-muted)', marginLeft:8, marginRight:4 }}>Categoria:</span>
+          <CatFilter slug={''} label="Todas" active={!categoria} />
+          {categories.map(c => <CatFilter key={c.slug} slug={c.slug} label={c.name} active={categoria === c.slug} />)}
         </div>
       </div>
+
+      {/* Sort + tamanho */}
+      <FilterSortBar
+        total={products.length}
+        availableSizes={sizes}
+        currentSize={tamanho}
+        currentSort={sort}
+      />
+
+      {/* Grid */}
+      <div className="container" style={{ paddingTop:40, paddingBottom:96 }}>
+        {products.length === 0 ? (
+          <div style={{ textAlign:'center', padding:'80px 0', color:'var(--fg-muted)' }}>
+            <p style={{ fontSize:40, marginBottom:12 }}>😕</p>
+            <p>Nenhum produto com esses filtros. <Link href="/produtos" style={{ color:'var(--brand-orange)' }}>Ver todos</Link></p>
+          </div>
+        ) : (
+          <div className="grid-products" data-density="4">
+            {products.map(p => <ProductCard key={p.id} p={p} />)}
+          </div>
+        )}
+      </div>
     </>
+  )
+}
+
+// ── Chips de filtro (links para manter SEO) ────────────────────────────────
+
+function BrandFilter({ slug, label, active }: { slug: string; label: string; active: boolean }) {
+  const href = slug ? `/produtos?marca=${slug}` : '/produtos'
+  return (
+    <Link href={href} style={{
+      padding:'5px 12px', borderRadius:8, fontSize:12, fontFamily:'var(--font-ui)', fontWeight:600,
+      border:      active ? '1.5px solid var(--brand-orange)' : '1.5px solid var(--border)',
+      background:  active ? 'var(--brand-orange)' : 'transparent',
+      color:       active ? '#fff' : 'var(--fg-muted)',
+      textDecoration: 'none',
+    }}>
+      {label}
+    </Link>
+  )
+}
+
+function CatFilter({ slug, label, active }: { slug: string; label: string; active: boolean }) {
+  const href = slug ? `/produtos?categoria=${slug}` : '/produtos'
+  return (
+    <Link href={href} style={{
+      padding:'5px 12px', borderRadius:8, fontSize:12, fontFamily:'var(--font-ui)', fontWeight:600,
+      border:      active ? '1.5px solid var(--brand-teal)' : '1.5px solid var(--border)',
+      background:  active ? 'var(--brand-teal)' : 'transparent',
+      color:       active ? '#fff' : 'var(--fg-muted)',
+      textDecoration: 'none',
+    }}>
+      {label}
+    </Link>
   )
 }
