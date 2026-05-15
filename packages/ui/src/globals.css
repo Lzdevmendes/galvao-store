@@ -1,0 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Archivo+Black&family=Archivo:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* Design tokens — light mode default (portado dos HTMLs originais) */
+:root {
+  --bg:            #F8F9FB;
+  --bg-elev:       #FFFFFF;
+  --bg-sunk:       #F1F3F6;
+  --fg:            #0B0E12;
+  --fg-muted:      #6B7280;
+  --fg-faint:      #9AA3AF;
+  --border:        #E2E5EA;
+  --border-strong: #C4CAD2;
+}
+
+[data-theme="dark"] {
+  --bg:            #0B0E12;
+  --bg-elev:       #14181F;
+  --bg-sunk:       #1F252E;
+  --fg:            #F8F9FB;
+  --fg-muted:      #9AA3AF;
+  --fg-faint:      #6B7280;
+  --border:        #2A323D;
+  --border-strong: #4A5462;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Archivo', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+::selection { background: rgba(242,107,31,.2); }
+:focus-visible { outline: 2px solid #F26B1F; outline-offset: 2px; }
