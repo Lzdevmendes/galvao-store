@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Product } from '../../core/domain/product';
 import { getDiscountPct, getPixPrice, getInstallment, formatBRL } from '../../core/domain/product';
 import { useStore } from '../store';
+import { useToast } from '../ui/Toast';
 
 interface Props {
   product: Product;
@@ -11,6 +12,7 @@ interface Props {
 export function ProductCard({ product }: Props) {
   const navigate = useNavigate();
   const { wishlist, toggleWishlist, addToCart } = useStore();
+  const { cartToast, toast } = useToast();
   const [imgErr, setImgErr] = useState(false);
   const isWished = wishlist.includes(product.id);
   const pct = getDiscountPct(product);
@@ -30,7 +32,11 @@ export function ProductCard({ product }: Props) {
 
           <button
             className={`heart${isWished ? ' wished' : ''}`}
-            onClick={e => { e.stopPropagation(); toggleWishlist(product.id); }}
+            onClick={e => {
+              e.stopPropagation();
+              toggleWishlist(product.id);
+              toast(isWished ? 'Removido dos favoritos' : 'Adicionado aos favoritos', isWished ? 'info' : 'success');
+            }}
             aria-label={isWished ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill={isWished ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
@@ -44,7 +50,7 @@ export function ProductCard({ product }: Props) {
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="m3 3 18 18"/></svg>
           </div>
         ) : (
-          <img src={product.images[0]?.url} alt={product.images[0]?.alt} onError={() => setImgErr(true)} />
+          <img src={product.images[0]?.url} alt={product.images[0]?.alt} onError={() => setImgErr(true)} loading="lazy" decoding="async" />
         )}
       </div>
 
@@ -75,7 +81,7 @@ export function ProductCard({ product }: Props) {
             opacity: 0, transition: 'opacity .2s',
           }}
           className="quick-add"
-          onClick={e => { e.stopPropagation(); addToCart(product, firstAvail.size); }}
+          onClick={e => { e.stopPropagation(); addToCart(product, firstAvail.size); cartToast(product.name); }}
         >
           + ADICIONAR · TAM {firstAvail.size}
         </button>

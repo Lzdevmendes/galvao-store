@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useStore } from '../../shared/store'
 import { formatBRL, getPixPrice } from '../../core/domain/product'
+import { useToast } from '../../shared/ui/Toast'
 
 type Step = 'address' | 'payment' | 'review'
 type PayMethod = 'pix' | 'credit' | 'boleto'
@@ -29,13 +30,33 @@ export function CheckoutPage() {
   const [orderNum] = useState(() => `GS-${Date.now().toString().slice(-6)}`)
   const [copied, setCopied] = useState(false)
 
-  const [addr, setAddr] = useState({ name: '', email: '', phone: '', cep: '', street: '', number: '', city: '', state: 'SP' })
+  const { toast } = useToast()
+  const [addr, setAddr] = useState({ name: '', email: '', phone: '', cep: '', street: '', number: '', complement: '', district: '', city: '', state: 'SP' })
+  const [cepLoading, setCepLoading] = useState(false)
   const [card, setCard] = useState({ number: '', name: '', expiry: '', cvv: '', inst: '12' })
 
   const setA = (k: keyof typeof addr) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setAddr(a => ({ ...a, [k]: e.target.value }))
   const setC = (k: keyof typeof card) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setCard(c => ({ ...c, [k]: e.target.value }))
+
+  // ViaCEP — preenche endereço automático
+  const lookupCep = useCallback(async (raw: string) => {
+    const cep = raw.replace(/\D/g, '')
+    if (cep.length !== 8) return
+    setCepLoading(true)
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`)
+      const data = await res.json()
+      if (data.erro) { toast('CEP não encontrado', 'error'); return }
+      setAddr(a => ({ ...a, street: data.logradouro, district: data.bairro, city: data.localidade, state: data.uf }))
+      toast('Endereço preenchido automaticamente', 'success')
+    } catch {
+      toast('Erro ao buscar CEP', 'error')
+    } finally {
+      setCepLoading(false)
+    }
+  }, [toast])
 
   const placeOrder = () => { clearCart(); setDone(true) }
 
@@ -127,16 +148,35 @@ export function CheckoutPage() {
               </div>
               <div className="form-row">
                 <Field label="Telefone" value={addr.phone} onChange={setA('phone')} placeholder="(11) 99999-0000" />
-                <Field label="CEP" value={addr.cep} onChange={setA('cep')} placeholder="00000-000" maxLength={9} />
+                <div className="form-group">
+                  <label>CEP</label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      value={addr.cep}
+                      onChange={e => { setA('cep')(e); if (e.target.value.replace(/\D/g,'').length === 8) lookupCep(e.target.value) }}
+                      placeholder="00000-000"
+                      maxLength={9}
+                      style={{ paddingRight: cepLoading ? 36 : undefined }}
+                    />
+                    {cepLoading && <span style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', fontSize:16 }}>⏳</span>}
+                  </div>
+                </div>
               </div>
               <div className="form-row">
-                <div style={{ gridColumn: 'span 2' }}><Field label="Rua / Avenida" value={addr.street} onChange={setA('street')} placeholder="Av. Paulista" /></div>
+                <div style={{ gridColumn: 'span 2' }}><Field label="Rua / Avenida" value={addr.street} onChange={setA('street')} placeholder="Preenchido automaticamente pelo CEP" /></div>
               </div>
               <div className="form-row">
                 <Field label="Número" value={addr.number} onChange={setA('number')} placeholder="1000" />
+                <Field label="Complemento" value={addr.complement} onChange={setA('complement')} placeholder="Ap. 42 (opcional)" />
+              </div>
+              <div className="form-row">
+                <Field label="Bairro" value={addr.district} onChange={setA('district')} placeholder="Centro" />
                 <Field label="Cidade" value={addr.city} onChange={setA('city')} placeholder="São Paulo" />
               </div>
-              <button className="btn btn-primary btn-lg" style={{ marginTop: 8 }} onClick={() => setStep('payment')}>
+              <button className="btn btn-primary btn-lg" style={{ marginTop: 8 }} onClick={() => {
+                if (!addr.name || !addr.email || !addr.cep || !addr.street) { toast('Preenche todos os campos obrigatórios', 'error'); return }
+                setStep('payment')
+              }}>
                 Continuar para pagamento →
               </button>
             </>

@@ -4,15 +4,21 @@ import { getBySlug, catalog } from '../../infrastructure/catalog/products'
 import { useStore } from '../../shared/store'
 import { formatBRL, getDiscountPct, getPixPrice, getInstallment } from '../../core/domain/product'
 import { ProductCard } from '../../shared/product/ProductCard'
+import { useToast } from '../../shared/ui/Toast'
+import { usePageTitle } from '../../shared/ui/usePageTitle'
 
 export function ProductPage() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
   const product = slug ? getBySlug(slug) : undefined
   const { wishlist, toggleWishlist, addToCart } = useStore()
+  const { toast, cartToast } = useToast()
+  usePageTitle(product ? `${product.name} "${product.colorway}"` : undefined)
 
   const [selectedImg, setSelectedImg] = useState(0)
   const [selectedSize, setSelectedSize] = useState<number | null>(null)
+  const [shippingResult, setShippingResult] = useState<{ sedex: string; price: string } | null>(null)
+  const [calcLoading, setCalcLoading] = useState(false)
   const [tab, setTab] = useState<'desc' | 'specs' | 'reviews' | 'trocas'>('desc')
   const [cep, setCep] = useState('')
   const [sizeErr, setSizeErr] = useState(false)
@@ -33,6 +39,21 @@ export function ProductPage() {
   const pix = getPixPrice(product.price)
   const inst = getInstallment(product.price)
 
+  const calcShipping = async () => {
+    const raw = cep.replace(/\D/g, '')
+    if (raw.length !== 8) { toast('Digita um CEP válido (8 dígitos)', 'error'); return }
+    setCalcLoading(true)
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${raw}/json/`)
+      const data = await res.json()
+      if (data.erro) { toast('CEP não encontrado', 'error'); return }
+      const isSP = data.uf === 'SP'
+      setShippingResult({ sedex: isSP ? '2 dias úteis' : '4 dias úteis', price: product.price >= 399 ? 'GRÁTIS' : isSP ? 'R$ 19,90' : 'R$ 29,90' })
+      toast(`Frete calculado para ${data.localidade}/${data.uf}`, 'success')
+    } catch { toast('Erro ao calcular frete', 'error') }
+    finally { setCalcLoading(false) }
+  }
+
   const handleBuy = () => {
     if (!selectedSize) { setSizeErr(true); return }
     addToCart(product, selectedSize)
@@ -42,6 +63,7 @@ export function ProductPage() {
   const handleAdd = () => {
     if (!selectedSize) { setSizeErr(true); return }
     addToCart(product, selectedSize)
+    cartToast(product.name)
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
   }
@@ -183,12 +205,22 @@ export function ProductPage() {
                 value={cep}
                 onChange={e => setCep(e.target.value.replace(/\D/g, '').slice(0, 8))}
                 placeholder="00000-000"
+                onKeyDown={e => e.key === 'Enter' && calcShipping()}
               />
-              <button className="btn btn-ghost btn-sm">Calcular</button>
+              <button className="btn btn-ghost btn-sm" onClick={calcShipping} disabled={calcLoading}>
+                {calcLoading ? '⏳' : 'Calcular'}
+              </button>
             </div>
-            <div className="opt"><span>SEDEX · 2 dias úteis</span><strong>GRÁTIS</strong></div>
-            <div className="opt"><span>SEDEX 10 · próximo dia útil</span><span>R$ 39,90</span></div>
-            <div className="opt"><span>Retirada em loja (SP)</span><strong style={{ color: 'var(--brand-green)' }}>GRÁTIS</strong></div>
+            {shippingResult ? (
+              <>
+                <div className="opt"><span>SEDEX · {shippingResult.sedex}</span><strong style={{ color: shippingResult.price === 'GRÁTIS' ? 'var(--brand-green)' : undefined }}>{shippingResult.price}</strong></div>
+                <div className="opt"><span>Retirada em loja (SP)</span><strong style={{ color: 'var(--brand-green)' }}>GRÁTIS</strong></div>
+              </>
+            ) : (
+              <p style={{ fontSize: 12, color: 'var(--fg-faint)', margin: '8px 0 0' }}>
+                Frete grátis para pedidos acima de R$ 399
+              </p>
+            )}
           </div>
         </div>
       </div>

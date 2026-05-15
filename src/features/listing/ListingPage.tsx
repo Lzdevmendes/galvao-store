@@ -120,6 +120,24 @@ export function ListingPage() {
               ))}
             </div>
           </FilterGroup>
+
+          <FilterGroup title="Preço máximo">
+            <div style={{ padding: '4px 0 8px' }}>
+              <input
+                type="range" min={0} max={2000} step={50}
+                value={filters.maxPrice}
+                onChange={e => setFilters(f => ({ ...f, maxPrice: +e.target.value }))}
+                style={{ width: '100%', accentColor: 'var(--brand-orange)' }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--fg-muted)', marginTop: 4 }}>
+                <span>R$ 0</span>
+                <span style={{ fontWeight: 700, color: 'var(--fg)' }}>
+                  {filters.maxPrice >= 2000 ? 'Todos' : `até R$ ${filters.maxPrice}`}
+                </span>
+                <span>R$ 2.000</span>
+              </div>
+            </div>
+          </FilterGroup>
         </aside>
 
         {/* Product grid */}

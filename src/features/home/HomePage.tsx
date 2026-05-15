@@ -6,8 +6,10 @@ import { Newsletter } from './components/Newsletter';
 import { SectionHead } from '../../shared/ui/SectionHead';
 import { ProductCard } from '../../shared/product/ProductCard';
 import { getNewArrivals, getBestSellers } from '../../infrastructure/catalog/products';
+import { usePageTitle } from '../../shared/ui/usePageTitle';
 
 export function HomePage() {
+  usePageTitle();
   const arrivals = getNewArrivals();
   const best = getBestSellers();
 

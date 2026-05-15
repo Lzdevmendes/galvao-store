@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { useStore } from './shared/store'
+import { ToastProvider } from './shared/ui/Toast'
+import { ScrollToTop } from './shared/ui/ScrollToTop'
 import { PromoBar } from './shared/layout/PromoBar'
 import { SiteHeader } from './shared/layout/SiteHeader'
 import { BrandNav } from './shared/layout/BrandNav'
@@ -48,6 +50,7 @@ export default function App() {
   }, [theme])
 
   return (
+    <ToastProvider>
     <BrowserRouter>
       <Routes>
         {/* Admin — layout próprio */}
@@ -86,6 +89,8 @@ export default function App() {
           </StoreLayout>
         } />
       </Routes>
+      <ScrollToTop />
     </BrowserRouter>
+    </ToastProvider>
   )
 }
