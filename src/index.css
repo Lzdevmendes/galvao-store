@@ -1,0 +1,88 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Archivo+Black&family=Archivo:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-brand-orange: #F26B1F;
+  --color-brand-orange-100: #FCE6D6;
+  --color-brand-orange-600: #D9551A;
+  --color-brand-teal: #1FB5A8;
+  --color-brand-teal-100: #D2F1ED;
+  --color-brand-teal-600: #168A80;
+  --color-brand-green: #2CB35A;
+  --color-brand-yellow: #FFC83A;
+  --color-brand-red: #E23B3B;
+
+  --color-ink-50: #F8F9FB;
+  --color-ink-100: #F1F3F6;
+  --color-ink-200: #E2E5EA;
+  --color-ink-300: #C4CAD2;
+  --color-ink-400: #9AA3AF;
+  --color-ink-500: #6B7280;
+  --color-ink-600: #4A5462;
+  --color-ink-700: #2A323D;
+  --color-ink-800: #1F252E;
+  --color-ink-900: #14181F;
+  --color-ink-950: #0B0E12;
+
+  --font-display: 'Bebas Neue', 'Archivo Black', sans-serif;
+  --font-heading: 'Archivo Black', 'Archivo', system-ui, sans-serif;
+  --font-body: 'Archivo', system-ui, sans-serif;
+  --font-ui: 'Space Grotesk', 'Archivo', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-pill: 999px;
+}
+
+:root {
+  --bg: #F8F9FB;
+  --bg-elev: #FFFFFF;
+  --bg-sunk: #F1F3F6;
+  --fg: #0B0E12;
+  --fg-muted: #4A5462;
+  --fg-faint: #6B7280;
+  --border: #E2E5EA;
+  --border-strong: #C4CAD2;
+}
+
+[data-theme="dark"] {
+  --bg: #0B0E12;
+  --bg-elev: #14181F;
+  --bg-sunk: #1F252E;
+  --fg: #F8F9FB;
+  --fg-muted: #9AA3AF;
+  --fg-faint: #6B7280;
+  --border: #2A323D;
+  --border-strong: #4A5462;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg);
+  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+
+::selection { background: rgba(242, 107, 31, 0.2); color: var(--fg); }
+
+:focus-visible { outline: 2px solid #F26B1F; outline-offset: 2px; border-radius: 4px; }
