@@ -5,6 +5,7 @@ import { PromoBar } from './shared/layout/PromoBar'
 import { SiteHeader } from './shared/layout/SiteHeader'
 import { BrandNav } from './shared/layout/BrandNav'
 import { SiteFooter } from './shared/layout/SiteFooter'
+import { MobileTabBar } from './shared/layout/MobileTabBar'
 import { HomePage } from './features/home/HomePage'
 import { ListingPage } from './features/listing/ListingPage'
 import { ProductPage } from './features/pdp/ProductPage'
@@ -23,6 +24,7 @@ function StoreLayout({ children }: { children: React.ReactNode }) {
       <BrandNav />
       <main style={{ flex: 1 }}>{children}</main>
       <SiteFooter />
+      <MobileTabBar />
     </div>
   )
 }
@@ -33,6 +35,7 @@ function MinimalLayout({ children }: { children: React.ReactNode }) {
       <PromoBar />
       <SiteHeader />
       <main>{children}</main>
+      <MobileTabBar />
     </div>
   )
 }
