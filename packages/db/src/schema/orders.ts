@@ -1,26 +1,29 @@
-import { text, integer, real } from 'drizzle-orm/sqlite-core'
+import { text, integer } from 'drizzle-orm/sqlite-core'
 import { sqliteTable } from 'drizzle-orm/sqlite-core'
 import { relations, sql } from 'drizzle-orm'
 import { users } from './users'
-import { products } from './products'
+import { productVariants } from './products'
 
-export type OrderStatus = 'pending_payment' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded'
+export type OrderStatus =
+  | 'pending_payment' | 'paid' | 'processing'
+  | 'shipped' | 'delivered' | 'cancelled' | 'refunded'
+
 export type PaymentMethod = 'pix' | 'credit_card' | 'boleto'
 export type DeliveryMethod = 'sedex' | 'pac' | 'local_delivery' | 'pickup'
 
 export const orders = sqliteTable('orders', {
-  id:            text('id').primaryKey(),
-  userId:        text('user_id').references(() => users.id), // null = guest
-  orderNumber:   text('order_number').notNull().unique(), // GS-2026-001042
-  status:        text('status').$type<OrderStatus>().notNull().default('pending_payment'),
+  id:          text('id').primaryKey(),
+  userId:      text('user_id').references(() => users.id),   // null = guest
+  orderNumber: text('order_number').notNull().unique(),       // GS-2026-001042
+  status:      text('status').$type<OrderStatus>().notNull().default('pending_payment'),
 
-  // Customer info (snapshot)
+  // Snapshot do cliente no momento do pedido
   customerName:  text('customer_name').notNull(),
   customerEmail: text('customer_email').notNull(),
   customerPhone: text('customer_phone'),
   customerCpf:   text('customer_cpf'),
 
-  // Shipping address (snapshot)
+  // Snapshot do endereço de entrega
   shipCep:        text('ship_cep').notNull(),
   shipStreet:     text('ship_street').notNull(),
   shipNumber:     text('ship_number').notNull(),
@@ -29,68 +32,82 @@ export const orders = sqliteTable('orders', {
   shipCity:       text('ship_city').notNull(),
   shipState:      text('ship_state').notNull(),
 
-  // Delivery
+  // Entrega
   deliveryMethod: text('delivery_method').$type<DeliveryMethod>().notNull().default('sedex'),
-  shippingCost:   real('shipping_cost').notNull().default(0),
+  shippingInCents:integer('shipping_in_cents').notNull().default(0),
   estimatedDays:  integer('estimated_days'),
   trackingCode:   text('tracking_code'),
+  shippedAt:      text('shipped_at'),
+  deliveredAt:    text('delivered_at'),
 
-  // Payment
+  // Pagamento
   paymentMethod:  text('payment_method').$type<PaymentMethod>().notNull(),
-  paymentId:      text('payment_id'), // MP transaction ID
-  pixQrCode:      text('pix_qr_code'),
-  pixKey:         text('pix_key'),
+  paymentId:      text('payment_id'),       // ID da transação MP
+  pixQrCode:      text('pix_qr_code'),      // base64 do QR
+  pixKey:         text('pix_key'),          // copia-e-cola
+  pixExpiresAt:   text('pix_expires_at'),
   boletoUrl:      text('boleto_url'),
+  boletoBarCode:  text('boleto_bar_code'),
+  boletoExpiresAt:text('boleto_expires_at'),
   paidAt:         text('paid_at'),
 
-  // Values
-  subtotal:       real('subtotal').notNull(),
-  discountAmount: real('discount_amount').notNull().default(0),
-  total:          real('total').notNull(),
-  couponCode:     text('coupon_code'),
+  // Valores — TODOS em centavos
+  subtotalInCents:  integer('subtotal_in_cents').notNull(),
+  discountInCents:  integer('discount_in_cents').notNull().default(0),
+  totalInCents:     integer('total_in_cents').notNull(),
+  couponCode:       text('coupon_code'),
 
-  // Notes
-  notes:          text('notes'),
+  // NF-e
+  nfeKey:       text('nfe_key'),
+  nfeUrl:       text('nfe_url'),
+  nfePdfUrl:    text('nfe_pdf_url'),
+  nfeIssuedAt:  text('nfe_issued_at'),
 
+  // Notas
+  notes:     text('notes'),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
   updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
 })
 
+// Itens do pedido — snapshot completo (produto pode mudar depois)
 export const orderItems = sqliteTable('order_items', {
-  id:           text('id').primaryKey(),
-  orderId:      text('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
-  productId:    text('product_id').notNull().references(() => products.id),
-  // Snapshot do produto no momento da compra
-  productName:  text('product_name').notNull(),
-  productSku:   text('product_sku').notNull(),
-  brandName:    text('brand_name').notNull(),
-  imageUrl:     text('image_url'),
-  size:         real('size').notNull(),
-  quantity:     integer('quantity').notNull().default(1),
-  unitPrice:    real('unit_price').notNull(),
-  totalPrice:   real('total_price').notNull(),
+  id:              text('id').primaryKey(),
+  orderId:         text('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
+  variantId:       text('variant_id').references(() => productVariants.id), // null se deletado
+  // Snapshot no momento da compra
+  productName:     text('product_name').notNull(),
+  productSku:      text('product_sku').notNull(),
+  brandName:       text('brand_name').notNull(),
+  variantSize:     text('variant_size').notNull(),
+  variantColor:    text('variant_color'),
+  imageUrl:        text('image_url'),
+  qty:             integer('qty').notNull().default(1),
+  unitInCents:     integer('unit_in_cents').notNull(),   // preço unitário
+  totalInCents:    integer('total_in_cents').notNull(),  // unit × qty
 })
 
-export const orderTimeline = sqliteTable('order_timeline', {
+// Timeline de eventos do pedido
+export const orderEvents = sqliteTable('order_events', {
   id:        text('id').primaryKey(),
   orderId:   text('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
-  status:    text('status').$type<OrderStatus>().notNull(),
-  note:      text('note'),
+  type:      text('type').$type<OrderStatus | 'note_added' | 'tracking_added'>().notNull(),
+  payload:   text('payload', { mode: 'json' }).$type<Record<string,unknown>>().default(sql`'{}'`),
+  createdBy: text('created_by'),   // admin_user_id | 'system' | 'customer'
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
 })
 
 // ── Relations ──────────────────────────────────────────────
 export const ordersRelations = relations(orders, ({ one, many }) => ({
-  user:     one(users,   { fields: [orders.userId], references: [users.id] }),
-  items:    many(orderItems),
-  timeline: many(orderTimeline),
+  user:   one(users,  { fields: [orders.userId], references: [users.id] }),
+  items:  many(orderItems),
+  events: many(orderEvents),
 }))
 
 export const orderItemsRelations = relations(orderItems, ({ one }) => ({
-  order:   one(orders,   { fields: [orderItems.orderId],   references: [orders.id] }),
-  product: one(products, { fields: [orderItems.productId], references: [products.id] }),
+  order:   one(orders,          { fields: [orderItems.orderId],   references: [orders.id] }),
+  variant: one(productVariants, { fields: [orderItems.variantId], references: [productVariants.id] }),
 }))
 
-export const orderTimelineRelations = relations(orderTimeline, ({ one }) => ({
-  order: one(orders, { fields: [orderTimeline.orderId], references: [orders.id] }),
+export const orderEventsRelations = relations(orderEvents, ({ one }) => ({
+  order: one(orders, { fields: [orderEvents.orderId], references: [orders.id] }),
 }))

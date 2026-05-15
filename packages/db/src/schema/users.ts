@@ -1,16 +1,18 @@
-import { text, integer, real } from 'drizzle-orm/sqlite-core'
+import { text, integer } from 'drizzle-orm/sqlite-core'
 import { sqliteTable } from 'drizzle-orm/sqlite-core'
 import { relations, sql } from 'drizzle-orm'
 import { orders } from './orders'
 import { wishlists, cartItems } from './commerce'
 
 export const users = sqliteTable('users', {
-  id:        text('id').primaryKey(), // Supabase Auth UID
+  id:        text('id').primaryKey(),       // Supabase Auth UID
   email:     text('email').notNull().unique(),
   name:      text('name'),
   phone:     text('phone'),
   cpf:       text('cpf'),
-  role:      text('role', { enum: ['customer','admin'] }).notNull().default('customer'),
+  birthday:  text('birthday'),             // YYYY-MM-DD
+  isClubMember:   integer('is_club_member', { mode: 'boolean' }).notNull().default(false),
+  marketingOptIn: integer('marketing_opt_in', { mode: 'boolean' }).notNull().default(false),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
   updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
 })
@@ -18,7 +20,7 @@ export const users = sqliteTable('users', {
 export const addresses = sqliteTable('addresses', {
   id:         text('id').primaryKey(),
   userId:     text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  label:      text('label').notNull().default('Casa'), // Casa, Trabalho, etc.
+  label:      text('label').notNull().default('Casa'),
   name:       text('name').notNull(),
   cep:        text('cep').notNull(),
   street:     text('street').notNull(),
@@ -26,9 +28,21 @@ export const addresses = sqliteTable('addresses', {
   complement: text('complement'),
   district:   text('district').notNull(),
   city:       text('city').notNull(),
-  state:      text('state').notNull(),
+  state:      text('state', { length: 2 }).notNull(),
   isDefault:  integer('is_default', { mode: 'boolean' }).notNull().default(false),
   createdAt:  text('created_at').notNull().default(sql`(datetime('now'))`),
+})
+
+// Utilizadores do backoffice — separados dos customers
+export const adminUsers = sqliteTable('admin_users', {
+  id:          text('id').primaryKey(),
+  email:       text('email').notNull().unique(),
+  name:        text('name').notNull(),
+  role:        text('role', { enum: ['owner','manager','staff','marketing'] }).notNull().default('staff'),
+  permissions: text('permissions', { mode: 'json' }).$type<Record<string,boolean>>().default(sql`'{}'`),
+  active:      integer('active', { mode: 'boolean' }).notNull().default(true),
+  lastLoginAt: text('last_login_at'),
+  createdAt:   text('created_at').notNull().default(sql`(datetime('now'))`),
 })
 
 // ── Relations ──────────────────────────────────────────────

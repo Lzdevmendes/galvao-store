@@ -1,26 +1,30 @@
-import { text, integer, real, blob } from 'drizzle-orm/sqlite-core'
+import { text, integer } from 'drizzle-orm/sqlite-core'
 import { sqliteTable } from 'drizzle-orm/sqlite-core'
 import { relations, sql } from 'drizzle-orm'
 
 export const brands = sqliteTable('brands', {
-  id:   text('id').primaryKey(),
-  slug: text('slug').notNull().unique(),
-  name: text('name').notNull(),
+  id:          text('id').primaryKey(),
+  slug:        text('slug').notNull().unique(),
+  name:        text('name').notNull(),
   tagline:     text('tagline'),
   description: text('description'),
+  logoUrl:     text('logo_url'),
   heroImage:   text('hero_image'),
   gradientCss: text('gradient_css'),
   stripeStyle: text('stripe_style'),
-  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  active:      integer('active', { mode: 'boolean' }).notNull().default(true),
+  createdAt:   text('created_at').notNull().default(sql`(datetime('now'))`),
 })
 
 export const categories = sqliteTable('categories', {
-  id:   text('id').primaryKey(),
-  slug: text('slug').notNull().unique(),
-  name: text('name').notNull(),
-  icon: text('icon'),
+  id:          text('id').primaryKey(),
+  slug:        text('slug').notNull().unique(),
+  name:        text('name').notNull(),
+  parentId:    text('parent_id'),           // hierarquia (ex: calçados > campo)
+  surfaceType: text('surface_type'),         // FG | SG | IC | AG | TF
+  icon:        text('icon'),
   description: text('description'),
-  sortOrder: integer('sort_order').notNull().default(0),
+  sortOrder:   integer('sort_order').notNull().default(0),
 })
 
 export const products = sqliteTable('products', {
@@ -28,40 +32,79 @@ export const products = sqliteTable('products', {
   slug:        text('slug').notNull().unique(),
   brandId:     text('brand_id').notNull().references(() => brands.id),
   categoryId:  text('category_id').notNull().references(() => categories.id),
-  line:        text('line'),
+  line:        text('line'),                 // Phantom, Predator, Future, etc.
   name:        text('name').notNull(),
-  colorway:    text('colorway').notNull(),
-  sku:         text('sku').notNull().unique(),
+  skuBase:     text('sku_base').notNull().unique(), // base sem variante
   description: text('description').notNull(),
   features:    text('features', { mode: 'json' }).$type<string[]>().notNull().default(sql`'[]'`),
   specs:       text('specs',    { mode: 'json' }).$type<Record<string,string>>().notNull().default(sql`'{}'`),
-  price:       real('price').notNull(),
-  originalPrice: real('original_price'),
+  tags:        text('tags',     { mode: 'json' }).$type<string[]>().notNull().default(sql`'[]'`),
   badge:       text('badge', { enum: ['new','sale','bestseller','exclusive'] }),
-  rating:      real('rating').notNull().default(0),
+  // Agregados calculados — actualizar ao salvar variante
+  rating:      integer('rating').notNull().default(0),       // × 10 (4.8 = 48)
   reviewCount: integer('review_count').notNull().default(0),
-  inStock:     integer('in_stock', { mode: 'boolean' }).notNull().default(true),
-  published:   integer('published', { mode: 'boolean' }).notNull().default(true),
-  tags:        text('tags', { mode: 'json' }).$type<string[]>().notNull().default(sql`'[]'`),
-  createdAt:   text('created_at').notNull().default(sql`(datetime('now'))`),
-  updatedAt:   text('updated_at').notNull().default(sql`(datetime('now'))`),
+  // SEO
+  metaTitle:       text('meta_title'),
+  metaDescription: text('meta_description'),
+  metaImage:       text('meta_image'),
+  // Status
+  status:    text('status', { enum: ['draft','published','archived'] }).notNull().default('draft'),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+})
+
+// Variantes — a unidade real de venda (tamanho × cor)
+// TODOS os preços em CENTAVOS (integer). R$ 529,99 = 52999
+export const productVariants = sqliteTable('product_variants', {
+  id:               text('id').primaryKey(),
+  productId:        text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  sku:              text('sku').notNull().unique(),
+  size:             text('size').notNull(),           // "41", "42", "M", "GG"
+  color:            text('color'),                    // "Branco/Marinho"
+  priceInCents:     integer('price_in_cents').notNull(),       // 52999 = R$ 529,99
+  pricePromoInCents:integer('price_promo_in_cents'),           // null = sem promoção
+  costInCents:      integer('cost_in_cents'),                  // custo de aquisição
+  stock:            integer('stock').notNull().default(0),
+  stockReserved:    integer('stock_reserved').notNull().default(0), // reservado no carrinho
+  available:        integer('available', { mode: 'boolean' }).notNull().default(true),
+  createdAt:        text('created_at').notNull().default(sql`(datetime('now'))`),
+  updatedAt:        text('updated_at').notNull().default(sql`(datetime('now'))`),
 })
 
 export const productImages = sqliteTable('product_images', {
   id:        text('id').primaryKey(),
   productId: text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  variantId: text('variant_id').references(() => productVariants.id, { onDelete: 'set null' }),
   url:       text('url').notNull(),
   alt:       text('alt').notNull().default(''),
   sortOrder: integer('sort_order').notNull().default(0),
   isPrimary: integer('is_primary', { mode: 'boolean' }).notNull().default(false),
 })
 
-export const productSizes = sqliteTable('product_sizes', {
-  id:        text('id').primaryKey(),
-  productId: text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
-  size:      real('size').notNull(),
-  available: integer('available', { mode: 'boolean' }).notNull().default(true),
-  stock:     integer('stock').notNull().default(0),
+// Auditoria de estoque — toda entrada/saída registada
+export const stockMovements = sqliteTable('stock_movements', {
+  id:          text('id').primaryKey(),
+  variantId:   text('variant_id').notNull().references(() => productVariants.id),
+  delta:       integer('delta').notNull(),            // +5 = entrada, -1 = saída
+  reason:      text('reason', {
+    enum: ['purchase','return','adjustment','reservation','reservation_expired','import'],
+  }).notNull(),
+  referenceId: text('reference_id'),                 // order_id ou null
+  createdBy:   text('created_by'),                   // admin_user_id ou 'system'
+  createdAt:   text('created_at').notNull().default(sql`(datetime('now'))`),
+})
+
+export const reviews = sqliteTable('reviews', {
+  id:         text('id').primaryKey(),
+  productId:  text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  customerId: text('customer_id').notNull(),          // users.id
+  orderId:    text('order_id'),                       // orders.id — confirma compra
+  rating:     integer('rating').notNull(),            // 1–5
+  title:      text('title'),
+  body:       text('body'),
+  tags:       text('tags', { mode: 'json' }).$type<string[]>().default(sql`'[]'`),
+  approved:   integer('approved', { mode: 'boolean' }).notNull().default(false),
+  createdAt:  text('created_at').notNull().default(sql`(datetime('now'))`),
 })
 
 // ── Relations ──────────────────────────────────────────────
@@ -76,14 +119,26 @@ export const categoriesRelations = relations(categories, ({ many }) => ({
 export const productsRelations = relations(products, ({ one, many }) => ({
   brand:    one(brands,     { fields: [products.brandId],    references: [brands.id] }),
   category: one(categories, { fields: [products.categoryId], references: [categories.id] }),
+  variants: many(productVariants),
   images:   many(productImages),
-  sizes:    many(productSizes),
+  reviews:  many(reviews),
+}))
+
+export const productVariantsRelations = relations(productVariants, ({ one, many }) => ({
+  product:        one(products, { fields: [productVariants.productId], references: [products.id] }),
+  images:         many(productImages),
+  stockMovements: many(stockMovements),
 }))
 
 export const productImagesRelations = relations(productImages, ({ one }) => ({
-  product: one(products, { fields: [productImages.productId], references: [products.id] }),
+  product: one(products,        { fields: [productImages.productId], references: [products.id] }),
+  variant: one(productVariants, { fields: [productImages.variantId], references: [productVariants.id] }),
 }))
 
-export const productSizesRelations = relations(productSizes, ({ one }) => ({
-  product: one(products, { fields: [productSizes.productId], references: [products.id] }),
+export const stockMovementsRelations = relations(stockMovements, ({ one }) => ({
+  variant: one(productVariants, { fields: [stockMovements.variantId], references: [productVariants.id] }),
+}))
+
+export const reviewsRelations = relations(reviews, ({ one }) => ({
+  product: one(products, { fields: [reviews.productId], references: [products.id] }),
 }))
