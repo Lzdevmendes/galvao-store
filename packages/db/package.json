@@ -4,22 +4,32 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./schema": "./src/schema/index.ts"
+    ".": {
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./schema": {
+      "import": "./dist/schema/index.js",
+      "default": "./dist/schema/index.js"
+    }
   },
+  "main": "./dist/index.js",
   "scripts": {
+    "build": "tsup",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/seed.ts",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
-    "drizzle-orm": "^0.43.1",
-    "@libsql/client": "^0.14.0"
+    "@libsql/client": "^0.14.0",
+    "drizzle-orm": "^0.43.1"
   },
   "devDependencies": {
     "@galvao/tsconfig": "workspace:*",
+    "@types/node": "^22.19.19",
     "drizzle-kit": "^0.31.1",
+    "tsup": "^8.5.1",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"
   }
