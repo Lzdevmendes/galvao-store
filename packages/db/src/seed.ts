@@ -124,7 +124,7 @@ async function seedProducts() {
       specs:{ Travas:'FG · CONTROLFRAME', Superfície:'Campo firme', Peso:'215g' },
       tags:['campo','fg','controle','predator'],
       variants:[
-        { color:'Energy Citrus', priceCents:brl(689.99), promoCents:brl(799.99), sizes:BOOT_SIZES, out:[42] },
+        { color:'Energy Citrus', priceCents:brl(799.99), promoCents:brl(689.99), sizes:BOOT_SIZES, out:[42] },
       ],
       images:[
         { url:'/products/predator-accuracy/01.jpg', alt:'Adidas Predator Accuracy – lateral',  isPrimary:true  },

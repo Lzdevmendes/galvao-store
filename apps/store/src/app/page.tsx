@@ -3,6 +3,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
+import { ProductCard, type ProductCardData } from '@/components/catalog/product-card'
+import { fmt } from '@/lib/utils'
 
 export const revalidate = 300
 
@@ -11,20 +13,11 @@ export const metadata: Metadata = {
   description: 'Nike, Adidas, Puma, Umbro. Frete grátis acima de R$ 399. 12x sem juros. 5% OFF no Pix.',
 }
 
-const fmt = (cents: number) =>
-  (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-
-interface ProductRow {
-  id: string; slug: string; name: string; brand_name: string; badge: string | null
-  image_url: string; image_alt: string
-  min_price: number; min_promo: number | null
-}
-
-async function getFeatured(limit = 4, badge?: string): Promise<ProductRow[]> {
-  const rows = badge
-    ? db.all<ProductRow>(sql`
+async function getFeatured(limit = 4, badge?: string): Promise<ProductCardData[]> {
+  return badge
+    ? db.all<ProductCardData>(sql`
         SELECT p.id, p.slug, p.name, b.name as brand_name, p.badge,
-               COALESCE(pi.url, '/products/placeholder.jpg') as image_url,
+               COALESCE(pi.url, '') as image_url,
                COALESCE(pi.alt, p.name) as image_alt,
                MIN(v.price_in_cents) as min_price,
                MIN(v.price_promo_in_cents) as min_promo
@@ -37,9 +30,9 @@ async function getFeatured(limit = 4, badge?: string): Promise<ProductRow[]> {
         ORDER BY p.created_at DESC
         LIMIT ${limit}
       `)
-    : db.all<ProductRow>(sql`
+    : db.all<ProductCardData>(sql`
         SELECT p.id, p.slug, p.name, b.name as brand_name, p.badge,
-               COALESCE(pi.url, '/products/placeholder.jpg') as image_url,
+               COALESCE(pi.url, '') as image_url,
                COALESCE(pi.alt, p.name) as image_alt,
                MIN(v.price_in_cents) as min_price,
                MIN(v.price_promo_in_cents) as min_promo
@@ -52,46 +45,6 @@ async function getFeatured(limit = 4, badge?: string): Promise<ProductRow[]> {
         ORDER BY p.rating DESC, p.review_count DESC
         LIMIT ${limit}
       `)
-  return rows
-}
-
-function ProductCard({ p }: { p: ProductRow }) {
-  const active = p.min_promo ?? p.min_price
-  const pix    = active * 0.95
-  const inst   = active / 12
-
-  const badgeEl = p.badge === 'new'        ? <span style={{ background:'#0B0E12', color:'#fff', padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, fontFamily:'var(--font-ui)', letterSpacing:'.04em' }}>LANÇAMENTO</span>
-                : p.badge === 'sale'        ? <span style={{ background:'#E23B3B', color:'#fff', padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, fontFamily:'var(--font-ui)' }}>OFERTA</span>
-                : p.badge === 'bestseller'  ? <span style={{ background:'#FFC83A', color:'#0B0E12', padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, fontFamily:'var(--font-ui)' }}>★ TOP</span>
-                : p.badge === 'exclusive'   ? <span style={{ background:'#0B0E12', color:'#fff', border:'1px solid #F26B1F', padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, fontFamily:'var(--font-ui)' }}>EXCLUSIVO</span>
-                : null
-
-  return (
-    <Link href={`/produto/${p.slug}`} className="pcard" style={{ display:'block' }}>
-      <div className="img">
-        {badgeEl && <div className="top-tags">{badgeEl}</div>}
-        <Image
-          src={p.image_url} alt={p.image_alt}
-          width={400} height={400}
-          style={{ width:'92%', height:'92%', objectFit:'contain', mixBlendMode:'multiply' }}
-          loading="lazy"
-        />
-      </div>
-      <div className="info">
-        <div className="brand">{p.brand_name}</div>
-        <div className="name">{p.name}</div>
-        <div className="price-row">
-          {p.min_promo && p.min_promo < p.min_price && (
-            <span className="from">{fmt(p.min_price)}</span>
-          )}
-          <span className="price">{fmt(active)}</span>
-        </div>
-        <div className="pix">
-          12× {fmt(inst)} ou <strong>{fmt(pix)} no Pix</strong>
-        </div>
-      </div>
-    </Link>
-  )
 }
 
 function SectionHead({ pre, title, accent, href, linkLabel }: {

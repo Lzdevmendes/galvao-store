@@ -1,0 +1,146 @@
+'use client'
+import { useState } from 'react'
+import { fmt } from '@/lib/utils'
+
+interface Variant {
+  sku: string
+  size: string
+  color: string
+  price_in_cents: number
+  price_promo_in_cents: number | null
+  stock: number
+  available: boolean
+}
+
+export function SizePicker({ variants }: { variants: Variant[] }) {
+  const colors = [...new Set(variants.map(v => v.color))]
+  const [selectedColor, setSelectedColor] = useState(colors[0] ?? '')
+  const [selectedSize, setSelectedSize]   = useState<string | null>(null)
+
+  const colorVariants = variants.filter(v => v.color === selectedColor)
+  const selectedVariant = colorVariants.find(v => v.size === selectedSize) ?? null
+
+  const hasValidPromo = (v: Variant) =>
+    v.price_promo_in_cents != null && v.price_promo_in_cents < v.price_in_cents
+
+  const activePrice = (v: Variant) =>
+    hasValidPromo(v) ? v.price_promo_in_cents! : v.price_in_cents
+
+  const displayVariant = selectedVariant ?? colorVariants[0]
+
+  return (
+    <div>
+      {/* Price */}
+      {displayVariant && (
+        <div style={{ marginBottom: 28 }}>
+          {hasValidPromo(displayVariant) && (
+            <div style={{ fontFamily: 'var(--font-ui)', fontSize: 14, color: 'var(--fg-muted)', textDecoration: 'line-through', marginBottom: 2 }}>
+              {fmt(displayVariant.price_in_cents)}
+            </div>
+          )}
+          <div style={{ fontFamily: 'var(--font-stencil)', fontSize: 48, lineHeight: 1, color: 'var(--brand-green)', letterSpacing: '.02em' }}>
+            {fmt(activePrice(displayVariant))}
+          </div>
+          <div style={{ fontFamily: 'var(--font-ui)', fontSize: 13, color: 'var(--fg-muted)', marginTop: 6 }}>
+            12× de {fmt(activePrice(displayVariant) / 12)} sem juros
+            {' · '}
+            <strong style={{ color: 'var(--brand-green)' }}>
+              {fmt(activePrice(displayVariant) * 0.95)} no Pix (5% OFF)
+            </strong>
+          </div>
+        </div>
+      )}
+
+      {/* Color selector */}
+      {colors.length > 1 && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontFamily: 'var(--font-ui)', fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--fg-muted)', marginBottom: 10 }}>
+            Cor: <span style={{ color: 'var(--fg)' }}>{selectedColor}</span>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {colors.map(c => (
+              <button
+                key={c}
+                onClick={() => { setSelectedColor(c); setSelectedSize(null) }}
+                style={{
+                  padding: '8px 16px', borderRadius: 8, fontSize: 13, fontFamily: 'var(--font-ui)', fontWeight: 600, cursor: 'pointer', transition: 'all .15s',
+                  border: selectedColor === c ? '2px solid var(--brand-orange)' : '2px solid var(--border-strong)',
+                  background: selectedColor === c ? 'var(--brand-orange)' : 'transparent',
+                  color: selectedColor === c ? '#fff' : 'var(--fg)',
+                }}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Size selector */}
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ fontFamily: 'var(--font-ui)', fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--fg-muted)', marginBottom: 10 }}>
+          Tamanho{selectedSize ? `: ${selectedSize}` : ''}
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {colorVariants.map(v => (
+            <button
+              key={v.size}
+              disabled={!v.available}
+              onClick={() => setSelectedSize(v.size)}
+              title={!v.available ? `Tamanho ${v.size} esgotado` : v.stock === 1 ? 'Última unidade!' : undefined}
+              style={{
+                width: 52, height: 44, borderRadius: 8, fontSize: 13, fontFamily: 'var(--font-mono)', fontWeight: 600, cursor: v.available ? 'pointer' : 'not-allowed',
+                transition: 'all .15s',
+                opacity: v.available ? 1 : .32,
+                textDecoration: v.available ? 'none' : 'line-through',
+                border: selectedSize === v.size ? '2px solid var(--brand-orange)' : '2px solid var(--border-strong)',
+                background: selectedSize === v.size ? '#0B0E12' : 'transparent',
+                color: selectedSize === v.size ? '#fff' : v.available ? 'var(--fg)' : 'var(--fg-faint)',
+                boxShadow: selectedSize === v.size ? '0 0 0 3px rgba(242,107,31,.18)' : 'none',
+              }}
+            >
+              {v.size}
+            </button>
+          ))}
+        </div>
+        {!selectedSize && (
+          <div style={{ marginTop: 8, fontFamily: 'var(--font-ui)', fontSize: 12, color: 'var(--brand-orange)' }}>
+            Selecione um tamanho
+          </div>
+        )}
+      </div>
+
+      {/* CTAs */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <button
+          disabled={!selectedSize}
+          style={{
+            width: '100%', padding: '18px', borderRadius: 12, fontSize: 16, fontFamily: 'var(--font-ui)', fontWeight: 700,
+            cursor: selectedSize ? 'pointer' : 'not-allowed', border: 'none', transition: 'all .15s',
+            background: selectedSize ? 'var(--brand-orange)' : 'var(--border)', color: '#fff',
+            opacity: selectedSize ? 1 : .6,
+          }}
+        >
+          Adicionar ao carrinho
+        </button>
+        <button
+          disabled={!selectedSize}
+          style={{
+            width: '100%', padding: '18px', borderRadius: 12, fontSize: 16, fontFamily: 'var(--font-ui)', fontWeight: 700,
+            cursor: selectedSize ? 'pointer' : 'not-allowed', border: '2px solid var(--ink-950)', transition: 'all .15s',
+            background: selectedSize ? '#0B0E12' : 'transparent', color: selectedSize ? '#fff' : 'var(--fg-muted)',
+          }}
+        >
+          Comprar agora
+        </button>
+      </div>
+
+      {/* Stock warning */}
+      {selectedVariant && selectedVariant.stock <= 3 && selectedVariant.available && (
+        <div style={{ marginTop: 12, fontFamily: 'var(--font-ui)', fontSize: 12, color: '#E23B3B', fontWeight: 600 }}>
+          ⚠️ Restam apenas {selectedVariant.stock} unidade{selectedVariant.stock > 1 ? 's' : ''}!
+        </div>
+      )}
+    </div>
+  )
+}
