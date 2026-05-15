@@ -175,7 +175,14 @@ export default async function ProdutoPage(
           </h1>
 
           {/* Size picker + Price + CTAs (client component) */}
-          <SizePicker variants={variants} />
+          <SizePicker
+            variants={variants}
+            productId={product.id}
+            productSlug={product.slug}
+            productName={product.name}
+            brandName={product.brand_name}
+            imageUrl={primaryImage?.url ?? ''}
+          />
 
           {/* Description */}
           <div style={{ marginTop: 32, paddingTop: 32, borderTop: '1px solid var(--border)' }}>

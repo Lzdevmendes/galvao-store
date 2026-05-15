@@ -5,6 +5,7 @@ import { SiteHeader }  from '@/components/layout/site-header'
 import { BrandNav }    from '@/components/layout/brand-nav'
 import { SiteFooter }  from '@/components/layout/site-footer'
 import { MobileTabBar } from '@/components/layout/mobile-tab-bar'
+import { CartDrawer }  from '@/components/cart/cart-drawer'
 
 export const metadata: Metadata = {
   title: {
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main>{children}</main>
         <SiteFooter />
         <MobileTabBar />
+        <CartDrawer />
       </body>
     </html>
   )
