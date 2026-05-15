@@ -13,6 +13,7 @@ import { CheckoutPage } from './features/checkout/CheckoutPage'
 import { LoginPage } from './features/auth/LoginPage'
 import { AccountPage } from './features/account/AccountPage'
 import { AdminPage } from './features/admin/AdminPage'
+import { BrandPage } from './features/brand/BrandPage'
 
 function StoreLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -60,7 +61,7 @@ export default function App() {
         {/* Loja completa */}
         <Route path="/" element={<StoreLayout><HomePage /></StoreLayout>} />
         <Route path="/produtos" element={<StoreLayout><ListingPage /></StoreLayout>} />
-        <Route path="/marca/:brand" element={<StoreLayout><ListingPage /></StoreLayout>} />
+        <Route path="/marca/:brand" element={<StoreLayout><BrandPage /></StoreLayout>} />
         <Route path="/categoria/:category" element={<StoreLayout><ListingPage /></StoreLayout>} />
         <Route path="/busca" element={<StoreLayout><ListingPage /></StoreLayout>} />
         <Route path="/lancamentos" element={<StoreLayout><ListingPage /></StoreLayout>} />
