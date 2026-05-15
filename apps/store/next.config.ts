@@ -8,9 +8,6 @@ const config: NextConfig = {
       { protocol: 'https', hostname: 'images.unsplash.com' },
     ],
   },
-  experimental: {
-    reactCompiler: true,
-  },
 }
 
 export default config
