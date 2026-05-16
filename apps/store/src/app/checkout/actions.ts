@@ -104,7 +104,7 @@ export async function calculateShipping(
   // 2. Melhor Envio (Correios) — SEDEX e PAC com preços reais
   const meToken   = process.env.MELHOR_ENVIO_TOKEN
   const originCep = process.env.SHIPPING_ORIGIN_CEP ?? '11671207'
-  const sandbox   = process.env.NODE_ENV !== 'production'
+  const sandbox   = process.env.MELHOR_ENVIO_SANDBOX === 'true'
 
   if (meToken && items.length > 0) {
     try {
