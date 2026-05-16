@@ -1,23 +1,50 @@
-// Melhor Envio API — SEDEX, PAC e transportadoras privadas
+// Melhor Envio API — OAuth 2.0 client_credentials + cotação de frete
 // Docs: https://docs.melhorenvio.com.br
-// Sandbox: sandbox.melhorenvio.com.br | Prod: melhorenvio.com.br
+// Token dura 15 dias — cacheado em memória no processo Node.js
 
-const BASE_PROD    = 'https://www.melhorenvio.com.br/api/v2'
-const BASE_SANDBOX = 'https://sandbox.melhorenvio.com.br/api/v2'
+const BASE_PROD    = 'https://www.melhorenvio.com.br'
+const BASE_SANDBOX = 'https://sandbox.melhorenvio.com.br'
+const USER_AGENT   = 'Galvão Store lzmendestechdev@gmail.com'
 
-const USER_AGENT = 'Galvão Store dev@galvaostore.com.br'
+// Cache em memória — sobrevive entre requests no mesmo processo
+let _cache: { token: string; expiresAt: number } | null = null
 
-// IDs de serviço Melhor Envio (Correios)
-// 1 = PAC | 2 = SEDEX | 3 = PAC Mini | 4 = SEDEX Mini
-const CORREIOS_SERVICES = '1,2'
+async function getAccessToken(clientId: string, clientSecret: string, sandbox: boolean): Promise<string> {
+  if (_cache && Date.now() < _cache.expiresAt) return _cache.token
+
+  const base = sandbox ? BASE_SANDBOX : BASE_PROD
+  const res  = await fetch(`${base}/oauth/token`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', 'User-Agent': USER_AGENT },
+    body: JSON.stringify({
+      grant_type:    'client_credentials',
+      client_id:     Number(clientId),
+      client_secret: clientSecret,
+      scope:         'shipping-calculate',
+    }),
+    signal: AbortSignal.timeout(8000),
+  })
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '')
+    throw new Error(`Melhor Envio OAuth ${res.status}: ${txt.slice(0, 200)}`)
+  }
+
+  const data: { access_token: string; expires_in: number } = await res.json()
+  // Cache por 14 dias (token dura 15)
+  _cache = { token: data.access_token, expiresAt: Date.now() + 14 * 24 * 60 * 60 * 1000 }
+  return _cache.token
+}
+
+// ── Tipos públicos ─────────────────────────────────────────────────────────
 
 export type MEProduct = {
-  id:             string   // SKU ou variantId
+  id:             string
   widthCm:        number
   heightCm:       number
   lengthCm:       number
   weightKg:       number
-  insuranceValue: number   // valor da nota em BRL
+  insuranceValue: number  // BRL
   quantity:       number
 }
 
@@ -38,14 +65,18 @@ type MEServiceRaw = {
   error:         string | null
 }
 
+// ── Quote ──────────────────────────────────────────────────────────────────
+
 export async function quoteMelhorEnvio(
-  originCep:  string,
-  destCep:    string,
-  products:   MEProduct[],
-  token:      string,
+  originCep:    string,
+  destCep:      string,
+  products:     MEProduct[],
+  clientId:     string,
+  clientSecret: string,
   sandbox = false,
 ): Promise<MEQuoteResult[]> {
-  const base = sandbox ? BASE_SANDBOX : BASE_PROD
+  const token = await getAccessToken(clientId, clientSecret, sandbox)
+  const base  = sandbox ? BASE_SANDBOX : BASE_PROD
 
   const body = {
     from:     { postal_code: originCep.replace(/\D/g, '') },
@@ -60,24 +91,24 @@ export async function quoteMelhorEnvio(
       quantity:        p.quantity,
     })),
     options:  { receipt: false, own_hand: false, collect: false },
-    services: CORREIOS_SERVICES,
+    services: '1,2',  // 1=PAC 2=SEDEX
   }
 
-  const res = await fetch(`${base}/me/shipment/calculate`, {
+  const res = await fetch(`${base}/api/v2/me/shipment/calculate`, {
     method:  'POST',
     headers: {
-      'Content-Type':  'application/json',
-      Accept:          'application/json',
-      Authorization:   `Bearer ${token}`,
-      'User-Agent':    USER_AGENT,
+      'Content-Type': 'application/json',
+      Accept:         'application/json',
+      Authorization:  `Bearer ${token}`,
+      'User-Agent':   USER_AGENT,
     },
     body:   JSON.stringify(body),
     signal: AbortSignal.timeout(8000),
   })
 
   if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`Melhor Envio HTTP ${res.status}: ${text.slice(0, 200)}`)
+    const txt = await res.text().catch(() => '')
+    throw new Error(`Melhor Envio quote ${res.status}: ${txt.slice(0, 200)}`)
   }
 
   const data: MEServiceRaw[] = await res.json()
@@ -93,9 +124,7 @@ export async function quoteMelhorEnvio(
     }))
 }
 
-// Mapear serviceId Melhor Envio → método interno
+// serviceId → método interno
 export function meServiceToMethod(id: number): 'sedex' | 'pac' {
-  // 2 = SEDEX, 4 = SEDEX Mini → sedex
-  // 1 = PAC,  3 = PAC Mini  → pac
   return id === 2 || id === 4 ? 'sedex' : 'pac'
 }

@@ -102,11 +102,12 @@ export async function calculateShipping(
   }
 
   // 2. Melhor Envio (Correios) — SEDEX e PAC com preços reais
-  const meToken   = process.env.MELHOR_ENVIO_TOKEN
-  const originCep = process.env.SHIPPING_ORIGIN_CEP ?? '11671207'
-  const sandbox   = process.env.MELHOR_ENVIO_SANDBOX === 'true'
+  const meClientId     = process.env.MELHOR_ENVIO_CLIENT_ID
+  const meClientSecret = process.env.MELHOR_ENVIO_CLIENT_SECRET
+  const originCep      = process.env.SHIPPING_ORIGIN_CEP ?? '11671207'
+  const sandbox        = process.env.MELHOR_ENVIO_SANDBOX === 'true'
 
-  if (meToken && items.length > 0) {
+  if (meClientId && meClientSecret && items.length > 0) {
     try {
       // Buscar dimensões reais das variantes
       const meProducts: MEProduct[] = []
@@ -133,7 +134,7 @@ export async function calculateShipping(
         })
       }
 
-      const quotes = await quoteMelhorEnvio(originCep, cleanCep, meProducts, meToken, sandbox)
+      const quotes = await quoteMelhorEnvio(originCep, cleanCep, meProducts, meClientId, meClientSecret, sandbox)
 
       // Agrupar por método → pegar o mais barato de cada
       const byMethod = new Map<'sedex' | 'pac', typeof quotes[0]>()
@@ -169,7 +170,7 @@ export async function calculateShipping(
       options.push({ method: 'pac',   label: 'PAC',   priceInCents: 1490, days: 7, description: 'Correios · até 7 dias úteis (estimado)' })
     }
   } else {
-    // Sem token → valores fixos para dev/demo
+    // Sem credenciais → valores fixos para dev/demo
     options.push({ method: 'sedex', label: 'SEDEX', priceInCents: 2990, days: 3, description: 'Correios · até 3 dias úteis' })
     options.push({ method: 'pac',   label: 'PAC',   priceInCents: 1490, days: 7, description: 'Correios · até 7 dias úteis' })
   }
