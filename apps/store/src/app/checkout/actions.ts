@@ -1,0 +1,377 @@
+'use server'
+
+import { db } from '@/lib/db'
+import { sql } from 'drizzle-orm'
+import { createClient } from '@/lib/supabase/server'
+import { fmt } from '@/lib/utils'
+
+// ── Types ──────────────────────────────────────────────────────────────────
+
+export type ShippingOption = {
+  method: 'sedex' | 'pac' | 'local_delivery'
+  label: string
+  priceInCents: number
+  days: number
+  description: string
+}
+
+export type CartItemData = {
+  variantId: string
+  productName: string
+  brandName: string
+  imageUrl: string
+  size: string
+  color: string
+  priceInCents: number
+  pricePromoInCents: number | null
+  quantity: number
+}
+
+export type CheckoutPayload = {
+  name: string
+  email: string
+  phone: string
+  cpf: string
+  cep: string
+  street: string
+  number: string
+  complement: string
+  district: string
+  city: string
+  state: string
+  shippingMethod: 'sedex' | 'pac' | 'local_delivery'
+  shippingInCents: number
+  estimatedDays: number
+  paymentMethod: 'pix' | 'credit_card' | 'boleto'
+  cardToken?: string
+  cardInstallments?: number
+  cardPaymentMethodId?: string
+  couponCode?: string
+  couponDiscountInCents?: number
+  couponId?: string
+  cartItems: CartItemData[]
+}
+
+export type CreateOrderResult =
+  | {
+      success: true
+      orderId: string
+      orderNumber: string
+      paymentMethod: string
+      pixQr?: string
+      pixKey?: string
+      pixExpiresAt?: string
+      boletoUrl?: string
+      boletoBarCode?: string
+      boletoExpiresAt?: string
+    }
+  | { success: false; error: string }
+
+// ── Calculate Shipping ─────────────────────────────────────────────────────
+
+export async function calculateShipping(cep: string): Promise<ShippingOption[]> {
+  const cleanCep = cep.replace(/\D/g, '')
+  const options: ShippingOption[] = []
+
+  const zones = db.all<{
+    name: string; fee_in_cents: number; min_days: number; max_days: number
+  }>(sql`
+    SELECT name, fee_in_cents, min_days, max_days
+    FROM delivery_zones
+    WHERE active = 1 AND ${cleanCep} LIKE cep_prefix || '%'
+    LIMIT 1
+  `)
+
+  if (zones.length > 0) {
+    const z = zones[0]
+    const daysLabel = z.min_days === 0 ? 'Hoje ou amanhã' : `${z.min_days}–${z.max_days} dias úteis`
+    options.push({
+      method: 'local_delivery',
+      label: 'Entrega Local Galvão',
+      priceInCents: z.fee_in_cents,
+      days: z.max_days,
+      description: daysLabel,
+    })
+  }
+
+  options.push({ method: 'sedex', label: 'SEDEX', priceInCents: 2990, days: 3, description: 'Até 3 dias úteis' })
+  options.push({ method: 'pac',   label: 'PAC',   priceInCents: 1490, days: 7, description: 'Até 7 dias úteis' })
+
+  return options
+}
+
+// ── Validate Coupon ────────────────────────────────────────────────────────
+
+export async function validateCoupon(
+  code: string,
+  subtotalInCents: number
+): Promise<
+  | { valid: true; discountInCents: number; couponId: string; type: string }
+  | { valid: false; error: string }
+> {
+  const now = new Date().toISOString()
+
+  const rows = db.all<{
+    id: string; type: string; value: number; min_order_in_cents: number | null
+  }>(sql`
+    SELECT id, type, value, min_order_in_cents
+    FROM coupons
+    WHERE UPPER(code) = UPPER(${code})
+      AND active = 1
+      AND (starts_at IS NULL OR starts_at <= ${now})
+      AND (expires_at IS NULL OR expires_at >= ${now})
+      AND (max_uses IS NULL OR used_count < max_uses)
+    LIMIT 1
+  `)
+
+  const coupon = rows[0]
+  if (!coupon) return { valid: false, error: 'Cupom inválido ou expirado.' }
+
+  const minOrder = coupon.min_order_in_cents ?? 0
+  if (subtotalInCents < minOrder) {
+    return { valid: false, error: `Pedido mínimo de ${fmt(minOrder)} para este cupom.` }
+  }
+
+  let discountInCents = 0
+  if (coupon.type === 'percent') discountInCents = Math.round(subtotalInCents * coupon.value / 100)
+  else if (coupon.type === 'fixed') discountInCents = Math.min(coupon.value, subtotalInCents)
+
+  return { valid: true, discountInCents, couponId: coupon.id, type: coupon.type }
+}
+
+// ── Create Order ───────────────────────────────────────────────────────────
+
+export async function createOrder(payload: CheckoutPayload): Promise<CreateOrderResult> {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    // Calcular totais
+    const subtotalInCents = payload.cartItems.reduce((acc, item) => {
+      const price = item.pricePromoInCents != null && item.pricePromoInCents < item.priceInCents
+        ? item.pricePromoInCents : item.priceInCents
+      return acc + price * item.quantity
+    }, 0)
+
+    const couponDiscount = payload.couponDiscountInCents ?? 0
+    const pixDiscount    = payload.paymentMethod === 'pix' ? Math.round(subtotalInCents * 0.05) : 0
+    const totalDiscount  = couponDiscount + pixDiscount
+    const totalInCents   = subtotalInCents - totalDiscount + payload.shippingInCents
+
+    // Número do pedido sequencial
+    const countRows  = db.all<{ n: number }>(sql`SELECT COUNT(*) as n FROM orders`)
+    const nextNum    = (countRows[0]?.n ?? 0) + 1
+    const orderNumber = `GS-${new Date().getFullYear()}-${String(nextNum).padStart(6, '0')}`
+    const orderId    = crypto.randomUUID()
+
+    // Validar estoque
+    for (const item of payload.cartItems) {
+      const vRows = db.all<{ stock: number; stock_reserved: number }>(sql`
+        SELECT stock, stock_reserved FROM product_variants WHERE id = ${item.variantId}
+      `)
+      const v = vRows[0]
+      if (v && v.stock - v.stock_reserved < item.quantity) {
+        return { success: false, error: `Estoque insuficiente para ${item.productName} (tam. ${item.size}).` }
+      }
+    }
+
+    // Criar pedido
+    db.run(sql`
+      INSERT INTO orders (
+        id, user_id, order_number, status,
+        customer_name, customer_email, customer_phone, customer_cpf,
+        ship_cep, ship_street, ship_number, ship_complement,
+        ship_district, ship_city, ship_state,
+        delivery_method, shipping_in_cents, estimated_days,
+        payment_method,
+        subtotal_in_cents, discount_in_cents, total_in_cents,
+        coupon_code, created_at, updated_at
+      ) VALUES (
+        ${orderId}, ${user?.id ?? null}, ${orderNumber}, 'pending_payment',
+        ${payload.name}, ${payload.email}, ${payload.phone || null}, ${payload.cpf || null},
+        ${payload.cep}, ${payload.street}, ${payload.number}, ${payload.complement || null},
+        ${payload.district}, ${payload.city}, ${payload.state},
+        ${payload.shippingMethod}, ${payload.shippingInCents}, ${payload.estimatedDays},
+        ${payload.paymentMethod},
+        ${subtotalInCents}, ${totalDiscount}, ${totalInCents},
+        ${payload.couponCode || null}, datetime('now'), datetime('now')
+      )
+    `)
+
+    // Criar itens
+    for (const item of payload.cartItems) {
+      const price     = item.pricePromoInCents != null && item.pricePromoInCents < item.priceInCents
+        ? item.pricePromoInCents : item.priceInCents
+      const skuRows   = db.all<{ sku: string }>(sql`SELECT sku FROM product_variants WHERE id = ${item.variantId}`)
+      const sku       = skuRows[0]?.sku ?? item.variantId
+
+      db.run(sql`
+        INSERT INTO order_items (
+          id, order_id, variant_id,
+          product_name, product_sku, brand_name,
+          variant_size, variant_color, image_url,
+          qty, unit_in_cents, total_in_cents
+        ) VALUES (
+          ${crypto.randomUUID()}, ${orderId}, ${item.variantId},
+          ${item.productName}, ${sku}, ${item.brandName},
+          ${item.size}, ${item.color}, ${item.imageUrl || null},
+          ${item.quantity}, ${price}, ${price * item.quantity}
+        )
+      `)
+    }
+
+    // Reservar estoque (TTL 30min — liberado pelo webhook de cancelamento)
+    for (const item of payload.cartItems) {
+      db.run(sql`
+        UPDATE product_variants
+        SET stock_reserved = stock_reserved + ${item.quantity}
+        WHERE id = ${item.variantId}
+      `)
+    }
+
+    // Primeiro evento da timeline
+    db.run(sql`
+      INSERT INTO order_events (id, order_id, type, created_by, created_at)
+      VALUES (${crypto.randomUUID()}, ${orderId}, 'pending_payment', 'system', datetime('now'))
+    `)
+
+    // Registrar uso do cupom
+    if (payload.couponId) {
+      db.run(sql`UPDATE coupons SET used_count = used_count + 1 WHERE id = ${payload.couponId}`)
+      db.run(sql`
+        INSERT INTO coupon_uses (id, coupon_id, user_id, order_id, used_at)
+        VALUES (${crypto.randomUUID()}, ${payload.couponId}, ${user?.id ?? null}, ${orderId}, datetime('now'))
+      `)
+    }
+
+    // Mercado Pago
+    const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
+    if (!accessToken) {
+      // Dev mode sem chaves MP
+      return { success: true, orderId, orderNumber, paymentMethod: payload.paymentMethod }
+    }
+
+    const { MercadoPagoConfig, Payment } = await import('mercadopago')
+    const mpClient  = new MercadoPagoConfig({ accessToken })
+    const mpPayment = new Payment(mpClient)
+
+    const totalBRL  = totalInCents / 100
+    const siteUrl   = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3010'
+    const firstName = payload.name.split(' ')[0]
+    const lastName  = payload.name.split(' ').slice(1).join(' ') || firstName
+
+    // ── PIX ──────────────────────────────────────────────────────────────
+    if (payload.paymentMethod === 'pix') {
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString()
+
+      const result = await mpPayment.create({
+        body: {
+          transaction_amount: totalBRL,
+          payment_method_id: 'pix',
+          payer: { email: payload.email, first_name: firstName, last_name: lastName },
+          description: `Pedido ${orderNumber} - Galvão Store`,
+          external_reference: orderId,
+          notification_url: `${siteUrl}/api/webhooks/mercadopago`,
+          date_of_expiration: expiresAt,
+        },
+      })
+
+      const pixQr  = result.point_of_interaction?.transaction_data?.qr_code_base64 ?? undefined
+      const pixKey = result.point_of_interaction?.transaction_data?.qr_code ?? undefined
+
+      db.run(sql`
+        UPDATE orders
+        SET payment_id = ${String(result.id)},
+            pix_qr_code = ${pixQr ?? null},
+            pix_key = ${pixKey ?? null},
+            pix_expires_at = ${expiresAt}
+        WHERE id = ${orderId}
+      `)
+
+      return { success: true, orderId, orderNumber, paymentMethod: 'pix', pixQr, pixKey, pixExpiresAt: expiresAt }
+    }
+
+    // ── Boleto ────────────────────────────────────────────────────────────
+    if (payload.paymentMethod === 'boleto') {
+      const result = await mpPayment.create({
+        body: {
+          transaction_amount: totalBRL,
+          payment_method_id: 'bolbradesco',
+          payer: {
+            email: payload.email,
+            first_name: firstName,
+            last_name: lastName,
+            identification: { type: 'CPF', number: payload.cpf.replace(/\D/g, '') },
+          },
+          description: `Pedido ${orderNumber} - Galvão Store`,
+          external_reference: orderId,
+          notification_url: `${siteUrl}/api/webhooks/mercadopago`,
+        },
+      })
+
+      const boletoUrl     = result.transaction_details?.external_resource_url ?? undefined
+      const resultAny     = result as unknown as Record<string, unknown>
+      const boletoBarCode = typeof resultAny.barcode === 'object' && resultAny.barcode !== null
+        ? (resultAny.barcode as Record<string, unknown>).content as string | undefined
+        : undefined
+      const boletoExpAt   = result.date_of_expiration ?? undefined
+
+      db.run(sql`
+        UPDATE orders
+        SET payment_id = ${String(result.id)},
+            boleto_url = ${boletoUrl ?? null},
+            boleto_bar_code = ${boletoBarCode ?? null},
+            boleto_expires_at = ${boletoExpAt ?? null}
+        WHERE id = ${orderId}
+      `)
+
+      return {
+        success: true, orderId, orderNumber, paymentMethod: 'boleto',
+        boletoUrl, boletoBarCode, boletoExpiresAt: boletoExpAt,
+      }
+    }
+
+    // ── Cartão ────────────────────────────────────────────────────────────
+    if (payload.paymentMethod === 'credit_card' && payload.cardToken) {
+      const result = await mpPayment.create({
+        body: {
+          transaction_amount: totalBRL,
+          token: payload.cardToken,
+          installments: payload.cardInstallments ?? 1,
+          payment_method_id: payload.cardPaymentMethodId!,
+          payer: {
+            email: payload.email,
+            identification: { type: 'CPF', number: payload.cpf.replace(/\D/g, '') },
+          },
+          description: `Pedido ${orderNumber} - Galvão Store`,
+          external_reference: orderId,
+          notification_url: `${siteUrl}/api/webhooks/mercadopago`,
+        },
+      })
+
+      if (result.status === 'approved') {
+        db.run(sql`
+          UPDATE orders SET status = 'paid', payment_id = ${String(result.id)}, paid_at = datetime('now')
+          WHERE id = ${orderId}
+        `)
+        for (const item of payload.cartItems) {
+          db.run(sql`
+            UPDATE product_variants
+            SET stock = stock - ${item.quantity},
+                stock_reserved = stock_reserved - ${item.quantity}
+            WHERE id = ${item.variantId}
+          `)
+        }
+      } else {
+        db.run(sql`UPDATE orders SET payment_id = ${String(result.id)} WHERE id = ${orderId}`)
+      }
+
+      return { success: true, orderId, orderNumber, paymentMethod: 'credit_card' }
+    }
+
+    return { success: true, orderId, orderNumber, paymentMethod: payload.paymentMethod }
+  } catch (err) {
+    console.error('[createOrder]', err)
+    return { success: false, error: 'Erro ao criar pedido. Tente novamente.' }
+  }
+}
