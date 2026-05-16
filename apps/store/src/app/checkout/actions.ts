@@ -164,13 +164,16 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
     const orderNumber = `GS-${new Date().getFullYear()}-${String(nextNum).padStart(6, '0')}`
     const orderId    = crypto.randomUUID()
 
-    // Validar estoque
+    // Validar variantes e estoque
     for (const item of payload.cartItems) {
       const vRows = db.all<{ stock: number; stock_reserved: number }>(sql`
         SELECT stock, stock_reserved FROM product_variants WHERE id = ${item.variantId}
       `)
       const v = vRows[0]
-      if (v && v.stock - v.stock_reserved < item.quantity) {
+      if (!v) {
+        return { success: false, error: `Produto não encontrado: ${item.productName} tam. ${item.size}. Atualize o carrinho e tente novamente.` }
+      }
+      if (v.stock - v.stock_reserved < item.quantity) {
         return { success: false, error: `Estoque insuficiente para ${item.productName} (tam. ${item.size}).` }
       }
     }
@@ -371,7 +374,8 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
 
     return { success: true, orderId, orderNumber, paymentMethod: payload.paymentMethod }
   } catch (err) {
-    console.error('[createOrder]', err)
-    return { success: false, error: 'Erro ao criar pedido. Tente novamente.' }
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[createOrder] ERRO:', msg)
+    return { success: false, error: `Erro interno: ${msg}` }
   }
 }
