@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import { createClient } from '@/lib/supabase/server'
 import { fmt } from '@/lib/utils'
+import { quoteFrenet, frenetCodeToMethod, type FrenetItem } from '@/lib/frenet'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -69,10 +70,16 @@ export type CreateOrderResult =
 
 // ── Calculate Shipping ─────────────────────────────────────────────────────
 
-export async function calculateShipping(cep: string): Promise<ShippingOption[]> {
-  const cleanCep = cep.replace(/\D/g, '')
-  const options: ShippingOption[] = []
+type ShippingInput = { variantId: string; quantity: number; priceInCents: number; pricePromoInCents: number | null }
 
+export async function calculateShipping(
+  cep: string,
+  items: ShippingInput[],
+): Promise<ShippingOption[]> {
+  const cleanCep = cep.replace(/\D/g, '')
+  const options:  ShippingOption[] = []
+
+  // 1. Entrega local (carro próprio) — prioridade se CEP bater
   const zones = db.all<{
     name: string; fee_in_cents: number; min_days: number; max_days: number
   }>(sql`
@@ -94,8 +101,86 @@ export async function calculateShipping(cep: string): Promise<ShippingOption[]> 
     })
   }
 
-  options.push({ method: 'sedex', label: 'SEDEX', priceInCents: 2990, days: 3, description: 'Até 3 dias úteis' })
-  options.push({ method: 'pac',   label: 'PAC',   priceInCents: 1490, days: 7, description: 'Até 7 dias úteis' })
+  // 2. Frenet (Correios) — SEDEX e PAC com preços reais
+  const frenetToken  = process.env.FRENET_API_TOKEN
+  const originCep    = process.env.FRENET_ORIGIN_CEP ?? '01310100'
+
+  if (frenetToken && items.length > 0) {
+    try {
+      // Buscar dimensões reais das variantes
+      const frenetItems: FrenetItem[] = []
+      for (const item of items) {
+        const rows = db.all<{
+          sku: string; weight_g: number; height_cm: number; width_cm: number; length_cm: number
+        }>(sql`
+          SELECT pv.sku, pv.weight_g, pv.height_cm, pv.width_cm, pv.length_cm
+          FROM product_variants pv
+          WHERE pv.id = ${item.variantId}
+          LIMIT 1
+        `)
+        const v = rows[0]
+        frenetItems.push({
+          sku:      v?.sku      ?? item.variantId,
+          quantity: item.quantity,
+          weightKg: (v?.weight_g ?? 500) / 1000,
+          heightCm: v?.height_cm ?? 12,
+          widthCm:  v?.width_cm  ?? 22,
+          lengthCm: v?.length_cm ?? 30,
+        })
+      }
+
+      // Valor da nota: soma dos preços efectivos
+      const invoiceValue = items.reduce((acc, i) => {
+        const price = i.pricePromoInCents != null && i.pricePromoInCents < i.priceInCents
+          ? i.pricePromoInCents : i.priceInCents
+        return acc + price * i.quantity / 100 // centavos → BRL
+      }, 0)
+
+      const quotes = await quoteFrenet(originCep, cleanCep, invoiceValue, frenetItems, frenetToken)
+
+      // Agrupar por método (pode vir vários SEDEX) → pegar o mais barato
+      const byMethod = new Map<'sedex' | 'pac', typeof quotes[0]>()
+      for (const q of quotes) {
+        const method = frenetCodeToMethod(q.serviceCode)
+        const existing = byMethod.get(method)
+        if (!existing || q.priceInCents < existing.priceInCents) byMethod.set(method, q)
+      }
+
+      // SEDEX
+      const sedex = byMethod.get('sedex')
+      if (sedex) {
+        options.push({
+          method: 'sedex',
+          label: 'SEDEX',
+          priceInCents: sedex.priceInCents,
+          days: sedex.days,
+          description: `Correios · até ${sedex.days} dias úteis`,
+        })
+      }
+
+      // PAC
+      const pac = byMethod.get('pac')
+      if (pac) {
+        options.push({
+          method: 'pac',
+          label: 'PAC',
+          priceInCents: pac.priceInCents,
+          days: pac.days,
+          description: `Correios · até ${pac.days} dias úteis`,
+        })
+      }
+
+    } catch (err) {
+      console.warn('[calculateShipping] Frenet falhou, usando fallback:', err instanceof Error ? err.message : err)
+      // Fallback com valores estimados
+      options.push({ method: 'sedex', label: 'SEDEX', priceInCents: 2990, days: 3, description: 'Correios · até 3 dias úteis (estimado)' })
+      options.push({ method: 'pac',   label: 'PAC',   priceInCents: 1490, days: 7, description: 'Correios · até 7 dias úteis (estimado)' })
+    }
+  } else {
+    // Sem token Frenet → valores fixos (dev/demo)
+    options.push({ method: 'sedex', label: 'SEDEX', priceInCents: 2990, days: 3, description: 'Correios · até 3 dias úteis' })
+    options.push({ method: 'pac',   label: 'PAC',   priceInCents: 1490, days: 7, description: 'Correios · até 7 dias úteis' })
+  }
 
   return options
 }

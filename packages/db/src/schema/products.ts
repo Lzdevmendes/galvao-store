@@ -67,6 +67,11 @@ export const productVariants = sqliteTable('product_variants', {
   stock:            integer('stock').notNull().default(0),
   stockReserved:    integer('stock_reserved').notNull().default(0), // reservado no carrinho
   available:        integer('available', { mode: 'boolean' }).notNull().default(true),
+  // Dimensões para cálculo de frete (Frenet / Correios)
+  weightG:          integer('weight_g').notNull().default(500),   // gramas — padrão chuteira
+  heightCm:         integer('height_cm').notNull().default(12),   // altura caixa
+  widthCm:          integer('width_cm').notNull().default(22),    // largura caixa
+  lengthCm:         integer('length_cm').notNull().default(30),   // comprimento caixa
   createdAt:        text('created_at').notNull().default(sql`(datetime('now'))`),
   updatedAt:        text('updated_at').notNull().default(sql`(datetime('now'))`),
 })

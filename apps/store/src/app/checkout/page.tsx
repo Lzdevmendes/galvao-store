@@ -128,17 +128,23 @@ export default function CheckoutPage() {
     }
   }, [couponInput, subtotal])
 
-  // Avançar para frete — busca opções
+  // Avançar para frete — busca opções Frenet
   const goToShipping = useCallback(async () => {
     setLoading(true)
-    const opts = await calculateShipping(form.cep)
+    const shippingItems = items.map(i => ({
+      variantId:         i.variantId,
+      quantity:          i.quantity,
+      priceInCents:      i.priceInCents,
+      pricePromoInCents: i.pricePromoInCents,
+    }))
+    const opts = await calculateShipping(form.cep, shippingItems)
     setShippingOpts(opts)
     if (opts.length > 0 && !form.shippingMethod) {
       setForm(f => ({ ...f, shippingMethod: opts[0].method, shippingInCents: opts[0].priceInCents, estimatedDays: opts[0].days }))
     }
     setLoading(false)
     setStep(3)
-  }, [form.cep, form.shippingMethod])
+  }, [form.cep, form.shippingMethod, items])
 
   // Finalizar pedido
   const submitOrder = useCallback(async () => {
