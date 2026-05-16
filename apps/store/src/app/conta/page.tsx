@@ -41,10 +41,7 @@ export default async function ContaPage() {
       {/* Menu */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:16 }}>
         {menuItems.map(item => (
-          <Link key={item.href} href={item.href} style={{ background:'var(--bg-elev)', border:'1px solid var(--border)', borderRadius:14, padding:'24px', display:'flex', gap:16, alignItems:'flex-start', textDecoration:'none', transition:'all .15s' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--brand-orange)'; (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-2px)' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLAnchorElement).style.transform = 'none' }}
-          >
+          <Link key={item.href} href={item.href} style={{ background:'var(--bg-elev)', border:'1px solid var(--border)', borderRadius:14, padding:'24px', display:'flex', gap:16, alignItems:'flex-start', textDecoration:'none' }}>
             <span style={{ fontSize:28, flexShrink:0 }}>{item.icon}</span>
             <div>
               <div style={{ fontFamily:'var(--font-ui)', fontWeight:700, fontSize:15, color:'var(--fg)', marginBottom:4 }}>{item.label}</div>
