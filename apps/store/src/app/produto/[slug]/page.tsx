@@ -21,7 +21,7 @@ interface ImageRow {
 }
 
 interface VariantRow {
-  sku: string; size: string; color: string
+  id: string; sku: string; size: string; color: string
   price_in_cents: number; price_promo_in_cents: number | null
   stock: number; available: boolean
 }
@@ -72,7 +72,7 @@ export default async function ProdutoPage(
   `)
 
   const variants = db.all<VariantRow>(sql`
-    SELECT sku, size, color, price_in_cents, price_promo_in_cents, stock, available
+    SELECT id, sku, size, color, price_in_cents, price_promo_in_cents, stock, available
     FROM product_variants
     WHERE product_id = ${product.id}
     ORDER BY color, CAST(size AS INTEGER)

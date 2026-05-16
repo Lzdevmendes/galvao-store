@@ -5,6 +5,7 @@ import { fmt } from '@/lib/utils'
 import { useCartStore } from '@/store/cart'
 
 interface Variant {
+  id: string
   sku: string
   size: string
   color: string
@@ -44,7 +45,7 @@ export function SizePicker({ variants, productId, productSlug, productName, bran
   const handleAddToCart = () => {
     if (!selectedVariant) return
     addItem({
-      variantId:         selectedVariant.sku,
+      variantId:         selectedVariant.id,
       productId,
       productSlug,
       productName,
