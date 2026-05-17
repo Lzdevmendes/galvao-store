@@ -388,6 +388,43 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
       return { success: true, orderId, orderNumber, paymentMethod: payload.paymentMethod }
     }
 
+    // ── Sandbox bypass: conta TEST- geralmente não tem PIX configurado ────
+    // Retorna dados simulados para testar o fluxo completo sem chamar a API real
+    const isSandbox = accessToken.startsWith('TEST-')
+    if (isSandbox && payload.paymentMethod === 'pix') {
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString()
+      const fakeKey   = `00020126580014BR.GOV.BCB.PIX0136${orderId.replace(/-/g,'').slice(0,32)}5204000053039865406${(totalInCents/100).toFixed(2)}5802BR5925GALVAO STORE LTDA6009SAO PAULO62070503***6304ABCD`
+      db.run(sql`
+        UPDATE orders SET pix_key = ${fakeKey}, pix_expires_at = ${expiresAt}
+        WHERE id = ${orderId}
+      `)
+      void sendOrderCreatedEmail(payload.email, {
+        orderNumber, customerName: payload.name, createdAt: new Date().toISOString(),
+        items: emailItems, totals: emailTotals, address: emailAddress,
+        deliveryMethod: payload.shippingMethod, estimatedDays: payload.estimatedDays,
+        paymentMethod: 'pix', pixKey: fakeKey, pixExpiresAt: expiresAt,
+      }).catch(e => console.error('[email] order-created pix sandbox:', e))
+      return { success: true, orderId, orderNumber, paymentMethod: 'pix', pixKey: fakeKey, pixExpiresAt: expiresAt }
+    }
+
+    if (isSandbox && payload.paymentMethod === 'boleto') {
+      const fakeUrl     = `https://boleto.sandbox.mercadopago.com/sandbox/${orderId}`
+      const fakeBarCode = `23793.38128 60007.827136 98000.063305 2 10010000${totalInCents}`
+      const expiresAt   = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
+      db.run(sql`
+        UPDATE orders SET boleto_url = ${fakeUrl}, boleto_bar_code = ${fakeBarCode}, boleto_expires_at = ${expiresAt}
+        WHERE id = ${orderId}
+      `)
+      void sendOrderCreatedEmail(payload.email, {
+        orderNumber, customerName: payload.name, createdAt: new Date().toISOString(),
+        items: emailItems, totals: emailTotals, address: emailAddress,
+        deliveryMethod: payload.shippingMethod, estimatedDays: payload.estimatedDays,
+        paymentMethod: 'boleto', boletoUrl: fakeUrl, boletoBarCode: fakeBarCode, boletoExpiresAt: expiresAt,
+      }).catch(e => console.error('[email] order-created boleto sandbox:', e))
+      return { success: true, orderId, orderNumber, paymentMethod: 'boleto', boletoUrl: fakeUrl, boletoBarCode: fakeBarCode, boletoExpiresAt: expiresAt }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     const { MercadoPagoConfig, Payment } = await import('mercadopago')
     const mpClient  = new MercadoPagoConfig({ accessToken })
     const mpPayment = new Payment(mpClient)
@@ -395,8 +432,15 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
     // Helper: desfaz o pedido se o MP falhar (para o utilizador poder tentar de novo)
     const rollbackOrder = () => {
       try {
+        // Apagar na ordem inversa das FK constraints
         db.run(sql`DELETE FROM order_events WHERE order_id = ${orderId}`)
         db.run(sql`DELETE FROM order_items  WHERE order_id = ${orderId}`)
+        // Apagar coupon_uses e reverter contador se houve cupão
+        if (payload.couponId) {
+          db.run(sql`DELETE FROM coupon_uses WHERE order_id = ${orderId}`)
+          db.run(sql`UPDATE coupons SET used_count = MAX(0, used_count - 1) WHERE id = ${payload.couponId}`)
+        }
+        // Libertar stock reservado
         for (const item of payload.cartItems) {
           db.run(sql`
             UPDATE product_variants

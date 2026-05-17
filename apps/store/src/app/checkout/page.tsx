@@ -18,7 +18,17 @@ const maskCpf   = (v: string) => v.replace(/\D/g, '').slice(0, 11).replace(/(\d{
 
 function isEmailValid(v: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) }
 function isPhoneValid(v: string) { return v.replace(/\D/g, '').length >= 10 }
-function isCpfValid(v: string)   { return v.replace(/\D/g, '').length === 11 }
+function isCpfValid(v: string) {
+  const d = v.replace(/\D/g, '')
+  if (d.length !== 11 || /^(\d)\1+$/.test(d)) return false
+  const calc = (x: number) => {
+    let s = 0
+    for (let i = 0; i < x - 1; i++) s += Number(d[i]) * (x - i)
+    const r = (s * 10) % 11
+    return r === 10 || r === 11 ? 0 : r
+  }
+  return calc(10) === Number(d[9]) && calc(11) === Number(d[10])
+}
 function isCepValid(v: string)   { return v.replace(/\D/g, '').length === 8 }
 
 function validateStep1(f: FormData): Record<string, string> {
