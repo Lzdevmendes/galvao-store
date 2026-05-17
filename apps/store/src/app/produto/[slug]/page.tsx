@@ -6,6 +6,7 @@ import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import { ProductCard, type ProductCardData } from '@/components/catalog/product-card'
 import { SizePicker } from './size-picker'
+import { ProductGallery } from './product-gallery'
 
 export const revalidate = 300
 
@@ -118,39 +119,7 @@ export default async function ProdutoPage(
 
         {/* ── Gallery ── */}
         <div>
-          {/* Main image */}
-          <div style={{ background: 'var(--ink-100)', borderRadius: 16, aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12, overflow: 'hidden' }}>
-            {primaryImage ? (
-              <Image
-                src={primaryImage.url}
-                alt={primaryImage.alt}
-                width={600} height={600}
-                priority
-                style={{ width: '88%', height: '88%', objectFit: 'contain', mixBlendMode: 'multiply' }}
-              />
-            ) : (
-              <div style={{ color: 'var(--fg-faint)', fontFamily: 'var(--font-ui)', fontSize: 13 }}>Sem imagem</div>
-            )}
-          </div>
-
-          {/* Thumbnails */}
-          {images.length > 1 && (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {images.map(img => (
-                <div
-                  key={img.id}
-                  style={{
-                    width: 72, height: 72, background: 'var(--ink-100)', borderRadius: 8, overflow: 'hidden',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: img.is_primary ? '2px solid var(--brand-orange)' : '2px solid var(--border)',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <Image src={img.url} alt={img.alt} width={68} height={68} style={{ width: '88%', height: '88%', objectFit: 'contain', mixBlendMode: 'multiply' }} />
-                </div>
-              ))}
-            </div>
-          )}
+          <ProductGallery images={images} />
         </div>
 
         {/* ── Info ── */}
