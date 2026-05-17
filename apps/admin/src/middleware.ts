@@ -9,9 +9,7 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
+        getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({ request })
@@ -23,23 +21,13 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresha a sessão sem expor dados sensíveis
   const { data: { user } } = await supabase.auth.getUser()
+  const adminEmails = (process.env.ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase())
+  const isAdmin = user && adminEmails.includes((user.email ?? '').toLowerCase())
 
-  const { pathname } = request.nextUrl
-
-  // Rotas protegidas → redireciona para login
-  if (!user && pathname.startsWith('/conta')) {
+  if (!isAdmin) {
     const url = request.nextUrl.clone()
-    url.pathname = '/auth/login'
-    url.searchParams.set('redirect', pathname)
-    return NextResponse.redirect(url)
-  }
-
-  // Usuário logado tentando aceder auth pages → redireciona para conta
-  if (user && (pathname === '/auth/login' || pathname === '/auth/cadastro')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/conta'
+    url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
@@ -47,9 +35,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/conta/:path*',
-    '/auth/login',
-    '/auth/cadastro',
-  ],
+  matcher: ['/((?!login|_next/static|_next/image|favicon.ico|logo.svg).*)'],
 }

@@ -71,7 +71,7 @@ export default async function AdminOrderDetail({ params }: PageProps) {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
-          <Link href="/admin/pedidos" style={{ fontSize: 13, color: '#6B7280', textDecoration: 'none' }}>← Pedidos</Link>
+          <Link href="/pedidos" style={{ fontSize: 13, color: '#6B7280', textDecoration: 'none' }}>← Pedidos</Link>
           <h1 style={{ fontSize: 22, margin: '8px 0 4px', fontFamily: 'JetBrains Mono, monospace', fontWeight: 900 }}>
             {order.order_number}
           </h1>
