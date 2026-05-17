@@ -6,6 +6,7 @@ import { BrandNav }    from '@/components/layout/brand-nav'
 import { SiteFooter }  from '@/components/layout/site-footer'
 import { MobileTabBar } from '@/components/layout/mobile-tab-bar'
 import { CartDrawer }  from '@/components/cart/cart-drawer'
+import { TrackingScripts } from '@/components/analytics/tracking-scripts'
 
 const BASE = process.env.NEXT_PUBLIC_APP_URL ?? 'https://galvaosstore.com.br'
 
@@ -44,6 +45,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
       <body>
+        {/* JSON-LD — Organisation */}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'SportingGoodsStore',
+          name: "Galvão's Store",
+          url: BASE,
+          logo: `${BASE}/logo.svg`,
+          description: 'Chuteiras e tênis esportivos das melhores marcas. Nike, Adidas, Puma, Umbro.',
+          address: { '@type': 'PostalAddress', addressLocality: 'Caraguatatuba', addressRegion: 'SP', addressCountry: 'BR' },
+          contactPoint: { '@type': 'ContactPoint', contactType: 'customer service', availableLanguage: 'Portuguese' },
+          sameAs: [
+            process.env.NEXT_PUBLIC_INSTAGRAM ?? '',
+            process.env.NEXT_PUBLIC_FACEBOOK  ?? '',
+          ].filter(Boolean),
+        })}} />
+
         <PromoBar />
         <SiteHeader />
         <BrandNav />
@@ -51,6 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SiteFooter />
         <MobileTabBar />
         <CartDrawer />
+        <TrackingScripts />
       </body>
     </html>
   )
