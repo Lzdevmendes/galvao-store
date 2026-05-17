@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { render } from '@react-email/render'
 import { OrderCreatedEmail, type OrderCreatedEmailProps } from '@/emails/order-created'
 import { PaymentConfirmedEmail, type PaymentConfirmedEmailProps } from '@/emails/payment-confirmed'
 import { OrderShippedEmail, type OrderShippedEmailProps } from '@/emails/order-shipped'
@@ -14,22 +15,23 @@ const FROM = process.env.NODE_ENV === 'production'
   : 'Galvão\'s Store <onboarding@resend.dev>'
 
 // ── Generic send helper ───────────────────────────────────
-// Usa o param `react` do Resend directamente (sem render() manual)
 async function sendEmail({
   to,
   subject,
-  react,
+  component,
 }: {
-  to:      string
-  subject: string
-  react:   React.ReactElement
+  to:        string
+  subject:   string
+  component: React.ReactElement
 }) {
-  const { data, error } = await resend.emails.send({ from: FROM, to, subject, react })
+  // Renderiza o componente React para HTML no servidor
+  const html = await render(component)
+  const { data, error } = await resend.emails.send({ from: FROM, to: to.toLowerCase(), subject, html })
   if (error) {
-    console.error('[email] send error:', error)
-    throw new Error(`Failed to send email: ${(error as { message?: string }).message ?? JSON.stringify(error)}`)
+    console.error('[email] send error:', JSON.stringify(error))
+    throw new Error(`Resend error: ${JSON.stringify(error)}`)
   }
-  console.log(`[email] enviado para ${to} — id: ${data?.id}`)
+  console.log(`[email] ✓ enviado para ${to} — id: ${data?.id}`)
   return data
 }
 
@@ -41,7 +43,7 @@ export async function sendOrderCreatedEmail(
   return sendEmail({
     to,
     subject: `Pedido ${props.orderNumber} recebido — Galvão's Store`,
-    react: OrderCreatedEmail(props),
+    component: OrderCreatedEmail(props),
   })
 }
 
@@ -53,7 +55,7 @@ export async function sendPaymentConfirmedEmail(
   return sendEmail({
     to,
     subject: `✅ Pagamento confirmado — Pedido ${props.orderNumber}`,
-    react: PaymentConfirmedEmail(props),
+    component: PaymentConfirmedEmail(props),
   })
 }
 
@@ -65,7 +67,7 @@ export async function sendOrderShippedEmail(
   return sendEmail({
     to,
     subject: `🚚 Pedido ${props.orderNumber} enviado — Rastreio: ${props.trackingCode}`,
-    react: OrderShippedEmail(props),
+    component: OrderShippedEmail(props),
   })
 }
 
@@ -77,7 +79,7 @@ export async function sendOrderDeliveredEmail(
   return sendEmail({
     to,
     subject: `🎉 Pedido ${props.orderNumber} entregue — Conta-nos o que achou!`,
-    react: OrderDeliveredEmail(props),
+    component: OrderDeliveredEmail(props),
   })
 }
 
@@ -89,7 +91,7 @@ export async function sendPasswordResetEmail(
   return sendEmail({
     to,
     subject: `🔐 Redefinição de senha — Galvão's Store`,
-    react: PasswordResetEmail(props),
+    component: PasswordResetEmail(props),
   })
 }
 

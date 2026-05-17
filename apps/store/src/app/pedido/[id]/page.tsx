@@ -96,21 +96,23 @@ export default async function PedidoPage({ params, searchParams }: PageProps) {
                 PAGUE COM PIX
               </h2>
 
-              {pixQr ? (
+              {(pixQr || pixKey) ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
-                  <Image
-                    src={`data:image/png;base64,${pixQr}`}
-                    alt="QR Code PIX"
-                    width={220} height={220}
-                    style={{ borderRadius: 12, border: '4px solid var(--border)' }}
-                  />
+                  {pixQr && (
+                    <Image
+                      src={`data:image/png;base64,${pixQr}`}
+                      alt="QR Code PIX"
+                      width={220} height={220}
+                      style={{ borderRadius: 12, border: '4px solid var(--border)' }}
+                    />
+                  )}
 
                   {pixExpAt && <PixTimer expiresAt={pixExpAt} />}
 
                   {pixKey && (
                     <div style={{ width: '100%' }}>
-                      <p style={{ fontFamily: 'var(--font-ui)', fontSize: 12, color: 'var(--fg-muted)', marginBottom: 8 }}>
-                        Ou copie o código PIX:
+                      <p style={{ fontFamily: 'var(--font-ui)', fontSize: 12, fontWeight: 600, color: 'var(--fg-muted)', marginBottom: 8 }}>
+                        {pixQr ? 'Ou copie o código PIX:' : 'Copia e Cola PIX:'}
                       </p>
                       <div style={{ display: 'flex', gap: 8 }}>
                         <code style={{
@@ -126,10 +128,9 @@ export default async function PedidoPage({ params, searchParams }: PageProps) {
                   )}
                 </div>
               ) : (
-                // Dev mode sem chaves MP
                 <div style={{ textAlign: 'center', padding: '20px', background: 'var(--bg-sunk)', borderRadius: 12 }}>
                   <p style={{ fontFamily: 'var(--font-ui)', fontSize: 13, color: 'var(--fg-muted)' }}>
-                    Configure as chaves do Mercado Pago em <code>.env.local</code> para gerar o QR Code.
+                    Chave PIX não disponível — verifique as credenciais do Mercado Pago.
                   </p>
                 </div>
               )}
