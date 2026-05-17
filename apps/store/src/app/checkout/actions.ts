@@ -394,6 +394,8 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
 
     const totalBRL  = totalInCents / 100
     const siteUrl   = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3010'
+    // MP não aceita localhost como notification_url — omitir em dev
+    const notificationUrl = siteUrl.startsWith('http://localhost') ? undefined : `${siteUrl}/api/webhooks/mercadopago`
     const firstName = payload.name.split(' ')[0]
     const lastName  = payload.name.split(' ').slice(1).join(' ') || firstName
 
@@ -408,7 +410,7 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
           payer: { email: payload.email, first_name: firstName, last_name: lastName },
           description: `Pedido ${orderNumber} - Galvão Store`,
           external_reference: orderId,
-          notification_url: `${siteUrl}/api/webhooks/mercadopago`,
+          notification_url: notificationUrl,
           date_of_expiration: expiresAt,
         },
       })
@@ -457,7 +459,7 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
           },
           description: `Pedido ${orderNumber} - Galvão Store`,
           external_reference: orderId,
-          notification_url: `${siteUrl}/api/webhooks/mercadopago`,
+          notification_url: notificationUrl,
         },
       })
 
@@ -512,7 +514,7 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
           },
           description: `Pedido ${orderNumber} - Galvão Store`,
           external_reference: orderId,
-          notification_url: `${siteUrl}/api/webhooks/mercadopago`,
+          notification_url: notificationUrl,
         },
       })
 
@@ -550,8 +552,13 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
 
     return { success: true, orderId, orderNumber, paymentMethod: payload.paymentMethod }
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    console.error('[createOrder] ERRO:', msg)
+    console.error('[createOrder] ERRO COMPLETO:', err)
+    const msg = err instanceof Error
+      ? err.message
+      : (typeof err === 'object' && err !== null)
+        ? JSON.stringify(err)
+        : String(err)
+    console.error('[createOrder] MENSAGEM:', msg)
     return { success: false, error: `Erro interno: ${msg}` }
   }
 }
