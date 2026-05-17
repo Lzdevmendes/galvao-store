@@ -102,11 +102,48 @@ export default async function ProdutoPage(
   : product.badge === 'bestseller' ? <span style={{ background:'#FFC83A', color:'#0B0E12', padding:'6px 14px', borderRadius:999, fontSize:12, fontWeight:700, fontFamily:'var(--font-ui)' }}>★ MAIS VENDIDO</span>
   : null
 
+  const BASE = process.env.NEXT_PUBLIC_APP_URL ?? 'https://galvaosstore.com.br'
+  const minVariant = variants.reduce((a, b) => (a.price_in_cents < b.price_in_cents ? a : b), variants[0])
+
+  const productSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: product.description,
+    brand: { '@type': 'Brand', name: product.brand_name },
+    category: product.category_name,
+    image: images.map(i => `${BASE}${i.url}`),
+    sku: variants[0]?.sku ?? product.slug,
+    offers: {
+      '@type': 'AggregateOffer',
+      priceCurrency: 'BRL',
+      lowPrice: minVariant ? (minVariant.price_promo_in_cents ?? minVariant.price_in_cents) / 100 : 0,
+      offerCount: variants.filter(v => v.available && v.stock > 0).length,
+      availability: variants.some(v => v.available && v.stock > 0)
+        ? 'https://schema.org/InStock'
+        : 'https://schema.org/OutOfStock',
+    },
+  }
+
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Início', item: BASE },
+      { '@type': 'ListItem', position: 2, name: product.brand_name, item: `${BASE}/${product.brand_slug}` },
+      { '@type': 'ListItem', position: 3, name: product.name,       item: `${BASE}/produto/${product.slug}` },
+    ],
+  }
+
   return (
     <div className="container" style={{ paddingTop: 32, paddingBottom: 96 }}>
+      {/* JSON-LD */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
+
       {/* Breadcrumb */}
       <nav style={{ display: 'flex', gap: 8, alignItems: 'center', fontFamily: 'var(--font-ui)', fontSize: 12, color: 'var(--fg-muted)', marginBottom: 32 }}>
-        <Link href="/" style={{ color: 'var(--fg-muted)' }}>Home</Link>
+        <Link href="/" style={{ color: 'var(--fg-muted)' }}>Início</Link>
         <span>›</span>
         <Link href={`/${product.brand_slug}`} style={{ color: 'var(--fg-muted)' }}>{product.brand_name}</Link>
         <span>›</span>
