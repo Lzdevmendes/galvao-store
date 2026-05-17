@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCartStore, cartSubtotal } from '@/store/cart'
-import { fmt, pixPrice, installment } from '@/lib/utils'
+import { fmt, installment } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { calculateShipping, validateCoupon, createOrder } from './actions'
 import type { ShippingOption } from './actions'
