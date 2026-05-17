@@ -255,7 +255,7 @@ footer.site .legal { padding-top: 24px; display: flex; justify-content: space-be
 @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
 /* Page transitions */
-main { view-transition-name: main; }
+/* view-transition-name: main; — desactivado (requer suporte experimental Next.js) */
 
 /* Focus rings melhorados */
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
@@ -269,7 +269,6 @@ html { scroll-behavior: smooth; }
 
 /* ── Conta/Pedidos ── */
 .order-card:hover { border-color: var(--brand-orange) !important; transform: translateX(2px); }
-a:has(.order-card) { display: block; }
 
 /* Touch improvements mobile */
 @media (hover: none) {
