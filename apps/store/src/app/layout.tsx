@@ -7,20 +7,34 @@ import { SiteFooter }  from '@/components/layout/site-footer'
 import { MobileTabBar } from '@/components/layout/mobile-tab-bar'
 import { CartDrawer }  from '@/components/cart/cart-drawer'
 
+const BASE = process.env.NEXT_PUBLIC_APP_URL ?? 'https://galvaosstore.com.br'
+
 export const metadata: Metadata = {
+  metadataBase: new URL(BASE),
   title: {
     default: "Galvão's Store — Chuteiras de Alta Performance",
     template: "%s — Galvão's Store",
   },
   description: 'Nike, Adidas, Puma, Umbro e mais. Frete grátis acima de R$ 399. 12x sem juros. 5% OFF no Pix.',
-  keywords: ['chuteiras', 'nike', 'adidas', 'puma', 'campo', 'society', 'futsal', 'tênis'],
+  keywords: ['chuteiras', 'futebol', 'nike', 'adidas', 'puma', 'umbro', 'campo', 'society', 'futsal', 'tênis esportivo'],
+  authors: [{ name: "Galvão's Store" }],
+  creator: "Galvão's Store",
   openGraph: {
-    type: 'website',
-    siteName: "Galvão's Store",
-    title: "Galvão's Store — Chuteiras de Alta Performance",
+    type:        'website',
+    locale:      'pt_BR',
+    siteName:    "Galvão's Store",
+    url:         BASE,
+    title:       "Galvão's Store — Chuteiras de Alta Performance",
+    description: 'Nike, Adidas, Puma, Umbro. Frete grátis acima de R$ 399. 12x sem juros.',
+    images: [{ url: '/logo.svg', width: 150, height: 150, alt: "Galvão's Store" }],
+  },
+  twitter: {
+    card:        'summary',
+    title:       "Galvão's Store — Chuteiras de Alta Performance",
     description: 'Nike, Adidas, Puma, Umbro. Frete grátis acima de R$ 399.',
   },
-  robots: { index: true, follow: true },
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
+  verification: { google: '' },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
