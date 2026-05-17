@@ -20,16 +20,16 @@ export function SiteHeader() {
     <header className="site">
       <div className="container row">
         {/* Logo */}
-        <Link href="/" className="logo" style={{ display:'flex', alignItems:'center', gap:10, textDecoration:'none' }}>
+        <Link href="/" className="logo" style={{ display:'flex', flexDirection:'row', alignItems:'center', gap:10, textDecoration:'none' }}>
           <Image
             src="/logo.svg"
             alt="Galvão's Store"
-            width={44}
-            height={44}
+            width={40}
+            height={40}
             priority
             style={{ borderRadius:'50%', flexShrink:0 }}
           />
-          <div>
+          <div style={{ display:'flex', flexDirection:'column' }}>
             <div className="logo-wordmark">GALVÃO&apos;S</div>
             <div className="logo-sub">Store · Alta Performance</div>
           </div>
