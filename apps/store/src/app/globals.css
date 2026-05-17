@@ -235,4 +235,54 @@ footer.site .legal { padding-top: 24px; display: flex; justify-content: space-be
   .section-head .left h2 { font-size: 40px; }
   .hero h1 { font-size: 72px; }
   .foot-grid { grid-template-columns: 1fr 1fr !important; }
+  header.site .search { display: none; }
+  header.site .actions .icon-btn:not(.cart-btn) span.small { display: none; }
+  header.site .actions .icon-btn:not(.cart-btn) { padding: 8px; }
+}
+
+/* ── Microinterações globais ── */
+.btn { will-change: transform; }
+.btn:active { transform: scale(.97); }
+.btn-primary { box-shadow: 0 4px 14px rgba(242,107,31,.25); }
+.btn-primary:hover { box-shadow: 0 6px 20px rgba(242,107,31,.35); transform: translateY(-1px); }
+
+/* Cart item animations */
+.cart-item-enter { animation: slideIn .25s ease-out; }
+@keyframes slideIn { from { opacity:0; transform:translateX(16px); } to { opacity:1; transform:translateX(0); } }
+
+/* Skeleton loading pulse */
+.skeleton { background: linear-gradient(90deg, var(--bg-sunk) 25%, var(--bg-elev) 50%, var(--bg-sunk) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* Page transitions */
+main { view-transition-name: main; }
+
+/* Focus rings melhorados */
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid var(--brand-orange);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Scroll suave global */
+html { scroll-behavior: smooth; }
+
+/* Touch improvements mobile */
+@media (hover: none) {
+  .pcard:hover { transform: none; box-shadow: none; }
+  .brand-banner:hover { transform: none; }
+  .cat-tile:hover { transform: none; }
+  .btn-primary:hover { transform: none; box-shadow: 0 4px 14px rgba(242,107,31,.25); }
+}
+
+/* Brand nav scrollbar mobile */
+@media (max-width: 768px) {
+  nav.brands .row { -webkit-overflow-scrolling: touch; padding: 0 8px; }
+  nav.brands a { font-size: 17px; padding: 12px 14px; }
+  .brand-row { grid-template-columns: repeat(2,1fr); gap: 10px; }
+  .section-head { margin: 40px 0 18px; }
+  .section-head .left h2 { font-size: 44px; }
+  .grid-products[data-density="4"] { grid-template-columns: repeat(2,1fr); gap: 10px; }
+  .cta-banner { padding: 32px 24px; }
+  .cta-banner h3 { font-size: 48px; }
 }
