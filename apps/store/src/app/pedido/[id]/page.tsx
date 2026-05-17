@@ -84,7 +84,7 @@ export default async function PedidoPage({ params, searchParams }: PageProps) {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 32, alignItems: 'start' }}>
+      <div className="rg-sidebar">
 
         {/* ── Pagamento ──────────────────────────────────────────────── */}
         <div>
@@ -225,7 +225,7 @@ export default async function PedidoPage({ params, searchParams }: PageProps) {
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 900, marginBottom: 16 }}>
               ENTREGA
             </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div className="rg-delivery">
               <div>
                 <p style={{ fontFamily: 'var(--font-ui)', fontSize: 11, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 4 }}>Endereço</p>
                 <p style={{ fontFamily: 'var(--font-ui)', fontSize: 13, lineHeight: 1.6 }}>

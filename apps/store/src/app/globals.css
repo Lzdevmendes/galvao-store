@@ -215,6 +215,16 @@ footer.site .legal { padding-top: 24px; display: flex; justify-content: space-be
 ::selection { background: rgba(242,107,31,.2); }
 :focus-visible { outline: 2px solid var(--brand-orange); outline-offset: 2px; }
 
+/* ── Grids responsivos reutilizáveis ────────────────────── */
+/* Substituem inline gridTemplateColumns nos componentes */
+.rg-pdp     { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; }
+.rg-sidebar { display: grid; grid-template-columns: 1fr 360px; gap: 32px; align-items: start; }
+.rg-sidebar-sm { display: grid; grid-template-columns: 1fr 340px; gap: 32px; align-items: start; }
+.rg-form-2  { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.rg-form-cep { display: grid; grid-template-columns: 140px 1fr; gap: 16px; }
+.rg-delivery { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.rg-stats-5 { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; }
+
 /* ── Responsive ── */
 @media (max-width: 1024px) {
   .grid-products[data-density="4"] { grid-template-columns: repeat(2,1fr); }
@@ -227,17 +237,59 @@ footer.site .legal { padding-top: 24px; display: flex; justify-content: space-be
   .cta-banner  { grid-template-columns: 1fr; }
   .mobile-tabbar { display: grid; }
   main { padding-bottom: max(72px, env(safe-area-inset-bottom)); }
+
+  /* Grids com sidebar → empilhar */
+  .rg-sidebar    { grid-template-columns: 1fr; }
+  .rg-sidebar-sm { grid-template-columns: 1fr; }
+  .rg-stats-5    { grid-template-columns: repeat(3,1fr); }
+}
+
+@media (max-width: 768px) {
+  /* Trust bar: 4→2 colunas mais cedo */
+  .trust .row { grid-template-columns: repeat(2,1fr); gap: 16px; }
+  /* PDP: galeria em cima, info em baixo */
+  .rg-pdp { grid-template-columns: 1fr; gap: 32px; }
+  /* Formulários 2-col → 1-col */
+  .rg-form-2   { grid-template-columns: 1fr; }
+  .rg-form-cep { grid-template-columns: 1fr; }
+  .rg-delivery { grid-template-columns: 1fr; }
+  .rg-stats-5  { grid-template-columns: repeat(2,1fr); }
+  /* Brand nav font menor */
+  nav.brands a { font-size: 17px; padding: 12px 14px; }
+  /* Section heads menores */
+  .section-head { margin: 40px 0 18px; }
+  .section-head .left h2 { font-size: 44px; }
+  .grid-products[data-density="4"] { grid-template-columns: repeat(2,1fr); gap: 10px; }
+  .brand-row { gap: 10px; }
+  /* CTA banner */
+  .cta-banner { padding: 32px 24px; }
+  .cta-banner h3 { font-size: 48px; }
 }
 
 @media (max-width: 640px) {
   .container { padding: 0 16px; }
   .cat-row { grid-template-columns: repeat(2,1fr); }
-  .section-head .left h2 { font-size: 40px; }
-  .hero h1 { font-size: 72px; }
+  .section-head .left h2 { font-size: 36px; }
+  .hero h1 { font-size: 64px; }
   .foot-grid { grid-template-columns: 1fr 1fr !important; }
   header.site .search { display: none; }
   header.site .actions .icon-btn:not(.cart-btn) span.small { display: none; }
   header.site .actions .icon-btn:not(.cart-btn) { padding: 8px; }
+  /* Cart btn touch target */
+  header.site .icon-btn.cart-btn { padding: 10px 14px; min-width: 44px; min-height: 44px; }
+  /* Sidebar em mobile: resumo vai para baixo */
+  .rg-sidebar    { grid-template-columns: 1fr; gap: 20px; }
+  .rg-sidebar-sm { grid-template-columns: 1fr; gap: 20px; }
+  /* Padding de página menor */
+  .page-pad { padding-top: 24px !important; padding-bottom: 80px !important; }
+  /* Grids de form sempre 1 col */
+  .rg-form-2   { grid-template-columns: 1fr; gap: 12px; }
+  .rg-form-cep { grid-template-columns: 1fr; gap: 12px; }
+  .rg-stats-5  { grid-template-columns: repeat(2,1fr); gap: 8px; }
+  /* Product card grid */
+  .grid-products { gap: 10px; }
+  /* Footer simplificado */
+  .foot-grid { gap: 24px !important; }
 }
 
 /* ── Microinterações globais ── */

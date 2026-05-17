@@ -98,7 +98,7 @@ export default async function PedidoDetailPage({ params }: { params: Promise<{ i
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 32, alignItems: 'start' }}>
+      <div className="rg-sidebar-sm">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
           {/* Timeline / Tracker */}
@@ -179,7 +179,7 @@ export default async function PedidoDetailPage({ params }: { params: Promise<{ i
           {/* Entrega */}
           <div style={{ background: 'var(--bg-elev)', border: '1px solid var(--border)', borderRadius: 16, padding: 28 }}>
             <p style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 900, marginBottom: 16 }}>ENTREGA</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div className="rg-delivery">
               <div>
                 <p style={{ fontFamily: 'var(--font-ui)', fontSize: 11, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 6 }}>Endereço</p>
                 <p style={{ fontFamily: 'var(--font-ui)', fontSize: 13, lineHeight: 1.7, margin: 0 }}>

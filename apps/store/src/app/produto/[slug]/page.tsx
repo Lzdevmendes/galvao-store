@@ -136,7 +136,7 @@ export default async function ProdutoPage(
   }
 
   return (
-    <div className="container" style={{ paddingTop: 32, paddingBottom: 96 }}>
+    <div className="container page-pad" style={{ paddingTop: 32, paddingBottom: 96 }}>
       {/* JSON-LD */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
@@ -151,7 +151,7 @@ export default async function ProdutoPage(
       </nav>
 
       {/* Main grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'start' }}>
+      <div className="rg-pdp">
 
         {/* ── Gallery ── */}
         <div>

@@ -236,7 +236,7 @@ export default function CheckoutPage() {
   ]
 
   return (
-    <div className="container" style={{ paddingTop: 32, paddingBottom: 80 }}>
+    <div className="container page-pad" style={{ paddingTop: 32, paddingBottom: 80 }}>
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 900, marginBottom: 32, letterSpacing: '.04em' }}>
         CHECKOUT
       </h1>
@@ -267,16 +267,16 @@ export default function CheckoutPage() {
       </div>
 
       {/* Layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 32, alignItems: 'start' }}>
+      <div className="rg-sidebar">
 
         {/* ── Formulário ────────────────────────────────────────────── */}
-        <div style={{ background: 'var(--bg-elev)', borderRadius: 16, padding: 32, border: '1px solid var(--border)' }}>
+        <div style={{ background: 'var(--bg-elev)', borderRadius: 16, padding: 'clamp(16px,4vw,32px)', border: '1px solid var(--border)' }}>
 
           {/* STEP 1 — Identificação */}
           {step === 1 && (
             <div>
               <p style={secTitle}>Seus dados</p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div className="rg-form-2">
 
                 <Field label="Nome completo *" error={errors.name} style={{ gridColumn: '1/-1' }}>
                   <input style={field(errors.name)} value={form.name}
@@ -326,7 +326,7 @@ export default function CheckoutPage() {
           {step === 2 && (
             <div>
               <p style={secTitle}>Endereço de entrega</p>
-              <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 16 }}>
+              <div className="rg-form-cep">
 
                 <Field label="CEP *" error={errors.cep}>
                   <div style={{ position: 'relative' }}>
@@ -515,7 +515,8 @@ export default function CheckoutPage() {
       </div>
 
       <style>{`
-        @media(min-width:640px){ .step-label{ display:inline !important } }
+        @media(min-width:480px){ .step-label{ display:inline !important } }
+        @media(max-width:479px){ .step-circle{ width:22px !important; height:22px !important; font-size:10px !important; } }
       `}</style>
     </div>
   )
