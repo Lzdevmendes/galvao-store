@@ -311,8 +311,27 @@ export default function CheckoutPage() {
                 </Field>
 
                 <Field label="CPF *" error={errors.cpf}>
-                  <input style={field(errors.cpf)} value={form.cpf}
-                    onChange={e => set('cpf', maskCpf(e.target.value))} placeholder="000.000.000-00" />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      style={{ ...field(errors.cpf), paddingRight: 36 }}
+                      value={form.cpf}
+                      onChange={e => set('cpf', maskCpf(e.target.value))}
+                      placeholder="000.000.000-00"
+                    />
+                    {form.cpf.replace(/\D/g, '').length === 11 && (
+                      <span style={{
+                        position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                        fontSize: 16,
+                      }}>
+                        {isCpfValid(form.cpf) ? '✅' : '❌'}
+                      </span>
+                    )}
+                  </div>
+                  {form.cpf.replace(/\D/g, '').length === 11 && !isCpfValid(form.cpf) && !errors.cpf && (
+                    <p style={{ fontFamily: 'var(--font-ui)', fontSize: 11, color: '#EF4444', marginTop: 4, marginBottom: 0 }}>
+                      CPF inválido — verifique os dígitos
+                    </p>
+                  )}
                 </Field>
 
               </div>

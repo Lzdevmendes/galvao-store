@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import { fmt } from '@/lib/utils'
+import { CopyButton, PixTimer } from './client-components'
 
 type PageProps = {
   params: Promise<{ id: string }>
@@ -17,6 +18,7 @@ type OrderRow = {
   ship_district: string; ship_city: string; ship_state: string
   delivery_method: string; shipping_in_cents: number; estimated_days: number | null
   payment_method: string; subtotal_in_cents: number; discount_in_cents: number; total_in_cents: number
+  coupon_code: string | null
   created_at: string
 }
 
@@ -41,7 +43,7 @@ export default async function PedidoPage({ params, searchParams }: PageProps) {
            ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state,
            delivery_method, shipping_in_cents, estimated_days,
            payment_method, subtotal_in_cents, discount_in_cents, total_in_cents,
-           created_at
+           coupon_code, created_at
     FROM orders WHERE id = ${id} LIMIT 1
   `)
 
@@ -270,7 +272,16 @@ export default async function PedidoPage({ params, searchParams }: PageProps) {
 
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
               <SRow label="Subtotal" value={fmt(order.subtotal_in_cents)} />
-              {order.discount_in_cents > 0 && <SRow label="Desconto" value={`-${fmt(order.discount_in_cents)}`} green />}
+              {(() => {
+                const pixDisc = order.payment_method === 'pix' ? Math.round(order.subtotal_in_cents * 0.05) : 0
+                const couponDisc = order.discount_in_cents - pixDisc
+                return (
+                  <>
+                    {couponDisc > 0 && <SRow label={`Cupom${order.coupon_code ? ` (${order.coupon_code})` : ''}`} value={`-${fmt(couponDisc)}`} green />}
+                    {pixDisc > 0 && <SRow label="Desconto PIX 5%" value={`-${fmt(pixDisc)}`} green />}
+                  </>
+                )
+              })()}
               {order.shipping_in_cents > 0
                 ? <SRow label="Frete" value={fmt(order.shipping_in_cents)} />
                 : <SRow label="Frete" value="Grátis" green />
@@ -313,32 +324,3 @@ function SRow({ label, value, green, large }: { label: string; value: string; gr
   )
 }
 
-function CopyButton({ text }: { text: string }) {
-  return (
-    <button
-      onClick={() => navigator.clipboard.writeText(text)}
-      style={{
-        padding: '10px 14px', borderRadius: 10, border: '1.5px solid var(--border)',
-        background: 'none', cursor: 'pointer', color: 'var(--fg-muted)',
-        fontFamily: 'var(--font-ui)', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
-      }}
-    >
-      Copiar
-    </button>
-  )
-}
-
-function PixTimer({ expiresAt }: { expiresAt: string }) {
-  const exp  = new Date(expiresAt).getTime()
-  const diff = Math.max(0, Math.floor((exp - Date.now()) / 1000))
-  const m    = String(Math.floor(diff / 60)).padStart(2, '0')
-  const s    = String(diff % 60).padStart(2, '0')
-
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', background: 'var(--bg-sunk)', borderRadius: 99 }}>
-      <span style={{ fontSize: 14 }}>⏱</span>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700 }}>{m}:{s}</span>
-      <span style={{ fontFamily: 'var(--font-ui)', fontSize: 12, color: 'var(--fg-muted)' }}>restantes</span>
-    </div>
-  )
-}

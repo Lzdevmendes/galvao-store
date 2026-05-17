@@ -1,5 +1,4 @@
 import { Resend } from 'resend'
-import { render } from '@react-email/components'
 import { OrderCreatedEmail, type OrderCreatedEmailProps } from '@/emails/order-created'
 import { PaymentConfirmedEmail, type PaymentConfirmedEmailProps } from '@/emails/payment-confirmed'
 import { OrderShippedEmail, type OrderShippedEmailProps } from '@/emails/order-shipped'
@@ -15,6 +14,7 @@ const FROM = process.env.NODE_ENV === 'production'
   : 'Galvão\'s Store <onboarding@resend.dev>'
 
 // ── Generic send helper ───────────────────────────────────
+// Usa o param `react` do Resend directamente (sem render() manual)
 async function sendEmail({
   to,
   subject,
@@ -24,12 +24,12 @@ async function sendEmail({
   subject: string
   react:   React.ReactElement
 }) {
-  const html = await render(react)
-  const { data, error } = await resend.emails.send({ from: FROM, to, subject, html })
+  const { data, error } = await resend.emails.send({ from: FROM, to, subject, react })
   if (error) {
     console.error('[email] send error:', error)
-    throw new Error(`Failed to send email: ${error.message}`)
+    throw new Error(`Failed to send email: ${(error as { message?: string }).message ?? JSON.stringify(error)}`)
   }
+  console.log(`[email] enviado para ${to} — id: ${data?.id}`)
   return data
 }
 
