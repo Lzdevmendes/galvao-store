@@ -7,6 +7,7 @@ import { SiteFooter }  from '@/components/layout/site-footer'
 import { MobileTabBar } from '@/components/layout/mobile-tab-bar'
 import { CartDrawer }  from '@/components/cart/cart-drawer'
 import { TrackingScripts } from '@/components/analytics/tracking-scripts'
+import { CookieBanner }    from '@/components/lgpd/cookie-banner'
 
 const BASE = process.env.NEXT_PUBLIC_APP_URL ?? 'https://galvaosstore.com.br'
 
@@ -69,6 +70,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <MobileTabBar />
         <CartDrawer />
         <TrackingScripts />
+        <CookieBanner />
       </body>
     </html>
   )
