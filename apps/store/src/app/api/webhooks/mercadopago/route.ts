@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import { createHmac } from 'crypto'
 import { sendPaymentConfirmedEmail } from '@/lib/email'
+import { waSendPaymentConfirmed } from '@/lib/whatsapp'
 
 // MP envia: POST /api/webhooks/mercadopago?data.id=...&type=payment
 // Header x-signature: ts=...,v1=...
@@ -116,7 +117,7 @@ export async function POST(req: NextRequest) {
 
       // E-mail de pagamento confirmado
       const fullOrder = db.all<{
-        order_number: string; customer_name: string; customer_email: string
+        order_number: string; customer_name: string; customer_email: string; customer_phone: string | null
         delivery_method: string; estimated_days: number | null
         subtotal_in_cents: number; discount_in_cents: number
         shipping_in_cents: number; total_in_cents: number
@@ -156,6 +157,10 @@ export async function POST(req: NextRequest) {
           deliveryMethod: o.delivery_method,
           estimatedDays:  o.estimated_days,
         }).catch(e => console.error('[email] payment-confirmed:', e))
+
+        // WhatsApp
+        void waSendPaymentConfirmed(o.customer_phone ?? null, o.order_number, o.customer_name)
+          .catch(e => console.error('[whatsapp] payment-confirmed:', e))
       }
 
     } else if (newStatus === 'cancelled' || newStatus === 'refunded') {
