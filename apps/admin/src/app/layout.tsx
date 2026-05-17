@@ -2,11 +2,13 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 
 const NAV = [
-  { href: '/',          icon: '📊', label: 'Dashboard'  },
-  { href: '/pedidos',   icon: '📦', label: 'Pedidos'    },
-  { href: '/produtos',  icon: '👟', label: 'Produtos'   },
-  { href: '/cupons',    icon: '🏷️', label: 'Cupons'     },
-  { href: '/clientes',  icon: '👥', label: 'Clientes'   },
+  { href: '/',                icon: '📊', label: 'Dashboard'     },
+  { href: '/pedidos',         icon: '📦', label: 'Pedidos'       },
+  { href: '/produtos',        icon: '👟', label: 'Produtos'      },
+  { href: '/cupons',          icon: '🏷️', label: 'Cupons'        },
+  { href: '/clientes',        icon: '👥', label: 'Clientes'      },
+  { href: '/relatorios',      icon: '📈', label: 'Relatórios'    },
+  { href: '/configuracoes',   icon: '⚙️', label: 'Configurações' },
 ]
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
