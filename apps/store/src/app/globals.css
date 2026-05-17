@@ -267,6 +267,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 /* Scroll suave global */
 html { scroll-behavior: smooth; }
 
+/* ── Conta/Pedidos ── */
+.order-card:hover { border-color: var(--brand-orange) !important; transform: translateX(2px); }
+a:has(.order-card) { display: block; }
+
 /* Touch improvements mobile */
 @media (hover: none) {
   .pcard:hover { transform: none; box-shadow: none; }

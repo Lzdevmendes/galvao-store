@@ -78,10 +78,7 @@ export default async function PedidosPage() {
             const date = new Date(order.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
             return (
               <Link key={order.id} href={`/conta/pedidos/${order.id}`} style={{ textDecoration: 'none' }}>
-                <div style={{ background: 'var(--bg-elev)', border: '1px solid var(--border)', borderRadius: 14, padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 20, transition: 'border-color .15s' }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--brand-orange)')}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
-                >
+                <div className="order-card" style={{ background: 'var(--bg-elev)', border: '1px solid var(--border)', borderRadius: 14, padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 20, transition: 'border-color .15s, transform .15s' }}>
                   {/* Thumbnail */}
                   <div style={{ width: 64, height: 64, background: 'var(--bg-sunk)', borderRadius: 10, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                     {order.first_image

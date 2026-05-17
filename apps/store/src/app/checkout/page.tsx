@@ -3,32 +3,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCartStore, cartSubtotal } from '@/store/cart'
-import { fmt, installment } from '@/lib/utils'
+import { fmt, installment, maskCep, maskPhone, maskCpf, isCpfValid } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { calculateShipping, validateCoupon, createOrder } from './actions'
 import type { ShippingOption } from './actions'
-
-// ── Masks ──────────────────────────────────────────────────────────────────
-
-const maskCep   = (v: string) => v.replace(/\D/g, '').slice(0, 8).replace(/(\d{5})(\d)/, '$1-$2')
-const maskPhone = (v: string) => v.replace(/\D/g, '').slice(0, 11).replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
-const maskCpf   = (v: string) => v.replace(/\D/g, '').slice(0, 11).replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
 
 // ── Validators ─────────────────────────────────────────────────────────────
 
 function isEmailValid(v: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) }
 function isPhoneValid(v: string) { return v.replace(/\D/g, '').length >= 10 }
-function isCpfValid(v: string) {
-  const d = v.replace(/\D/g, '')
-  if (d.length !== 11 || /^(\d)\1+$/.test(d)) return false
-  const calc = (x: number) => {
-    let s = 0
-    for (let i = 0; i < x - 1; i++) s += Number(d[i]) * (x - i)
-    const r = (s * 10) % 11
-    return r === 10 || r === 11 ? 0 : r
-  }
-  return calc(10) === Number(d[9]) && calc(11) === Number(d[10])
-}
 function isCepValid(v: string)   { return v.replace(/\D/g, '').length === 8 }
 
 function validateStep1(f: FormData): Record<string, string> {

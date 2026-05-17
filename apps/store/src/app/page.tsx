@@ -97,7 +97,7 @@ export default async function HomePage() {
               <p>Phantom GX III, F50 Elite, Future 8 Ultimate. As chuteiras que fizeram a temporada já estão na Galvão&apos;s.</p>
               <div className="ctas">
                 <Link href="/produtos" className="btn btn-primary btn-lg">Comprar agora</Link>
-                <Link href="/lancamentos" className="btn btn-lg" style={{ background:'rgba(255,255,255,.1)', color:'#fff', border:'1px solid rgba(255,255,255,.2)' }}>Ver lançamentos</Link>
+                <Link href="/busca?sort=lancamentos" className="btn btn-lg" style={{ background:'rgba(255,255,255,.1)', color:'#fff', border:'1px solid rgba(255,255,255,.2)' }}>Ver lançamentos</Link>
               </div>
             </div>
             <div className="photo">
@@ -138,7 +138,7 @@ export default async function HomePage() {
         {/* ── Lançamentos ── */}
         {arrivals.length > 0 && (
           <>
-            <SectionHead pre="★ Recém-chegadas" title="LANÇA" accent="MENTOS." href="/lancamentos" />
+            <SectionHead pre="★ Recém-chegadas" title="LANÇA" accent="MENTOS." href="/busca?sort=lancamentos" />
             <div className="grid-products" data-density="4">
               {arrivals.map(p => <ProductCard key={p.id} p={p} />)}
             </div>
@@ -188,7 +188,7 @@ export default async function HomePage() {
         </div>
 
         {/* ── Mais vendidas ── */}
-        <SectionHead pre="★ Top 8 da semana" title="MAIS " accent="VENDIDAS." href="/mais-vendidas" linkLabel="Ver ranking completo →" />
+        <SectionHead pre="★ Top 8 da semana" title="MAIS " accent="VENDIDAS." href="/produtos" linkLabel="Ver catálogo completo →" />
         <div className="grid-products" data-density="4" style={{ marginBottom:96 }}>
           {bestSellers.map(p => <ProductCard key={p.id} p={p} />)}
         </div>
