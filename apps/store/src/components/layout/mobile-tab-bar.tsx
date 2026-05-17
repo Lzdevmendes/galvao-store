@@ -1,6 +1,8 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { motion } from 'framer-motion'
+import { useCartStore, cartTotalItems } from '@/store/cart'
 
 const tabs = [
   { href:'/',          label:'Início',
@@ -21,19 +23,67 @@ const tabs = [
 ]
 
 export function MobileTabBar() {
-  const pathname = usePathname()
+  const pathname  = usePathname()
+  const itemCount = useCartStore(cartTotalItems)
+  const toggleCart = useCartStore(s => s.toggleCart)
+
   return (
     <nav className="mobile-tabbar">
-      {tabs.map(t => (
-        <Link
-          key={t.href}
-          href={t.href}
-          className={t.match(pathname) ? 'active' : undefined}
-        >
-          {t.icon}
-          <span>{t.label}</span>
-        </Link>
-      ))}
+      {tabs.map(t => {
+        const active = t.match(pathname)
+        const isCart = t.href === '/carrinho'
+
+        const inner = (
+          <motion.span
+            style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, width:'100%' }}
+            whileTap={{ scale: .85 }}
+          >
+            <span style={{ position:'relative' }}>
+              {t.icon}
+              {isCart && itemCount > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  style={{
+                    position:'absolute', top:-5, right:-5,
+                    background:'var(--brand-orange)', color:'#fff',
+                    borderRadius:'50%', width:16, height:16, fontSize:9,
+                    fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center',
+                  }}
+                >
+                  {itemCount > 9 ? '9+' : itemCount}
+                </motion.span>
+              )}
+            </span>
+            <span>{t.label}</span>
+            {active && (
+              <motion.div
+                layoutId="tab-indicator"
+                style={{ height:2, width:20, background:'var(--brand-orange)', borderRadius:1 }}
+              />
+            )}
+          </motion.span>
+        )
+
+        if (isCart) {
+          return (
+            <button
+              key={t.href}
+              onClick={toggleCart}
+              className={active ? 'active' : undefined}
+              style={{ background:'none', border:'none', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', padding:'4px 0', fontFamily:'var(--font-ui)', fontSize:10, color: active ? 'var(--brand-orange)' : 'var(--fg-muted)', fontWeight: active ? 700 : 500 }}
+            >
+              {inner}
+            </button>
+          )
+        }
+
+        return (
+          <Link key={t.href} href={t.href} className={active ? 'active' : undefined}>
+            {inner}
+          </Link>
+        )
+      })}
     </nav>
   )
 }
