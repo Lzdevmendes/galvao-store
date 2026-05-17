@@ -26,7 +26,7 @@ export default function NotFound() {
   const lines = msg.headline.split('\n')
 
   return (
-    <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 24px', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '160px 24px 80px', position: 'relative', overflow: 'hidden' }}>
 
       {/* Bolas de fundo flutuantes */}
       {BALLS.map((b, i) => (
@@ -43,21 +43,25 @@ export default function NotFound() {
         />
       ))}
 
-      {/* Número 404 gigante de fundo */}
+      {/* Número 404 gigante de fundo — fixado ao topo, nunca cobre o conteúdo */}
       <motion.div
-        initial={{ opacity: 0, scale: 1.2 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: .8, ease: [.25, .46, .45, .94] }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1 }}
         style={{
           position: 'absolute',
+          top: 0, left: '50%',
+          transform: 'translateX(-50%)',
           fontFamily: 'var(--font-stencil)',
-          fontSize: 'clamp(200px,30vw,320px)',
-          lineHeight: 1,
+          fontSize: 'clamp(160px,22vw,260px)',
+          lineHeight: .85,
           color: 'var(--brand-orange)',
-          opacity: .06,
+          opacity: .07,
           userSelect: 'none',
           pointerEvents: 'none',
           letterSpacing: '.04em',
+          zIndex: 0,
+          whiteSpace: 'nowrap',
         }}
       >
         404
