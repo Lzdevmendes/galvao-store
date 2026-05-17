@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import { ProductCard, type ProductCardData } from '@/components/catalog/product-card'

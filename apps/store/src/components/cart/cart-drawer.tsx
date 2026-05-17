@@ -1,6 +1,7 @@
 'use client'
 import Image from 'next/image'
 import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useCartStore, cartSubtotal, type CartItem } from '@/store/cart'
 import { fmt } from '@/lib/utils'
 
@@ -16,21 +17,29 @@ export function CartDrawer() {
   return (
     <>
       {/* Overlay */}
-      {isOpen && (
-        <div
-          onClick={closeCart}
-          style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.5)', zIndex:200, backdropFilter:'blur(2px)' }}
-        />
-      )}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: .2 }}
+            onClick={closeCart}
+            style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.55)', zIndex:200, backdropFilter:'blur(3px)' }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Drawer */}
-      <div style={{
-        position: 'fixed', top: 0, right: 0, height: '100vh', width: 420, maxWidth: '100vw',
-        background: 'var(--bg-elev)', zIndex: 201, display: 'flex', flexDirection: 'column',
-        boxShadow: '-8px 0 40px rgba(0,0,0,.15)',
-        transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
-        transition: 'transform .3s cubic-bezier(.32,.72,0,1)',
-      }}>
+      <motion.div
+        initial={false}
+        animate={{ x: isOpen ? 0 : '100%' }}
+        transition={{ type: 'spring', stiffness: 380, damping: 40 }}
+        style={{
+          position: 'fixed', top: 0, right: 0, height: '100vh', width: 420, maxWidth: '100vw',
+          background: 'var(--bg-elev)', zIndex: 201, display: 'flex', flexDirection: 'column',
+          boxShadow: '-8px 0 40px rgba(0,0,0,.2)',
+        }}>
 
         {/* Header */}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'20px 24px', borderBottom:'1px solid var(--border)' }}>
@@ -98,7 +107,7 @@ export function CartDrawer() {
             </button>
           </div>
         )}
-      </div>
+      </motion.div>
     </>
   )
 }
