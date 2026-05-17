@@ -6,6 +6,7 @@ import { sql } from 'drizzle-orm'
 import { ProductCard, type ProductCardData } from '@/components/catalog/product-card'
 import { queryBrandsWithCount, queryCategoriesWithCount } from '@/lib/catalog-query'
 import { fmt } from '@/lib/utils'
+import { HomeAnimations } from '@/components/home-animations'
 
 export const revalidate = 300
 
@@ -84,6 +85,8 @@ export default async function HomePage() {
 
   return (
     <>
+      <HomeAnimations />
+
       {/* ── Hero ── */}
       <section className="hero">
         <div className="container">
