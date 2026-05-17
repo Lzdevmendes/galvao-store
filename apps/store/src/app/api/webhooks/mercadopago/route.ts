@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import { createHmac } from 'crypto'
+import { sendPaymentConfirmedEmail } from '@/lib/email'
 
 // MP envia: POST /api/webhooks/mercadopago?data.id=...&type=payment
 // Header x-signature: ts=...,v1=...
@@ -112,6 +113,50 @@ export async function POST(req: NextRequest) {
         INSERT INTO order_events (id, order_id, type, created_by, created_at)
         VALUES (${crypto.randomUUID()}, ${orderId}, 'paid', 'system', datetime('now'))
       `)
+
+      // E-mail de pagamento confirmado
+      const fullOrder = db.all<{
+        order_number: string; customer_name: string; customer_email: string
+        delivery_method: string; estimated_days: number | null
+        subtotal_in_cents: number; discount_in_cents: number
+        shipping_in_cents: number; total_in_cents: number
+        coupon_code: string | null; payment_method: string
+      }>(sql`SELECT * FROM orders WHERE id = ${orderId} LIMIT 1`)
+
+      const fullItems = db.all<{
+        product_name: string; brand_name: string; variant_size: string
+        variant_color: string | null; image_url: string | null
+        qty: number; unit_in_cents: number; total_in_cents: number
+      }>(sql`SELECT * FROM order_items WHERE order_id = ${orderId}`)
+
+      if (fullOrder[0]) {
+        const o = fullOrder[0]
+        void sendPaymentConfirmedEmail(o.customer_email, {
+          orderNumber:    o.order_number,
+          customerName:   o.customer_name,
+          paidAt:         new Date().toISOString(),
+          items:          fullItems.map(i => ({
+            productName:  i.product_name,
+            brandName:    i.brand_name,
+            variantSize:  i.variant_size,
+            variantColor: i.variant_color,
+            imageUrl:     i.image_url,
+            qty:          i.qty,
+            unitInCents:  i.unit_in_cents,
+            totalInCents: i.total_in_cents,
+          })),
+          totals: {
+            subtotalInCents: o.subtotal_in_cents,
+            discountInCents: o.discount_in_cents,
+            shippingInCents: o.shipping_in_cents,
+            totalInCents:    o.total_in_cents,
+            couponCode:      o.coupon_code,
+            paymentMethod:   o.payment_method as 'pix' | 'credit_card' | 'boleto',
+          },
+          deliveryMethod: o.delivery_method,
+          estimatedDays:  o.estimated_days,
+        }).catch(e => console.error('[email] payment-confirmed:', e))
+      }
 
     } else if (newStatus === 'cancelled' || newStatus === 'refunded') {
       db.run(sql`

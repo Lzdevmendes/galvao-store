@@ -5,6 +5,7 @@ import { sql } from 'drizzle-orm'
 import { createClient } from '@/lib/supabase/server'
 import { fmt } from '@/lib/utils'
 import { quoteMelhorEnvio, meServiceToMethod, type MEProduct } from '@/lib/melhor-envio'
+import { sendOrderCreatedEmail } from '@/lib/email'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -325,10 +326,55 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
       `)
     }
 
+    // Preparar dados comuns para e-mail (usados em todos os caminhos)
+    const emailItems = payload.cartItems.map(item => ({
+      productName:  item.productName,
+      brandName:    item.brandName,
+      variantSize:  item.size,
+      variantColor: item.color || null,
+      imageUrl:     item.imageUrl || null,
+      qty:          item.quantity,
+      unitInCents:  item.pricePromoInCents != null && item.pricePromoInCents < item.priceInCents
+        ? item.pricePromoInCents : item.priceInCents,
+      totalInCents: (item.pricePromoInCents != null && item.pricePromoInCents < item.priceInCents
+        ? item.pricePromoInCents : item.priceInCents) * item.quantity,
+    }))
+
+    const emailTotals = {
+      subtotalInCents,
+      discountInCents: totalDiscount,
+      shippingInCents: payload.shippingInCents,
+      totalInCents,
+      couponCode:      payload.couponCode ?? null,
+      paymentMethod:   payload.paymentMethod,
+    }
+
+    const emailAddress = {
+      street:     payload.street,
+      number:     payload.number,
+      complement: payload.complement || null,
+      district:   payload.district,
+      city:       payload.city,
+      state:      payload.state,
+      cep:        payload.cep,
+    }
+
     // Mercado Pago
     const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
     if (!accessToken) {
-      // Dev mode sem chaves MP
+      // Dev mode sem chaves MP — enviar e-mail sem dados de pagamento
+      void sendOrderCreatedEmail(payload.email, {
+        orderNumber,
+        customerName:   payload.name,
+        createdAt:      new Date().toISOString(),
+        items:          emailItems,
+        totals:         emailTotals,
+        address:        emailAddress,
+        deliveryMethod: payload.shippingMethod,
+        estimatedDays:  payload.estimatedDays,
+        paymentMethod:  payload.paymentMethod,
+      }).catch(e => console.error('[email] order-created:', e))
+
       return { success: true, orderId, orderNumber, paymentMethod: payload.paymentMethod }
     }
 
@@ -369,6 +415,21 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
         WHERE id = ${orderId}
       `)
 
+      void sendOrderCreatedEmail(payload.email, {
+        orderNumber,
+        customerName:   payload.name,
+        createdAt:      new Date().toISOString(),
+        items:          emailItems,
+        totals:         emailTotals,
+        address:        emailAddress,
+        deliveryMethod: payload.shippingMethod,
+        estimatedDays:  payload.estimatedDays,
+        paymentMethod:  'pix',
+        pixQrCode:      pixQr,
+        pixKey,
+        pixExpiresAt:   expiresAt,
+      }).catch(e => console.error('[email] order-created pix:', e))
+
       return { success: true, orderId, orderNumber, paymentMethod: 'pix', pixQr, pixKey, pixExpiresAt: expiresAt }
     }
 
@@ -405,6 +466,21 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
             boleto_expires_at = ${boletoExpAt ?? null}
         WHERE id = ${orderId}
       `)
+
+      void sendOrderCreatedEmail(payload.email, {
+        orderNumber,
+        customerName:      payload.name,
+        createdAt:         new Date().toISOString(),
+        items:             emailItems,
+        totals:            emailTotals,
+        address:           emailAddress,
+        deliveryMethod:    payload.shippingMethod,
+        estimatedDays:     payload.estimatedDays,
+        paymentMethod:     'boleto',
+        boletoUrl:         boletoUrl,
+        boletoBarCode:     boletoBarCode,
+        boletoExpiresAt:   boletoExpAt,
+      }).catch(e => console.error('[email] order-created boleto:', e))
 
       return {
         success: true, orderId, orderNumber, paymentMethod: 'boleto',
@@ -446,6 +522,18 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
       } else {
         db.run(sql`UPDATE orders SET payment_id = ${String(result.id)} WHERE id = ${orderId}`)
       }
+
+      void sendOrderCreatedEmail(payload.email, {
+        orderNumber,
+        customerName:   payload.name,
+        createdAt:      new Date().toISOString(),
+        items:          emailItems,
+        totals:         emailTotals,
+        address:        emailAddress,
+        deliveryMethod: payload.shippingMethod,
+        estimatedDays:  payload.estimatedDays,
+        paymentMethod:  'credit_card',
+      }).catch(e => console.error('[email] order-created card:', e))
 
       return { success: true, orderId, orderNumber, paymentMethod: 'credit_card' }
     }
