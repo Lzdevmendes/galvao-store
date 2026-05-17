@@ -36,6 +36,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Admin → tem de estar logado E ser email admin
+  if (pathname.startsWith('/admin')) {
+    const adminEmails = (process.env.ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase())
+    const isAdmin = user && adminEmails.includes((user.email ?? '').toLowerCase())
+    if (!isAdmin) {
+      const url = request.nextUrl.clone()
+      url.pathname = user ? '/' : '/auth/login'
+      if (!user) url.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(url)
+    }
+  }
+
   // Usuário logado tentando aceder auth pages → redireciona para conta
   if (user && (pathname === '/auth/login' || pathname === '/auth/cadastro')) {
     const url = request.nextUrl.clone()
@@ -49,6 +61,7 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/conta/:path*',
+    '/admin/:path*',
     '/auth/login',
     '/auth/cadastro',
   ],
