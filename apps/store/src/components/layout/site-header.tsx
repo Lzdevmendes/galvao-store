@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useCartStore, cartTotalItems } from '@/store/cart'
 
@@ -19,9 +20,19 @@ export function SiteHeader() {
     <header className="site">
       <div className="container row">
         {/* Logo */}
-        <Link href="/" className="logo">
-          <div className="logo-wordmark">GALVÃO&apos;S</div>
-          <div className="logo-sub">Store · Alta Performance</div>
+        <Link href="/" className="logo" style={{ display:'flex', alignItems:'center', gap:10, textDecoration:'none' }}>
+          <Image
+            src="/logo.svg"
+            alt="Galvão's Store"
+            width={44}
+            height={44}
+            priority
+            style={{ borderRadius:'50%', flexShrink:0 }}
+          />
+          <div>
+            <div className="logo-wordmark">GALVÃO&apos;S</div>
+            <div className="logo-sub">Store · Alta Performance</div>
+          </div>
         </Link>
 
         {/* Search */}
