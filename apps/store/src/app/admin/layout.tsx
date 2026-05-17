@@ -15,6 +15,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#0B0E12', color: '#F8F9FB', fontFamily: 'Space Grotesk, sans-serif' }}>
+      <style>{`
+        .admin-nav-link {
+          display: flex; align-items: center; gap: 10px;
+          padding: 10px 20px; font-size: 14px; font-weight: 500;
+          color: #9CA3AF; transition: all .15s;
+        }
+        .admin-nav-link:hover { color: #F8F9FB; background: rgba(242,107,31,.08); }
+      `}</style>
 
       {/* ── Sidebar ── */}
       <aside style={{
@@ -36,18 +44,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         {/* Nav */}
         <nav style={{ padding: '12px 0', flex: 1 }}>
           {NAV.map(item => (
-            <Link key={item.href} href={item.href} style={{ textDecoration: 'none' }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '10px 20px', fontSize: 14, fontWeight: 500,
-                color: '#9CA3AF', transition: 'color .15s',
-              }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#F8F9FB')}
-                onMouseLeave={e => (e.currentTarget.style.color = '#9CA3AF')}
-              >
-                <span style={{ fontSize: 16 }}>{item.icon}</span>
-                {item.label}
-              </div>
+            <Link key={item.href} href={item.href} className="admin-nav-link" style={{ textDecoration: 'none' }}>
+              <span style={{ fontSize: 16 }}>{item.icon}</span>
+              {item.label}
             </Link>
           ))}
         </nav>
