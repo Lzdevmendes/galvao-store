@@ -425,7 +425,7 @@ export default function CheckoutPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
                 <PayMethod selected={form.paymentMethod === 'pix'} onSelect={() => set('paymentMethod', 'pix')}
                   icon="📱" label="PIX" badge="5% OFF"
-                  description={`${fmt(pixPrice(subtotal - form.couponDiscountInCents + form.shippingInCents))} à vista`} />
+                  description={`${fmt(subtotal - form.couponDiscountInCents - Math.round(subtotal * 0.05) + form.shippingInCents)} à vista`} />
                 <PayMethod selected={form.paymentMethod === 'boleto'} onSelect={() => set('paymentMethod', 'boleto')}
                   icon="📄" label="Boleto Bancário" description="Vence em 3 dias úteis — requer CPF" />
                 <PayMethod selected={form.paymentMethod === 'credit_card'} onSelect={() => set('paymentMethod', 'credit_card')}

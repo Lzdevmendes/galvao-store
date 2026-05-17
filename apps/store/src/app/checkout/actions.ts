@@ -392,6 +392,24 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
     const mpClient  = new MercadoPagoConfig({ accessToken })
     const mpPayment = new Payment(mpClient)
 
+    // Helper: desfaz o pedido se o MP falhar (para o utilizador poder tentar de novo)
+    const rollbackOrder = () => {
+      try {
+        db.run(sql`DELETE FROM order_events WHERE order_id = ${orderId}`)
+        db.run(sql`DELETE FROM order_items  WHERE order_id = ${orderId}`)
+        for (const item of payload.cartItems) {
+          db.run(sql`
+            UPDATE product_variants
+            SET stock_reserved = MAX(0, stock_reserved - ${item.quantity})
+            WHERE id = ${item.variantId}
+          `)
+        }
+        db.run(sql`DELETE FROM orders WHERE id = ${orderId}`)
+      } catch (e) {
+        console.error('[rollbackOrder] falhou:', e)
+      }
+    }
+
     const totalBRL  = totalInCents / 100
     const siteUrl   = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3010'
     // MP não aceita localhost como notification_url — omitir em dev
@@ -399,158 +417,178 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
     const firstName = payload.name.split(' ')[0]
     const lastName  = payload.name.split(' ').slice(1).join(' ') || firstName
 
-    // ── PIX ──────────────────────────────────────────────────────────────
-    if (payload.paymentMethod === 'pix') {
-      const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString()
+    // ── Wrapper MP com rollback automático em caso de falha ──────────────
+    try {
 
-      const result = await mpPayment.create({
-        body: {
-          transaction_amount: totalBRL,
-          payment_method_id: 'pix',
-          payer: { email: payload.email, first_name: firstName, last_name: lastName },
-          description: `Pedido ${orderNumber} - Galvão Store`,
-          external_reference: orderId,
-          notification_url: notificationUrl,
-          date_of_expiration: expiresAt,
-        },
-      })
+      // ── PIX ────────────────────────────────────────────────────────────
+      if (payload.paymentMethod === 'pix') {
+        const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString()
 
-      const pixQr  = result.point_of_interaction?.transaction_data?.qr_code_base64 ?? undefined
-      const pixKey = result.point_of_interaction?.transaction_data?.qr_code ?? undefined
-
-      db.run(sql`
-        UPDATE orders
-        SET payment_id = ${String(result.id)},
-            pix_qr_code = ${pixQr ?? null},
-            pix_key = ${pixKey ?? null},
-            pix_expires_at = ${expiresAt}
-        WHERE id = ${orderId}
-      `)
-
-      void sendOrderCreatedEmail(payload.email, {
-        orderNumber,
-        customerName:   payload.name,
-        createdAt:      new Date().toISOString(),
-        items:          emailItems,
-        totals:         emailTotals,
-        address:        emailAddress,
-        deliveryMethod: payload.shippingMethod,
-        estimatedDays:  payload.estimatedDays,
-        paymentMethod:  'pix',
-        pixQrCode:      pixQr,
-        pixKey,
-        pixExpiresAt:   expiresAt,
-      }).catch(e => console.error('[email] order-created pix:', e))
-
-      return { success: true, orderId, orderNumber, paymentMethod: 'pix', pixQr, pixKey, pixExpiresAt: expiresAt }
-    }
-
-    // ── Boleto ────────────────────────────────────────────────────────────
-    if (payload.paymentMethod === 'boleto') {
-      const result = await mpPayment.create({
-        body: {
-          transaction_amount: totalBRL,
-          payment_method_id: 'bolbradesco',
-          payer: {
-            email: payload.email,
-            first_name: firstName,
-            last_name: lastName,
-            identification: { type: 'CPF', number: payload.cpf.replace(/\D/g, '') },
+        const result = await mpPayment.create({
+          body: {
+            transaction_amount: totalBRL,
+            payment_method_id:  'pix',
+            payer: {
+              email:      payload.email,
+              first_name: firstName,
+              last_name:  lastName,
+              identification: { type: 'CPF', number: payload.cpf.replace(/\D/g, '') },
+            },
+            description:        `Pedido ${orderNumber} - Galvão Store`,
+            external_reference: orderId,
+            notification_url:   notificationUrl,
+            date_of_expiration: expiresAt,
           },
-          description: `Pedido ${orderNumber} - Galvão Store`,
-          external_reference: orderId,
-          notification_url: notificationUrl,
-        },
-      })
+        })
 
-      const boletoUrl     = result.transaction_details?.external_resource_url ?? undefined
-      const resultAny     = result as unknown as Record<string, unknown>
-      const boletoBarCode = typeof resultAny.barcode === 'object' && resultAny.barcode !== null
-        ? (resultAny.barcode as Record<string, unknown>).content as string | undefined
-        : undefined
-      const boletoExpAt   = result.date_of_expiration ?? undefined
+        const pixQr  = result.point_of_interaction?.transaction_data?.qr_code_base64 ?? undefined
+        const pixKey = result.point_of_interaction?.transaction_data?.qr_code ?? undefined
 
-      db.run(sql`
-        UPDATE orders
-        SET payment_id = ${String(result.id)},
-            boleto_url = ${boletoUrl ?? null},
-            boleto_bar_code = ${boletoBarCode ?? null},
-            boleto_expires_at = ${boletoExpAt ?? null}
-        WHERE id = ${orderId}
-      `)
-
-      void sendOrderCreatedEmail(payload.email, {
-        orderNumber,
-        customerName:      payload.name,
-        createdAt:         new Date().toISOString(),
-        items:             emailItems,
-        totals:            emailTotals,
-        address:           emailAddress,
-        deliveryMethod:    payload.shippingMethod,
-        estimatedDays:     payload.estimatedDays,
-        paymentMethod:     'boleto',
-        boletoUrl:         boletoUrl,
-        boletoBarCode:     boletoBarCode,
-        boletoExpiresAt:   boletoExpAt,
-      }).catch(e => console.error('[email] order-created boleto:', e))
-
-      return {
-        success: true, orderId, orderNumber, paymentMethod: 'boleto',
-        boletoUrl, boletoBarCode, boletoExpiresAt: boletoExpAt,
-      }
-    }
-
-    // ── Cartão ────────────────────────────────────────────────────────────
-    if (payload.paymentMethod === 'credit_card' && payload.cardToken) {
-      const result = await mpPayment.create({
-        body: {
-          transaction_amount: totalBRL,
-          token: payload.cardToken,
-          installments: payload.cardInstallments ?? 1,
-          payment_method_id: payload.cardPaymentMethodId!,
-          payer: {
-            email: payload.email,
-            identification: { type: 'CPF', number: payload.cpf.replace(/\D/g, '') },
-          },
-          description: `Pedido ${orderNumber} - Galvão Store`,
-          external_reference: orderId,
-          notification_url: notificationUrl,
-        },
-      })
-
-      if (result.status === 'approved') {
         db.run(sql`
-          UPDATE orders SET status = 'paid', payment_id = ${String(result.id)}, paid_at = datetime('now')
+          UPDATE orders
+          SET payment_id = ${String(result.id)},
+              pix_qr_code = ${pixQr ?? null},
+              pix_key = ${pixKey ?? null},
+              pix_expires_at = ${expiresAt}
           WHERE id = ${orderId}
         `)
-        for (const item of payload.cartItems) {
-          db.run(sql`
-            UPDATE product_variants
-            SET stock = stock - ${item.quantity},
-                stock_reserved = stock_reserved - ${item.quantity}
-            WHERE id = ${item.variantId}
-          `)
-        }
-      } else {
-        db.run(sql`UPDATE orders SET payment_id = ${String(result.id)} WHERE id = ${orderId}`)
+
+        void sendOrderCreatedEmail(payload.email, {
+          orderNumber,
+          customerName:   payload.name,
+          createdAt:      new Date().toISOString(),
+          items:          emailItems,
+          totals:         emailTotals,
+          address:        emailAddress,
+          deliveryMethod: payload.shippingMethod,
+          estimatedDays:  payload.estimatedDays,
+          paymentMethod:  'pix',
+          pixQrCode:      pixQr,
+          pixKey,
+          pixExpiresAt:   expiresAt,
+        }).catch(e => console.error('[email] order-created pix:', e))
+
+        return { success: true, orderId, orderNumber, paymentMethod: 'pix', pixQr, pixKey, pixExpiresAt: expiresAt }
       }
 
-      void sendOrderCreatedEmail(payload.email, {
-        orderNumber,
-        customerName:   payload.name,
-        createdAt:      new Date().toISOString(),
-        items:          emailItems,
-        totals:         emailTotals,
-        address:        emailAddress,
-        deliveryMethod: payload.shippingMethod,
-        estimatedDays:  payload.estimatedDays,
-        paymentMethod:  'credit_card',
-      }).catch(e => console.error('[email] order-created card:', e))
+      // ── Boleto ──────────────────────────────────────────────────────────
+      if (payload.paymentMethod === 'boleto') {
+        const result = await mpPayment.create({
+          body: {
+            transaction_amount: totalBRL,
+            payment_method_id:  'bolbradesco',
+            payer: {
+              email:      payload.email,
+              first_name: firstName,
+              last_name:  lastName,
+              identification: { type: 'CPF', number: payload.cpf.replace(/\D/g, '') },
+            },
+            description:        `Pedido ${orderNumber} - Galvão Store`,
+            external_reference: orderId,
+            notification_url:   notificationUrl,
+          },
+        })
 
-      return { success: true, orderId, orderNumber, paymentMethod: 'credit_card' }
+        const boletoUrl     = result.transaction_details?.external_resource_url ?? undefined
+        const resultAny     = result as unknown as Record<string, unknown>
+        const boletoBarCode = typeof resultAny.barcode === 'object' && resultAny.barcode !== null
+          ? (resultAny.barcode as Record<string, unknown>).content as string | undefined
+          : undefined
+        const boletoExpAt   = result.date_of_expiration ?? undefined
+
+        db.run(sql`
+          UPDATE orders
+          SET payment_id = ${String(result.id)},
+              boleto_url = ${boletoUrl ?? null},
+              boleto_bar_code = ${boletoBarCode ?? null},
+              boleto_expires_at = ${boletoExpAt ?? null}
+          WHERE id = ${orderId}
+        `)
+
+        void sendOrderCreatedEmail(payload.email, {
+          orderNumber,
+          customerName:    payload.name,
+          createdAt:       new Date().toISOString(),
+          items:           emailItems,
+          totals:          emailTotals,
+          address:         emailAddress,
+          deliveryMethod:  payload.shippingMethod,
+          estimatedDays:   payload.estimatedDays,
+          paymentMethod:   'boleto',
+          boletoUrl,
+          boletoBarCode,
+          boletoExpiresAt: boletoExpAt,
+        }).catch(e => console.error('[email] order-created boleto:', e))
+
+        return {
+          success: true, orderId, orderNumber, paymentMethod: 'boleto',
+          boletoUrl, boletoBarCode, boletoExpiresAt: boletoExpAt,
+        }
+      }
+
+      // ── Cartão ──────────────────────────────────────────────────────────
+      if (payload.paymentMethod === 'credit_card' && payload.cardToken) {
+        const result = await mpPayment.create({
+          body: {
+            transaction_amount: totalBRL,
+            token:              payload.cardToken,
+            installments:       payload.cardInstallments ?? 1,
+            payment_method_id:  payload.cardPaymentMethodId!,
+            payer: {
+              email:          payload.email,
+              identification: { type: 'CPF', number: payload.cpf.replace(/\D/g, '') },
+            },
+            description:        `Pedido ${orderNumber} - Galvão Store`,
+            external_reference: orderId,
+            notification_url:   notificationUrl,
+          },
+        })
+
+        if (result.status === 'approved') {
+          db.run(sql`
+            UPDATE orders SET status = 'paid', payment_id = ${String(result.id)}, paid_at = datetime('now')
+            WHERE id = ${orderId}
+          `)
+          for (const item of payload.cartItems) {
+            db.run(sql`
+              UPDATE product_variants
+              SET stock = stock - ${item.quantity},
+                  stock_reserved = stock_reserved - ${item.quantity}
+              WHERE id = ${item.variantId}
+            `)
+          }
+        } else {
+          db.run(sql`UPDATE orders SET payment_id = ${String(result.id)} WHERE id = ${orderId}`)
+        }
+
+        void sendOrderCreatedEmail(payload.email, {
+          orderNumber,
+          customerName:   payload.name,
+          createdAt:      new Date().toISOString(),
+          items:          emailItems,
+          totals:         emailTotals,
+          address:        emailAddress,
+          deliveryMethod: payload.shippingMethod,
+          estimatedDays:  payload.estimatedDays,
+          paymentMethod:  'credit_card',
+        }).catch(e => console.error('[email] order-created card:', e))
+
+        return { success: true, orderId, orderNumber, paymentMethod: 'credit_card' }
+      }
+
+      return { success: true, orderId, orderNumber, paymentMethod: payload.paymentMethod }
+
+    } catch (mpErr) {
+      // Desfaz o pedido para o utilizador poder tentar novamente
+      rollbackOrder()
+      const mpMsg = mpErr instanceof Error
+        ? mpErr.message
+        : (typeof mpErr === 'object' && mpErr !== null)
+          ? JSON.stringify(mpErr)
+          : String(mpErr)
+      console.error('[createOrder] MP ERRO:', mpMsg)
+      return { success: false, error: `Erro no pagamento: ${mpMsg}` }
     }
-
-    return { success: true, orderId, orderNumber, paymentMethod: payload.paymentMethod }
   } catch (err) {
     console.error('[createOrder] ERRO COMPLETO:', err)
     const msg = err instanceof Error
