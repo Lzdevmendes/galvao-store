@@ -225,6 +225,16 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
+    // Garantir que o utilizador logado existe na tabela users do SQLite
+    // (Supabase gere auth; SQLite é o BD de negócio — precisamos sincronizar o UUID)
+    if (user) {
+      db.run(sql`
+        INSERT INTO users (id, email, name, created_at, updated_at)
+        VALUES (${user.id}, ${user.email ?? payload.email}, ${payload.name}, datetime('now'), datetime('now'))
+        ON CONFLICT(id) DO NOTHING
+      `)
+    }
+
     // Calcular totais
     const subtotalInCents = payload.cartItems.reduce((acc, item) => {
       const price = item.pricePromoInCents != null && item.pricePromoInCents < item.priceInCents

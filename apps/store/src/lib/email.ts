@@ -8,7 +8,11 @@ import { PasswordResetEmail, type PasswordResetEmailProps } from '@/emails/passw
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-const FROM = 'Galvão\'s Store <noreply@galvaosstore.com.br>'
+// Em dev usa o sender de teste do Resend (não requer domínio verificado)
+// Em prod trocar para: noreply@galvaosstore.com.br (após verificar domínio)
+const FROM = process.env.NODE_ENV === 'production'
+  ? 'Galvão\'s Store <noreply@galvaosstore.com.br>'
+  : 'Galvão\'s Store <onboarding@resend.dev>'
 
 // ── Generic send helper ───────────────────────────────────
 async function sendEmail({
