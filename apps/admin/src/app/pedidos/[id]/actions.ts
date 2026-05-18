@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { sendOrderShippedEmail } from '@/lib/email'
+import { waSendOrderShipped, waSendOrderDelivered } from '@/lib/whatsapp'
 
 export type UpdateOrderPayload = {
   orderId:      string
@@ -28,11 +29,11 @@ export async function updateOrderStatus({ orderId, status, trackingCode }: Updat
 
     // Buscar dados para e-mail
     const orders = db.all<{
-      order_number: string; customer_name: string; customer_email: string
+      order_number: string; customer_name: string; customer_email: string; customer_phone: string | null
       delivery_method: string; estimated_days: number | null
       ship_street: string; ship_number: string; ship_complement: string | null
       ship_district: string; ship_city: string; ship_state: string; ship_cep: string
-    }>(sql`SELECT order_number, customer_name, customer_email, delivery_method, estimated_days,
+    }>(sql`SELECT order_number, customer_name, customer_email, customer_phone, delivery_method, estimated_days,
       ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state, ship_cep
       FROM orders WHERE id = ${orderId} LIMIT 1`)
     const items = db.all<{
@@ -65,6 +66,10 @@ export async function updateOrderStatus({ orderId, status, trackingCode }: Updat
           district: o.ship_district, city: o.ship_city, state: o.ship_state, cep: o.ship_cep,
         },
       }).catch(e => console.error('[email] order-shipped:', e))
+
+      const carrier = o.delivery_method === 'sedex' ? 'SEDEX' : o.delivery_method === 'pac' ? 'PAC' : 'Correios'
+      void waSendOrderShipped(o.customer_phone ?? null, o.order_number, trackingCode.trim().toUpperCase(), carrier)
+        .catch(e => console.error('[whatsapp] order-shipped:', e))
     }
 
   } else if (status === 'delivered') {
@@ -72,6 +77,15 @@ export async function updateOrderStatus({ orderId, status, trackingCode }: Updat
       UPDATE orders SET status = 'delivered', delivered_at = ${now}, updated_at = ${now}
       WHERE id = ${orderId}
     `)
+
+    const deliveredOrders = db.all<{ order_number: string; customer_name: string; customer_phone: string | null }>(sql`
+      SELECT order_number, customer_name, customer_phone FROM orders WHERE id = ${orderId} LIMIT 1
+    `)
+    const d = deliveredOrders[0]
+    if (d) {
+      void waSendOrderDelivered(d.customer_phone ?? null, d.order_number, d.customer_name)
+        .catch(e => console.error('[whatsapp] order-delivered:', e))
+    }
 
   } else {
     db.run(sql`

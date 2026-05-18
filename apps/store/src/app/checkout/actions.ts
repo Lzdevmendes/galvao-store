@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { fmt } from '@/lib/utils'
 import { quoteMelhorEnvio, meServiceToMethod, type MEProduct } from '@/lib/melhor-envio'
 import { sendOrderCreatedEmail } from '@/lib/email'
+import { waSendOrderCreated } from '@/lib/whatsapp'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -384,6 +385,8 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
         estimatedDays:  payload.estimatedDays,
         paymentMethod:  payload.paymentMethod,
       }).catch(e => console.error('[email] order-created:', e))
+      void waSendOrderCreated(payload.phone || null, orderNumber, payload.name)
+        .catch(e => console.error('[whatsapp] order-created:', e))
 
       return { success: true, orderId, orderNumber, paymentMethod: payload.paymentMethod }
     }
@@ -404,6 +407,8 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
         deliveryMethod: payload.shippingMethod, estimatedDays: payload.estimatedDays,
         paymentMethod: 'pix', pixKey: fakeKey, pixExpiresAt: expiresAt,
       }).catch(e => console.error('[email] order-created pix sandbox:', e))
+      void waSendOrderCreated(payload.phone || null, orderNumber, payload.name)
+        .catch(e => console.error('[whatsapp] order-created pix sandbox:', e))
       return { success: true, orderId, orderNumber, paymentMethod: 'pix', pixKey: fakeKey, pixExpiresAt: expiresAt }
     }
 
@@ -421,6 +426,8 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
         deliveryMethod: payload.shippingMethod, estimatedDays: payload.estimatedDays,
         paymentMethod: 'boleto', boletoUrl: fakeUrl, boletoBarCode: fakeBarCode, boletoExpiresAt: expiresAt,
       }).catch(e => console.error('[email] order-created boleto sandbox:', e))
+      void waSendOrderCreated(payload.phone || null, orderNumber, payload.name)
+        .catch(e => console.error('[whatsapp] order-created boleto sandbox:', e))
       return { success: true, orderId, orderNumber, paymentMethod: 'boleto', boletoUrl: fakeUrl, boletoBarCode: fakeBarCode, boletoExpiresAt: expiresAt }
     }
     // ─────────────────────────────────────────────────────────────────────────
@@ -511,6 +518,8 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
           pixKey,
           pixExpiresAt:   expiresAt,
         }).catch(e => console.error('[email] order-created pix:', e))
+        void waSendOrderCreated(payload.phone || null, orderNumber, payload.name)
+          .catch(e => console.error('[whatsapp] order-created pix:', e))
 
         return { success: true, orderId, orderNumber, paymentMethod: 'pix', pixQr, pixKey, pixExpiresAt: expiresAt }
       }
@@ -563,6 +572,8 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
           boletoBarCode,
           boletoExpiresAt: boletoExpAt,
         }).catch(e => console.error('[email] order-created boleto:', e))
+        void waSendOrderCreated(payload.phone || null, orderNumber, payload.name)
+          .catch(e => console.error('[whatsapp] order-created boleto:', e))
 
         return {
           success: true, orderId, orderNumber, paymentMethod: 'boleto',
@@ -616,6 +627,8 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
           estimatedDays:  payload.estimatedDays,
           paymentMethod:  'credit_card',
         }).catch(e => console.error('[email] order-created card:', e))
+        void waSendOrderCreated(payload.phone || null, orderNumber, payload.name)
+          .catch(e => console.error('[whatsapp] order-created card:', e))
 
         return { success: true, orderId, orderNumber, paymentMethod: 'credit_card' }
       }
