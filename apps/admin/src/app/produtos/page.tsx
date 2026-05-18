@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import { fmt } from '@/lib/utils'
+import Link from 'next/link'
 
 type PageProps = { searchParams: Promise<{ q?: string }> }
 
@@ -49,7 +50,7 @@ export default async function AdminProdutos({ searchParams }: PageProps) {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #1E2530' }}>
-              {['Produto', 'Marca', 'Cat.', 'Variantes', 'Stock', 'Preço', 'Status'].map(h => (
+              {['Produto', 'Marca', 'Cat.', 'Variantes', 'Stock', 'Preço', 'Status', ''].map(h => (
                 <th key={h} style={{ padding: '10px 20px', textAlign: 'left', fontSize: 11, color: '#4A5462', letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 600 }}>{h}</th>
               ))}
             </tr>
@@ -79,6 +80,11 @@ export default async function AdminProdutos({ searchParams }: PageProps) {
                   <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 99, background: p.active ? '#2CB35A22' : '#E23B3B22', color: p.active ? '#2CB35A' : '#E23B3B' }}>
                     {p.active ? 'Activo' : 'Inactivo'}
                   </span>
+                </td>
+                <td style={{ padding: '12px 20px' }}>
+                  <Link href={`/produtos/${p.id}`} style={{ fontSize: 12, color: '#F26B1F', textDecoration: 'none', fontWeight: 600 }}>
+                    Editar →
+                  </Link>
                 </td>
               </tr>
             ))}
