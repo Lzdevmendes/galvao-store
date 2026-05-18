@@ -12,9 +12,10 @@ export default async function ProdutoDetalhe({ params }: { params: Promise<{ id:
     id: string; name: string; slug: string; brand_name: string
     category: string; status: string; description: string
   }>(sql`
-    SELECT p.id, p.name, p.slug, b.name brand_name, p.category, p.status, p.description
+    SELECT p.id, p.name, p.slug, b.name brand_name, c.name category, p.status, p.description
     FROM products p
     JOIN brands b ON b.id = p.brand_id
+    LEFT JOIN categories c ON c.id = p.category_id
     WHERE p.id = ${id} LIMIT 1
   `)
   const produto = produtos[0]

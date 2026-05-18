@@ -111,7 +111,7 @@ export default async function AdminDashboard() {
                   {new Date(o.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                 </td>
                 <td style={{ padding: '12px 24px' }}>
-                  <Link href={`/admin/pedidos/${o.id}`} style={{ fontSize: 12, color: '#F26B1F', textDecoration: 'none' }}>Ver →</Link>
+                  <Link href={`/pedidos/${o.id}`} style={{ fontSize: 12, color: '#F26B1F', textDecoration: 'none' }}>Ver →</Link>
                 </td>
               </tr>
             ))}

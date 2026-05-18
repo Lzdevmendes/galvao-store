@@ -11,11 +11,12 @@ export default async function AdminProdutos({ searchParams }: PageProps) {
 
   const produtos = db.all<{
     id: string; slug: string; name: string; brand_name: string
-    category: string; active: number
+    category_name: string; status: string
     variant_count: number; total_stock: number; low_stock_count: number
     min_price: number; max_price: number
   }>(sql`
-    SELECT p.id, p.slug, p.name, b.name brand_name, p.category, p.active,
+    SELECT p.id, p.slug, p.name, b.name brand_name, c.name category_name,
+           p.status,
            COUNT(pv.id) variant_count,
            COALESCE(SUM(pv.stock - pv.stock_reserved), 0) total_stock,
            COUNT(CASE WHEN pv.stock - pv.stock_reserved <= 2 THEN 1 END) low_stock_count,
@@ -23,6 +24,7 @@ export default async function AdminProdutos({ searchParams }: PageProps) {
            MAX(pv.price_in_cents) max_price
     FROM products p
     JOIN brands b ON b.id = p.brand_id
+    LEFT JOIN categories c ON c.id = p.category_id
     LEFT JOIN product_variants pv ON pv.product_id = p.id
     ${q ? sql`WHERE p.name LIKE ${'%'+q+'%'} OR b.name LIKE ${'%'+q+'%'}` : sql``}
     GROUP BY p.id
@@ -57,13 +59,13 @@ export default async function AdminProdutos({ searchParams }: PageProps) {
           </thead>
           <tbody>
             {produtos.map(p => (
-              <tr key={p.id} style={{ borderBottom: '1px solid #141922', opacity: p.active ? 1 : 0.5 }}>
+              <tr key={p.id} style={{ borderBottom: '1px solid #141922', opacity: p.status === 'archived' ? 0.5 : 1 }}>
                 <td style={{ padding: '12px 20px' }}>
                   <p style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>{p.name}</p>
                   <p style={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', color: '#6B7280', margin: '2px 0 0' }}>{p.slug}</p>
                 </td>
                 <td style={{ padding: '12px 20px', fontSize: 13, color: '#9CA3AF' }}>{p.brand_name}</td>
-                <td style={{ padding: '12px 20px', fontSize: 12, color: '#9CA3AF', textTransform: 'capitalize' }}>{p.category}</td>
+                <td style={{ padding: '12px 20px', fontSize: 12, color: '#9CA3AF', textTransform: 'capitalize' }}>{p.category_name}</td>
                 <td style={{ padding: '12px 20px', fontSize: 13 }}>{p.variant_count}</td>
                 <td style={{ padding: '12px 20px' }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: p.total_stock <= 0 ? '#E23B3B' : p.low_stock_count > 0 ? '#F59E0B' : '#2CB35A' }}>
@@ -77,8 +79,12 @@ export default async function AdminProdutos({ searchParams }: PageProps) {
                   {p.min_price === p.max_price ? fmt(p.min_price) : `${fmt(p.min_price)} – ${fmt(p.max_price)}`}
                 </td>
                 <td style={{ padding: '12px 20px' }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 99, background: p.active ? '#2CB35A22' : '#E23B3B22', color: p.active ? '#2CB35A' : '#E23B3B' }}>
-                    {p.active ? 'Activo' : 'Inactivo'}
+                  <span style={{
+                    fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 99,
+                    background: p.status === 'published' ? '#2CB35A22' : p.status === 'archived' ? '#E23B3B22' : '#F59E0B22',
+                    color:      p.status === 'published' ? '#2CB35A'   : p.status === 'archived' ? '#E23B3B'   : '#F59E0B',
+                  }}>
+                    {p.status === 'published' ? 'Publicado' : p.status === 'archived' ? 'Arquivado' : 'Rascunho'}
                   </span>
                 </td>
                 <td style={{ padding: '12px 20px' }}>

@@ -4,7 +4,7 @@ import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 
 const BUCKET    = 'product-images'
-const MAX_SIZE  = 5 * 1024 * 1024
+const MAX_SIZE  = 10 * 1024 * 1024
 const ALLOWED   = ['image/jpeg', 'image/png', 'image/webp']
 
 export async function POST(req: NextRequest) {
