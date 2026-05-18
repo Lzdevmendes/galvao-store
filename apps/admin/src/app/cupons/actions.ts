@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache'
 
 export async function toggleCoupon(couponId: string, active: boolean) {
   db.run(sql`UPDATE coupons SET active = ${active ? 0 : 1} WHERE id = ${couponId}`)
-  revalidatePath('/admin/cupons')
+  revalidatePath('/cupons')
   return { success: true }
 }
 

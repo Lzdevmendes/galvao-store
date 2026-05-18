@@ -3,8 +3,9 @@ import { createClient } from '@/lib/supabase/server'
 
 const NAV = [
   { href: '/',                icon: '📊', label: 'Dashboard'     },
-  { href: '/pedidos',         icon: '📦', label: 'Pedidos'       },
+  { href: '/pedidos',         icon: '🛒', label: 'Pedidos'       },
   { href: '/produtos',        icon: '👟', label: 'Produtos'      },
+  { href: '/estoque',         icon: '📦', label: 'Estoque'       },
   { href: '/cupons',          icon: '🏷️', label: 'Cupons'        },
   { href: '/clientes',        icon: '👥', label: 'Clientes'      },
   { href: '/relatorios',      icon: '📈', label: 'Relatórios'    },

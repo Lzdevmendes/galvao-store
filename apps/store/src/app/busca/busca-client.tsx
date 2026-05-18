@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useTransition } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ProductCard, type ProductCardData } from '@/components/catalog/product-card'
+import { SearchInput } from './search-input'
 
 interface Props {
   q:               string
@@ -75,6 +76,9 @@ export function BuscaClient({
         ) : (
           <h1 style={{ fontFamily: 'var(--font-stencil)', fontSize: 56 }}>BUSCA</h1>
         )}
+        <div style={{ marginTop: 24, maxWidth: 640 }}>
+          <SearchInput defaultValue={q} />
+        </div>
       </motion.div>
 
       {/* ── Filtros ── */}
