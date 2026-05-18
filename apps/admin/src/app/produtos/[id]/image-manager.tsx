@@ -116,12 +116,23 @@ export default function ImageManager({ productId, initialImages }: { productId: 
               <div key={img.id} style={{ borderRadius: 10, overflow: 'hidden', border: `2px solid ${img.is_primary ? '#F26B1F' : '#1E2530'}`, background: '#141922', transition: 'border-color .15s' }}>
                 {/* Imagem */}
                 <div style={{ position: 'relative', aspectRatio: '1', background: '#0F1318', overflow: 'hidden' }}>
-                  <img
-                    src={img.url}
-                    alt={img.alt || `Imagem ${idx + 1}`}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                    onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-                  />
+                  {img.url.startsWith('http') ? (
+                    <img
+                      src={img.url}
+                      alt={img.alt || `Imagem ${idx + 1}`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    />
+                  ) : (
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#141922' }}>
+                      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#2A3340" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                      </svg>
+                      <span style={{ fontSize: 10, fontFamily: 'JetBrains Mono, monospace', color: '#2A3340', textAlign: 'center', padding: '0 12px', wordBreak: 'break-all', lineHeight: 1.4 }}>
+                        {img.url.split('/').pop()}
+                      </span>
+                      <span style={{ fontSize: 9, color: '#1E2530', textAlign: 'center' }}>imagem local · faça re-upload</span>
+                    </div>
+                  )}
                   {/* Badges */}
                   <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                     {img.is_primary ? (
@@ -136,24 +147,25 @@ export default function ImageManager({ productId, initialImages }: { productId: 
                 </div>
 
                 {/* Acções */}
-                <div style={{ padding: '8px 10px', display: 'flex', gap: 6, alignItems: 'center', background: '#0F1318' }}>
-                  {/* Reorder */}
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    <button onClick={() => move(idx, -1)} disabled={idx === 0} title="Mover para a esquerda" style={actionBtn(idx === 0, 'neutral')}>‹</button>
-                    <button onClick={() => move(idx, 1)} disabled={idx === images.length - 1} title="Mover para a direita" style={actionBtn(idx === images.length - 1, 'neutral')}>›</button>
-                  </div>
+                <div style={{ padding: '8px 10px', display: 'flex', gap: 4, background: '#0F1318' }}>
+                  <button onClick={() => move(idx, -1)} disabled={idx === 0}
+                    title="Mover para a esquerda"
+                    style={actionBtn(idx === 0, 'neutral')}>←</button>
 
-                  {/* Set primary */}
-                  {!img.is_primary && (
-                    <button onClick={() => setPrimary(img.id)} title="Definir como principal" style={{ ...actionBtn(false, 'primary'), flex: 1, fontSize: 11 }}>
-                      ★ Principal
-                    </button>
-                  )}
+                  <button onClick={() => move(idx, 1)} disabled={idx === images.length - 1}
+                    title="Mover para a direita"
+                    style={actionBtn(idx === images.length - 1, 'neutral')}>→</button>
 
-                  {/* Delete */}
-                  <button onClick={() => deleteImage(img.id)} title="Remover imagem" style={{ ...actionBtn(false, 'danger'), marginLeft: 'auto' }}>
-                    ✕
-                  </button>
+                  <button
+                    onClick={() => !img.is_primary && setPrimary(img.id)}
+                    disabled={!!img.is_primary}
+                    title={img.is_primary ? 'Já é a imagem principal' : 'Definir como principal'}
+                    style={{ ...actionBtn(!!img.is_primary, img.is_primary ? 'active' : 'primary'), flex: 1, fontSize: 11 }}
+                  >{img.is_primary ? '★ Principal' : '☆ Principal'}</button>
+
+                  <button onClick={() => deleteImage(img.id)}
+                    title="Remover imagem"
+                    style={actionBtn(false, 'danger')}>✕</button>
                 </div>
               </div>
             ))}
@@ -185,23 +197,26 @@ export default function ImageManager({ productId, initialImages }: { productId: 
   )
 }
 
-function actionBtn(disabled: boolean, variant: 'neutral' | 'primary' | 'danger'): React.CSSProperties {
+function actionBtn(disabled: boolean, variant: 'neutral' | 'primary' | 'active' | 'danger'): React.CSSProperties {
   const colors = {
-    neutral: { bg: '#1E2530', color: disabled ? '#2A3340' : '#9CA3AF', hover: '#2A3340' },
-    primary: { bg: '#F26B1F22', color: '#F26B1F', hover: '#F26B1F33' },
-    danger:  { bg: '#E23B3B22', color: '#E23B3B', hover: '#E23B3B33' },
+    neutral: { bg: '#1E2530',    color: disabled ? '#2A3340' : '#9CA3AF' },
+    primary: { bg: '#F26B1F22',  color: '#F26B1F' },
+    active:  { bg: '#F26B1F',    color: '#fff' },   // estrela já é principal
+    danger:  { bg: '#E23B3B22',  color: '#E23B3B' },
   }
   const c = colors[variant]
   return {
-    padding: '5px 10px',
+    padding: '7px 12px',
     borderRadius: 6,
     border: 'none',
     background: c.bg,
     color: c.color,
     fontSize: 13,
     fontWeight: 700,
-    cursor: disabled ? 'not-allowed' : 'pointer',
+    cursor: disabled ? 'default' : 'pointer',
     lineHeight: 1,
-    transition: 'background .1s',
+    whiteSpace: 'nowrap',
+    transition: 'opacity .1s',
+    opacity: disabled ? 0.3 : 1,
   }
 }
