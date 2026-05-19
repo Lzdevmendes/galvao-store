@@ -7,7 +7,7 @@ function Stat({ label, value, sub, color = '#F8F9FB', href, icon }: {
   label: string; value: string; sub?: string; color?: string; href?: string; icon: string
 }) {
   const inner = (
-    <div style={{
+    <div className={href ? 'stat-card stat-card--link' : 'stat-card'} style={{
       background: '#0F1318',
       border: '1px solid #1E2530',
       borderRadius: 14,
@@ -15,17 +15,8 @@ function Stat({ label, value, sub, color = '#F8F9FB', href, icon }: {
       cursor: href ? 'pointer' : 'default',
       position: 'relative',
       overflow: 'hidden',
-      transition: 'border-color .15s, transform .15s',
-    }}
-      onMouseEnter={href ? (e => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = `${color}55`
-        ;(e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'
-      }) : undefined}
-      onMouseLeave={href ? (e => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = '#1E2530'
-        ;(e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'
-      }) : undefined}
-    >
+      transition: 'border-color .2s, transform .2s',
+    }}>
       {/* Glow de fundo */}
       <div style={{
         position: 'absolute', top: -20, right: -20,

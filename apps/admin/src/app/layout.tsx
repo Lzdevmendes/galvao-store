@@ -28,6 +28,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           }
           .admin-nav-link:hover { color: #F8F9FB; background: rgba(242,107,31,.08); }
           ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-thumb { background: #2A323D; border-radius: 99px; }
+          .stat-card--link:hover { transform: translateY(-2px); border-color: #F26B1F44 !important; }
         `}</style>
       </head>
       <body>
