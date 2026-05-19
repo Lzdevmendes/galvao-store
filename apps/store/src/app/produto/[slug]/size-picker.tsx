@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { fmt } from '@/lib/utils'
 import { useCartStore } from '@/store/cart'
+import { NotifyMeButton } from '@/components/catalog/notify-me-button'
 
 interface Variant {
   id: string
@@ -120,17 +121,16 @@ export function SizePicker({ variants, productId, productSlug, productName, bran
           {colorVariants.map(v => (
             <button
               key={v.size}
-              disabled={!v.available}
               onClick={() => setSelectedSize(v.size)}
               title={!v.available ? `Tamanho ${v.size} esgotado` : v.stock === 1 ? 'Última unidade!' : undefined}
               style={{
                 width:48, height:42, borderRadius:8, fontSize:13, fontFamily:'var(--font-mono)', fontWeight:600,
-                cursor:        v.available ? 'pointer' : 'not-allowed',
+                cursor:        'pointer',
                 transition:    'all .15s',
-                opacity:       v.available ? 1 : .32,
+                opacity:       v.available ? 1 : .45,
                 textDecoration:v.available ? 'none' : 'line-through',
                 border:     selectedSize === v.size ? '2px solid var(--brand-orange)' : '2px solid var(--border-strong)',
-                background: selectedSize === v.size ? '#0B0E12' : 'transparent',
+                background: selectedSize === v.size ? (v.available ? '#0B0E12' : '#1a0a00') : 'transparent',
                 color:      selectedSize === v.size ? '#fff' : v.available ? 'var(--fg)' : 'var(--fg-faint)',
                 boxShadow:  selectedSize === v.size ? '0 0 0 3px rgba(242,107,31,.18)' : 'none',
               }}
@@ -147,36 +147,42 @@ export function SizePicker({ variants, productId, productSlug, productName, bran
       </div>
 
       {/* CTAs */}
-      <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-        <button
-          disabled={!selectedSize}
-          onClick={handleAddToCart}
-          style={{
-            width:'100%', padding:'18px', borderRadius:12, fontSize:16, fontFamily:'var(--font-ui)', fontWeight:700,
-            cursor:     selectedSize ? 'pointer' : 'not-allowed',
-            border:     'none', transition:'all .15s',
-            background: selectedSize ? 'var(--brand-orange)' : 'var(--border)',
-            color:      '#fff', opacity: selectedSize ? 1 : .6,
-          }}
-        >
-          Adicionar ao carrinho
-        </button>
-        <button
-          disabled={!selectedSize}
-          onClick={handleBuyNow}
-          style={{
-            width:'100%', padding:'18px', borderRadius:12, fontSize:16, fontFamily:'var(--font-ui)', fontWeight:700,
-            cursor:     selectedSize ? 'pointer' : 'not-allowed',
-            border:     '2px solid var(--ink-950)', transition:'all .15s',
-            background: selectedSize ? '#0B0E12' : 'transparent',
-            color:      selectedSize ? '#fff' : 'var(--fg-muted)',
-          }}
-        >
-          Comprar agora
-        </button>
-      </div>
+      {selectedVariant && !selectedVariant.available ? (
+        <div style={{ marginTop: 4 }}>
+          <NotifyMeButton variantId={selectedVariant.id} productName={productName} />
+        </div>
+      ) : (
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          <button
+            disabled={!selectedSize}
+            onClick={handleAddToCart}
+            style={{
+              width:'100%', padding:'18px', borderRadius:12, fontSize:16, fontFamily:'var(--font-ui)', fontWeight:700,
+              cursor:     selectedSize ? 'pointer' : 'not-allowed',
+              border:     'none', transition:'all .15s',
+              background: selectedSize ? 'var(--brand-orange)' : 'var(--border)',
+              color:      '#fff', opacity: selectedSize ? 1 : .6,
+            }}
+          >
+            Adicionar ao carrinho
+          </button>
+          <button
+            disabled={!selectedSize}
+            onClick={handleBuyNow}
+            style={{
+              width:'100%', padding:'18px', borderRadius:12, fontSize:16, fontFamily:'var(--font-ui)', fontWeight:700,
+              cursor:     selectedSize ? 'pointer' : 'not-allowed',
+              border:     '2px solid var(--ink-950)', transition:'all .15s',
+              background: selectedSize ? '#0B0E12' : 'transparent',
+              color:      selectedSize ? '#fff' : 'var(--fg-muted)',
+            }}
+          >
+            Comprar agora
+          </button>
+        </div>
+      )}
 
-      {selectedVariant && selectedVariant.stock <= 3 && selectedVariant.available && (
+      {selectedVariant && selectedVariant.available && selectedVariant.stock <= 3 && (
         <div style={{ marginTop:12, fontFamily:'var(--font-ui)', fontSize:12, color:'#E23B3B', fontWeight:600 }}>
           ⚠️ Restam apenas {selectedVariant.stock} unidade{selectedVariant.stock > 1 ? 's' : ''}!
         </div>

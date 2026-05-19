@@ -6,6 +6,8 @@ import { sql } from 'drizzle-orm'
 import { ProductCard, type ProductCardData } from '@/components/catalog/product-card'
 import { SizePicker } from './size-picker'
 import { ProductGallery } from './product-gallery'
+import { WishlistButton } from '@/components/catalog/wishlist-button'
+import { createClient } from '@/lib/supabase/server'
 
 export const revalidate = 300
 
@@ -116,6 +118,13 @@ export default async function ProdutoPage(
   const specs: Record<string, string> = JSON.parse(product.specs ?? '{}')
   const primaryImage = images.find(i => i.is_primary) ?? images[0]
 
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const isLoggedIn = !!user
+  const initialFavorited = user ? db.all(sql`
+    SELECT id FROM wishlists WHERE user_id = ${user.id} AND product_id = ${product.id} LIMIT 1
+  `).length > 0 : false
+
   const badgeEl =
     product.badge === 'new'        ? <span style={{ background:'#0B0E12', color:'#fff', padding:'6px 14px', borderRadius:999, fontSize:12, fontWeight:700, fontFamily:'var(--font-ui)', letterSpacing:'.04em' }}>LANÇAMENTO</span>
   : product.badge === 'sale'       ? <span style={{ background:'#E23B3B', color:'#fff', padding:'6px 14px', borderRadius:999, fontSize:12, fontWeight:700, fontFamily:'var(--font-ui)' }}>OFERTA</span>
@@ -194,10 +203,17 @@ export default async function ProdutoPage(
             {badgeEl && <div style={{ marginLeft: 'auto' }}>{badgeEl}</div>}
           </div>
 
-          {/* Name */}
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px,3vw,30px)', fontWeight: 900, lineHeight: 1.15, margin: '0 0 20px', color: 'var(--fg)' }}>
-            {product.name}
-          </h1>
+          {/* Name + Wishlist */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 20 }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px,3vw,30px)', fontWeight: 900, lineHeight: 1.15, margin: 0, color: 'var(--fg)', flex: 1 }}>
+              {product.name}
+            </h1>
+            <WishlistButton
+              productId={product.id}
+              initialFavorited={initialFavorited}
+              isLoggedIn={isLoggedIn}
+            />
+          </div>
 
           {/* Size picker + Price + CTAs (client component) */}
           <SizePicker
