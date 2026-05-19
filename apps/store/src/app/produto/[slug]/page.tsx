@@ -35,16 +35,36 @@ export async function generateMetadata(
   { params }: { params: Promise<{ slug: string }> }
 ): Promise<Metadata> {
   const { slug } = await params
-  const [p] = db.all<ProductRow>(sql`
-    SELECT p.*, b.name as brand_name FROM products p
+  const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://galvaosstore.com.br'
+
+  const [p] = db.all<ProductRow & { meta_title: string | null; meta_description: string | null; meta_image: string | null; primary_image: string | null }>(sql`
+    SELECT p.*, b.name as brand_name,
+      (SELECT url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as primary_image
+    FROM products p
     JOIN brands b ON b.id = p.brand_id
     WHERE p.slug = ${slug}
   `)
-  if (!p) return {}
+  if (!p) return { title: 'Produto não encontrado' }
+
+  const title       = p.meta_title       ?? `${p.name} | Galvão's Store`
+  const description = (p.meta_description ?? p.description).slice(0, 160)
+  const image       = p.meta_image ?? p.primary_image
+
   return {
-    title: `${p.name} — ${p.brand_name}`,
-    description: p.description.slice(0, 160),
-    openGraph: { title: `${p.name}`, description: p.description.slice(0, 160) },
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `${BASE}/produto/${slug}`,
+      ...(image && { images: [{ url: image, width: 1200, height: 630, alt: p.name }] }),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      ...(image && { images: [image] }),
+    },
   }
 }
 
