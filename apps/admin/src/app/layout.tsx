@@ -1,16 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-
-const NAV = [
-  { href: '/',                icon: '📊', label: 'Dashboard'     },
-  { href: '/pedidos',         icon: '🛒', label: 'Pedidos'       },
-  { href: '/produtos',        icon: '👟', label: 'Produtos'      },
-  { href: '/estoque',         icon: '📦', label: 'Estoque'       },
-  { href: '/cupons',          icon: '🏷️', label: 'Cupons'        },
-  { href: '/clientes',        icon: '👥', label: 'Clientes'      },
-  { href: '/relatorios',      icon: '📈', label: 'Relatórios'    },
-  { href: '/configuracoes',   icon: '⚙️', label: 'Configurações' },
-]
+import { AdminNav } from './nav'
+import { ToastProvider } from '@/lib/toast'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   let user = null
@@ -59,14 +50,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </div>
 
             {/* Nav */}
-            <nav style={{ padding: '12px 0', flex: 1 }}>
-              {NAV.map(item => (
-                <Link key={item.href} href={item.href} className="admin-nav-link">
-                  <span style={{ fontSize: 16 }}>{item.icon}</span>
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
+            <AdminNav />
 
             {/* User */}
             <div style={{ padding: '16px 20px', borderTop: '1px solid #1E2530' }}>
@@ -81,7 +65,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
           {/* ── Content ── */}
           <main style={{ flex: 1, padding: '32px', overflow: 'auto', minWidth: 0 }}>
-            {children}
+            <ToastProvider>{children}</ToastProvider>
           </main>
         </div>
       </body>

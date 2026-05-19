@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { adjustStock } from './actions'
+import { useToast } from '@/lib/toast'
 
 const REASONS = [
   { value: 'purchase',   label: 'Compra'        },
@@ -29,9 +30,8 @@ export function AdjustForm({ variantId }: { variantId: string }) {
   const [delta, setDelta]     = useState<number>(0)
   const [reason, setReason]   = useState<Reason>('adjustment')
   const [note, setNote]       = useState('')
-  const [error, setError]     = useState('')
-  const [ok, setOk]           = useState('')
   const [pending, start]      = useTransition()
+  const toast                 = useToast()
 
   function reset() {
     setDelta(0)
@@ -49,10 +49,10 @@ export function AdjustForm({ variantId }: { variantId: string }) {
     start(async () => {
       const res = await adjustStock(variantId, delta, reason, note)
       if (res.success) {
-        setOk('Estoque ajustado.')
-        setTimeout(reset, 1200)
+        toast.success('Estoque ajustado com sucesso.')
+        setTimeout(reset, 300)
       } else {
-        setError(res.error ?? 'Erro desconhecido.')
+        toast.error(res.error ?? 'Erro desconhecido.')
       }
     })
   }
@@ -123,10 +123,7 @@ export function AdjustForm({ variantId }: { variantId: string }) {
         />
       </div>
 
-      {error && <p style={{ fontSize: 11, color: '#E23B3B', margin: 0 }}>{error}</p>}
-      {ok    && <p style={{ fontSize: 11, color: '#2CB35A', margin: 0 }}>{ok}</p>}
-
-      <div style={{ display: 'flex', gap: 6 }}>
+<div style={{ display: 'flex', gap: 6 }}>
         <button
           type="button"
           onClick={reset}
