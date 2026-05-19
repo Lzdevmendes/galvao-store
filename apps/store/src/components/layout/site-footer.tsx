@@ -19,7 +19,8 @@ const BRANDS = [
 const SUPPORT = [
   { label: "Trocas e Devoluções",    href: "/politica-trocas"  },
   { label: "Rastrear Pedido",        href: "/conta/pedidos"    },
-  { label: "Tabela de Tamanhos",     href: "/tamanhos"         },
+  { label: "Tabela de Tamanhos",     href: "/
+    tamanhos"         },
   { label: "Política de Privacidade",href: "/privacidade"      },
   { label: "Termos de Uso",          href: "/termos"           },
   { label: "Fale Conosco",           href: "/contato"          },

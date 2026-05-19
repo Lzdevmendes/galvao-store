@@ -122,7 +122,10 @@ export default async function ProdutoPage(
   const { data: { user } } = await supabase.auth.getUser()
   const isLoggedIn = !!user
   const initialFavorited = user ? db.all(sql`
-    SELECT id FROM wishlists WHERE user_id = ${user.id} AND product_id = ${product.id} LIMIT 1
+    SELECT w.id FROM wishlists w
+    JOIN product_variants pv ON pv.id = w.variant_id
+    WHERE w.user_id = ${user.id} AND pv.product_id = ${product.id}
+    LIMIT 1
   `).length > 0 : false
 
   const badgeEl =
