@@ -53,8 +53,6 @@ export async function middleware(request: NextRequest) {
   // Refresha a sessão sem expor dados sensíveis
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { pathname } = request.nextUrl
-
   // Rotas protegidas → redireciona para login
   if (!user && pathname.startsWith('/conta')) {
     const url = request.nextUrl.clone()
