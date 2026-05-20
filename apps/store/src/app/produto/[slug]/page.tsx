@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Fragment } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { db } from '@/lib/db'
@@ -260,10 +261,10 @@ export default async function ProdutoPage(
               </h3>
               <dl style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '8px 24px', margin: 0 }}>
                 {Object.entries(specs).map(([k, v]) => (
-                  <>
-                    <dt key={`k-${k}`} style={{ fontFamily: 'var(--font-ui)', fontSize: 12, color: 'var(--fg-muted)', fontWeight: 600 }}>{k}</dt>
-                    <dd key={`v-${k}`} style={{ fontFamily: 'var(--font-ui)', fontSize: 13, color: 'var(--fg)', margin: 0 }}>{v}</dd>
-                  </>
+                  <Fragment key={k}>
+                    <dt style={{ fontFamily: 'var(--font-ui)', fontSize: 12, color: 'var(--fg-muted)', fontWeight: 600 }}>{k}</dt>
+                    <dd style={{ fontFamily: 'var(--font-ui)', fontSize: 13, color: 'var(--fg)', margin: 0 }}>{v}</dd>
+                  </Fragment>
                 ))}
               </dl>
             </div>
