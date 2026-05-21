@@ -19,7 +19,7 @@ function Stars({ value, onChange }: { value: number; onChange: (v: number) => vo
   )
 }
 
-export function ReviewForm({ orderId, customerId, items }: { orderId: string; customerId: string; items: Item[] }) {
+export function ReviewForm({ orderId, items }: { orderId: string; items: Item[] }) {
   const [ratings, setRatings] = useState<Record<string, number>>({})
   const [bodies, setBodies]   = useState<Record<string, string>>({})
   const [pending, start]      = useTransition()
@@ -33,7 +33,7 @@ export function ReviewForm({ orderId, customerId, items }: { orderId: string; cu
       body:       bodies[i.product_id] ?? '',
     }))
     start(async () => {
-      await submitReviews({ orderId, customerId, reviews })
+      await submitReviews({ orderId, reviews })
       router.push('/conta/pedidos?avaliado=1')
     })
   }
