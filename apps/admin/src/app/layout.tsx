@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { AdminNav } from './nav'
 import { ToastProvider } from '@/lib/toast'
+import { NavProgress } from '@/components/nav-progress'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   let user = null
@@ -32,6 +33,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         `}</style>
       </head>
       <body>
+        <NavProgress />
         <div style={{ display: 'flex', minHeight: '100vh' }}>
           {/* ── Sidebar ── */}
           <aside style={{
