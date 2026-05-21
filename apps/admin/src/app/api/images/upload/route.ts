@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
+import { requireAdmin } from '@/lib/require-admin'
 
 const BUCKET    = 'product-images'
 const MAX_SIZE  = 10 * 1024 * 1024
 const ALLOWED   = ['image/jpeg', 'image/png', 'image/webp']
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAdmin()
+  if (auth instanceof NextResponse) return auth
+
   const form      = await req.formData()
   const file      = form.get('file') as File | null
   const productId = form.get('productId') as string | null

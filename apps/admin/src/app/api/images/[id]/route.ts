@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
+import { requireAdmin } from '@/lib/require-admin'
 
 const BUCKET = 'product-images'
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAdmin()
+  if (auth instanceof NextResponse) return auth
+
   const { id } = await params
 
   const rows = db.all<{ url: string; product_id: string; is_primary: number }>(sql`
