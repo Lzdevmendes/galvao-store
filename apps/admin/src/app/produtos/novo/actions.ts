@@ -36,8 +36,10 @@ export async function createProduct(formData: FormData) {
   const promoInCents = promoStr ? Math.round(parseFloat(promoStr) * 100) : null
 
   const baseSlug  = slugify(name)
-  const skuBase   = `${brandId.toUpperCase().slice(0, 3)}-${baseSlug.toUpperCase().slice(0, 12).replace(/-/g, '')}`
   const productId = baseSlug
+  const skuRaw    = baseSlug.toUpperCase().replace(/-/g, '').slice(0, 16)
+  const suffix    = Math.random().toString(36).slice(2, 5).toUpperCase()
+  const skuBase   = `${brandId.toUpperCase().slice(0, 3)}-${skuRaw}-${suffix}`
 
   const existing = db.all(sql`SELECT id FROM products WHERE id = ${productId} OR slug = ${baseSlug} LIMIT 1`)
   if (existing.length > 0) return { error: 'Já existe um produto com este nome/slug.' }
