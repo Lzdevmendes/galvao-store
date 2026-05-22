@@ -21,7 +21,7 @@ export default function CadastroPage() {
     e.preventDefault()
     setError('')
     if (password !== confirm) { setError('As senhas não coincidem.'); return }
-    if (password.length < 6)  { setError('A senha deve ter no mínimo 6 caracteres.'); return }
+    if (password.length < 8)  { setError('A senha deve ter no mínimo 8 caracteres.'); return }
 
     setLoading(true)
     const supabase = createClient()
@@ -66,7 +66,7 @@ export default function CadastroPage() {
       <form onSubmit={handleCadastro} style={{ display:'flex', flexDirection:'column', gap:16 }}>
         <Field label="Nome completo" type="text"     value={name}     onChange={setName}     placeholder="João Silva" />
         <Field label="E-mail"        type="email"    value={email}    onChange={setEmail}    placeholder="seu@email.com" />
-        <Field label="Senha"         type="password" value={password} onChange={setPassword} placeholder="Mínimo 6 caracteres" />
+        <Field label="Senha"         type="password" value={password} onChange={setPassword} placeholder="Mínimo 8 caracteres" />
         <Field label="Confirmar senha" type="password" value={confirm} onChange={setConfirm} placeholder="••••••••" />
 
         {error && <ErrorMsg>{error}</ErrorMsg>}
