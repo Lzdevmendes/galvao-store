@@ -1,12 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import Image from 'next/image'
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import { ProductCard, type ProductCardData } from '@/components/catalog/product-card'
 import { queryBrandsWithCount, queryCategoriesWithCount } from '@/lib/catalog-query'
-import { fmt } from '@/lib/utils'
 import { HomeAnimations } from '@/components/home-animations'
+import { HeroParallax } from '@/components/hero-parallax'
 
 export const revalidate = 300
 
@@ -87,33 +86,8 @@ export default async function HomePage() {
     <>
       <HomeAnimations />
 
-      {/* ── Hero ── */}
-      <section className="hero">
-        <div className="container">
-          <div className="row">
-            <div>
-              <div className="pre">PRONTA ENTREGA · LANÇAMENTO 2026</div>
-              <h1>JOGO<br /><span className="t">RÁPIDO.</span></h1>
-              <p>Phantom GX III, F50 Elite, Future 8 Ultimate. As chuteiras que fizeram a temporada já estão na Galvão&apos;s.</p>
-              <div className="ctas">
-                <Link href="/produtos" className="btn btn-primary btn-lg">Comprar agora</Link>
-                <Link href="/busca?sort=lancamentos" className="btn btn-lg" style={{ background:'rgba(255,255,255,.1)', color:'#fff', border:'1px solid rgba(255,255,255,.2)' }}>Ver lançamentos</Link>
-              </div>
-            </div>
-            <div className="photo">
-              {heroProduct && (
-                <Image src={heroProduct.image_url} alt={heroProduct.image_alt} width={500} height={500} priority style={{ width:'95%', height:'auto' }} />
-              )}
-              {heroProduct && (
-                <div className="price-tag">
-                  <span className="small">A PARTIR DE</span>
-                  {fmt(heroProduct.min_promo ?? heroProduct.min_price)}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* ── Hero Parallax 3D ── */}
+      <HeroParallax minPrice={heroProduct ? (heroProduct.min_promo ?? heroProduct.min_price) : undefined} />
 
       {/* ── Trust bar ── */}
       <div className="trust">
