@@ -52,7 +52,7 @@ export function SalesDashboardChart({ data }: { data: SalesPoint[] }) {
           <Tooltip
             contentStyle={{ background: '#0F1318', border: '1px solid #1E2530', borderRadius: 8, fontSize: 12 }}
             labelStyle={{ color: '#9CA3AF', marginBottom: 4 }}
-            formatter={(v: number) => tab === 'R$' ? [`R$ ${(v / 100).toFixed(2)}`, ''] : [v, '']}
+            formatter={(v) => tab === 'R$' ? [`R$ ${(Number(v) / 100).toFixed(2)}`, ''] : [Number(v), '']}
           />
           <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 12 }}
             formatter={v => <span style={{ color: '#9CA3AF' }}>{v === 'atual' ? 'Atual' : 'Período anterior'}</span>}

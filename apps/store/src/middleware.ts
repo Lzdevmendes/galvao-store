@@ -4,9 +4,8 @@ import { NextResponse, type NextRequest } from 'next/server'
 const loginAttempts = new Map<string, { count: number; firstAt: number }>()
 
 export async function middleware(request: NextRequest) {
-  const { pathname, method } = request.nextUrl
-  // @ts-expect-error method is available at runtime
-  const reqMethod = request.method ?? method
+  const { pathname } = request.nextUrl
+  const reqMethod = request.method
 
   if (pathname === '/auth/login' && reqMethod === 'POST') {
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ?? 'unknown'

@@ -1,12 +1,11 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { AuthShell, Field, ErrorMsg, SuccessMsg, SubmitBtn, Divider, GoogleBtn } from '../login/page'
 
 export default function CadastroPage() {
-  const router       = useRouter()
   const searchParams = useSearchParams()
   const redirect     = searchParams.get('redirect') ?? '/conta'
 

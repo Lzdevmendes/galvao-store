@@ -37,15 +37,11 @@ export function AdjustForm({ variantId }: { variantId: string }) {
     setDelta(0)
     setReason('adjustment')
     setNote('')
-    setError('')
-    setOk('')
     setOpen(false)
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setError('')
-    setOk('')
     start(async () => {
       const res = await adjustStock(variantId, delta, reason, note)
       if (res.success) {
