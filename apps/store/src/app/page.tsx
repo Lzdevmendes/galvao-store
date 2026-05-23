@@ -7,6 +7,7 @@ import { ProductCard, type ProductCardData } from '@/components/catalog/product-
 import { queryBrandsWithCount, queryCategoriesWithCount } from '@/lib/catalog-query'
 import { fmt } from '@/lib/utils'
 import { HomeAnimations } from '@/components/home-animations'
+import { HomeNewsletter } from '@/components/home-newsletter'
 
 export const revalidate = 300
 
@@ -173,18 +174,7 @@ export default async function HomePage() {
 
         {/* ── Newsletter ── */}
         <div style={{ margin:'48px 0' }}>
-          <div className="cta-banner">
-            <div>
-              <h3>BORA<br />JOGAR.</h3>
-              <p>Cadastra teu e-mail. Avisamos em primeira mão dos lançamentos e ofertas relâmpago.</p>
-            </div>
-            <div className="right">
-              <input type="email" placeholder="seu@email.com" required
-                style={{ width:'100%', padding:'14px 16px', border:'1px solid rgba(255,255,255,.3)', borderRadius:10, background:'rgba(255,255,255,.15)', color:'#fff', fontSize:14, fontFamily:'inherit', outline:'none', marginBottom:10, display:'block' }} />
-              <button className="btn btn-lg" style={{ background:'#fff', color:'#0B0E12', width:'100%' }}>Quero entrar →</button>
-              <p style={{ marginTop:8, fontSize:12, opacity:.8 }}>Já são 12.430 craques no time.</p>
-            </div>
-          </div>
+          <HomeNewsletter />
         </div>
 
         {/* ── Mais vendidas ── */}
