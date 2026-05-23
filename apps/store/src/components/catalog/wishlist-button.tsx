@@ -3,25 +3,27 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-export function WishlistButton({ productId, initialFavorited, isLoggedIn }: {
+export function WishlistButton({ productId, initialFavorited = false, isLoggedIn: _ = false }: {
   productId: string
-  initialFavorited: boolean
-  isLoggedIn: boolean
+  initialFavorited?: boolean
+  isLoggedIn?: boolean
 }) {
   const [favorited, setFavorited] = useState(initialFavorited)
   const router = useRouter()
 
-  async function toggle() {
-    if (!isLoggedIn) { router.push('/auth/login'); return }
+  async function toggle(e?: React.MouseEvent) {
+    e?.preventDefault()
+    e?.stopPropagation()
     const next = !favorited
-    setFavorited(next) // optimistic — sem delay
+    setFavorited(next)
     try {
       const res = await fetch('/api/favoritos', {
         method: next ? 'POST' : 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId }),
       })
-      if (!res.ok) setFavorited(!next) // reverte se falhar
+      if (res.status === 401) { setFavorited(!next); router.push('/auth/login'); return }
+      if (!res.ok) setFavorited(!next)
     } catch {
       setFavorited(!next)
     }

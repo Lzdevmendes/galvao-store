@@ -2,9 +2,9 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { fmt } from '@/lib/utils'
+import { WishlistButton } from './wishlist-button'
 
 export interface ProductCardData {
   id: string
@@ -18,8 +18,7 @@ export interface ProductCardData {
   min_promo: number | null
 }
 
-export function ProductCard({ p }: { p: ProductCardData }) {
-  const [wishlisted, setWishlisted] = useState(false)
+export function ProductCard({ p, initialFavorited }: { p: ProductCardData; initialFavorited?: boolean }) {
   const hasValidPromo = p.min_promo != null && p.min_promo < p.min_price
   const active = hasValidPromo ? p.min_promo! : p.min_price
   const pix    = Math.round(active * 0.95)
@@ -42,18 +41,7 @@ export function ProductCard({ p }: { p: ProductCardData }) {
         <div className="img">
           <div className="top-tags">
             {badgeEl}
-            <motion.button
-              onClick={e => { e.preventDefault(); setWishlisted(w => !w) }}
-              whileTap={{ scale: 1.3 }}
-              animate={{ scale: wishlisted ? [1, 1.25, 1] : 1 }}
-              className="heart"
-              aria-label="Favorito"
-              style={{ color: wishlisted ? '#E23B3B' : undefined, borderColor: wishlisted ? '#E23B3B' : undefined }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill={wishlisted ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
-                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/>
-              </svg>
-            </motion.button>
+            <WishlistButton productId={p.id} initialFavorited={initialFavorited ?? false} />
           </div>
           {p.image_url && (
             <Image
