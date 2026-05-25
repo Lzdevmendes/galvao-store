@@ -112,30 +112,29 @@ export async function calculateShipping(
 
   if (meClientId && meClientSecret && items.length > 0) {
     try {
-      // Buscar dimensões reais das variantes
-      const meProducts: MEProduct[] = []
-      for (const item of items) {
-        const rows = await db.all<{
-          sku: string; weight_g: number; height_cm: number; width_cm: number; length_cm: number
-        }>(sql`
-          SELECT pv.sku, pv.weight_g, pv.height_cm, pv.width_cm, pv.length_cm
-          FROM product_variants pv
-          WHERE pv.id = ${item.variantId}
-          LIMIT 1
-        `)
-        const v = rows[0]
+      // Buscar dimensões de todas as variantes em uma única query (evita N+1)
+      const dimRows = await db.all<{
+        id: string; sku: string; weight_g: number; height_cm: number; width_cm: number; length_cm: number
+      }>(sql`
+        SELECT id, sku, weight_g, height_cm, width_cm, length_cm
+        FROM product_variants
+        WHERE id IN (${sql.join(items.map(i => sql`${i.variantId}`), sql`,`)})
+      `)
+      const dimMap = new Map(dimRows.map(r => [r.id, r]))
+      const meProducts: MEProduct[] = items.map(item => {
+        const v = dimMap.get(item.variantId)
         const unitPrice = item.pricePromoInCents != null && item.pricePromoInCents < item.priceInCents
           ? item.pricePromoInCents : item.priceInCents
-        meProducts.push({
+        return {
           id:             v?.sku      ?? item.variantId,
           quantity:       item.quantity,
           weightKg:       (v?.weight_g ?? 500) / 1000,
           heightCm:       v?.height_cm ?? 12,
           widthCm:        v?.width_cm  ?? 22,
           lengthCm:       v?.length_cm ?? 30,
-          insuranceValue: unitPrice / 100, // centavos → BRL
-        })
-      }
+          insuranceValue: unitPrice / 100,
+        }
+      })
 
       const quotes = await quoteMelhorEnvio(originCep, cleanCep, meProducts, meClientId, meClientSecret, sandbox)
 
@@ -275,12 +274,18 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
     const orderNumber = `GS-${new Date().getFullYear()}-${String(nextNum).padStart(6, '0')}`
     const orderId    = crypto.randomUUID()
 
-    // Validar variantes e estoque
+    // Pré-busca única de todas as variantes (evita N+1 no loop abaixo)
+    const allVariantIds = payload.cartItems.map(i => i.variantId)
+    const variantRows = await db.all<{ id: string; stock: number; stock_reserved: number; sku: string }>(sql`
+      SELECT id, stock, stock_reserved, sku
+      FROM product_variants
+      WHERE id IN (${sql.join(allVariantIds.map(id => sql`${id}`), sql`,`)})
+    `)
+    const variantMap = new Map(variantRows.map(v => [v.id, v]))
+
+    // Validar estoque usando os dados já em memória
     for (const item of payload.cartItems) {
-      const vRows = await db.all<{ stock: number; stock_reserved: number }>(sql`
-        SELECT stock, stock_reserved FROM product_variants WHERE id = ${item.variantId}
-      `)
-      const v = vRows[0]
+      const v = variantMap.get(item.variantId)
       if (!v) {
         return { success: false, error: `Produto não encontrado: ${item.productName} tam. ${item.size}. Atualize o carrinho e tente novamente.` }
       }
@@ -312,14 +317,12 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
       )
     `)
 
-    // Criar itens
-    for (const item of payload.cartItems) {
-      const price     = item.pricePromoInCents != null && item.pricePromoInCents < item.priceInCents
+    // Inserir itens em paralelo — SKU já está no variantMap, sem queries extras
+    await Promise.all(payload.cartItems.map(item => {
+      const price = item.pricePromoInCents != null && item.pricePromoInCents < item.priceInCents
         ? item.pricePromoInCents : item.priceInCents
-      const skuRows   = await db.all<{ sku: string }>(sql`SELECT sku FROM product_variants WHERE id = ${item.variantId}`)
-      const sku       = skuRows[0]?.sku ?? item.variantId
-
-      await db.run(sql`
+      const sku = variantMap.get(item.variantId)?.sku ?? item.variantId
+      return db.run(sql`
         INSERT INTO order_items (
           id, order_id, variant_id,
           product_name, product_sku, brand_name,
@@ -332,16 +335,16 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
           ${item.quantity}, ${price}, ${price * item.quantity}
         )
       `)
-    }
+    }))
 
-    // Reservar estoque (TTL 30min — liberado pelo webhook de cancelamento)
-    for (const item of payload.cartItems) {
-      await db.run(sql`
+    // Reservar estoque em paralelo
+    await Promise.all(payload.cartItems.map(item =>
+      db.run(sql`
         UPDATE product_variants
         SET stock_reserved = stock_reserved + ${item.quantity}
         WHERE id = ${item.variantId}
       `)
-    }
+    ))
 
     // Primeiro evento da timeline
     await db.run(sql`
@@ -468,14 +471,14 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
           await db.run(sql`DELETE FROM coupon_uses WHERE order_id = ${orderId}`)
           await db.run(sql`UPDATE coupons SET used_count = MAX(0, used_count - 1) WHERE id = ${payload.couponId}`)
         }
-        // Libertar stock reservado
-        for (const item of payload.cartItems) {
-          await db.run(sql`
+        // Libertar stock reservado em paralelo
+        await Promise.all(payload.cartItems.map(item =>
+          db.run(sql`
             UPDATE product_variants
             SET stock_reserved = MAX(0, stock_reserved - ${item.quantity})
             WHERE id = ${item.variantId}
           `)
-        }
+        ))
         await db.run(sql`DELETE FROM orders WHERE id = ${orderId}`)
       } catch (e) {
         console.error('[rollbackOrder] falhou:', e)
@@ -625,14 +628,14 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
             UPDATE orders SET status = 'paid', payment_id = ${String(result.id)}, paid_at = datetime('now')
             WHERE id = ${orderId}
           `)
-          for (const item of payload.cartItems) {
-            await db.run(sql`
+          await Promise.all(payload.cartItems.map(item =>
+            db.run(sql`
               UPDATE product_variants
               SET stock = stock - ${item.quantity},
                   stock_reserved = stock_reserved - ${item.quantity}
               WHERE id = ${item.variantId}
             `)
-          }
+          ))
         } else {
           await db.run(sql`UPDATE orders SET payment_id = ${String(result.id)} WHERE id = ${orderId}`)
         }

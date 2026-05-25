@@ -76,58 +76,62 @@ export default async function ProdutoPage(
 ) {
   const { slug } = await params
 
-  const [product] = await db.all<ProductRow>(sql`
-    SELECT p.id, p.slug, p.name, p.badge, p.line, p.description, p.features, p.specs,
-           p.brand_id,
-           b.name as brand_name, b.slug as brand_slug, b.gradient_css as brand_gradient,
-           c.name as category_name, c.slug as category_slug
-    FROM products p
-    JOIN brands b ON b.id = p.brand_id
-    JOIN categories c ON c.id = p.category_id
-    WHERE p.slug = ${slug} AND p.status = 'published'
-  `)
+  // Round 1 — produto + auth em paralelo (não dependem um do outro)
+  const [[product], { data: { user } }] = await Promise.all([
+    db.all<ProductRow>(sql`
+      SELECT p.id, p.slug, p.name, p.badge, p.line, p.description, p.features, p.specs,
+             p.brand_id,
+             b.name as brand_name, b.slug as brand_slug, b.gradient_css as brand_gradient,
+             c.name as category_name, c.slug as category_slug
+      FROM products p
+      JOIN brands b ON b.id = p.brand_id
+      JOIN categories c ON c.id = p.category_id
+      WHERE p.slug = ${slug} AND p.status = 'published'
+    `),
+    createClient().then(sb => sb.auth.getUser()),
+  ])
   if (!product) notFound()
+  const isLoggedIn = !!user
 
-  const images = await db.all<ImageRow>(sql`
-    SELECT id, url, alt, is_primary, sort_order FROM product_images
-    WHERE product_id = ${product.id}
-    ORDER BY is_primary DESC, sort_order ASC
-  `)
-
-  const variants = await db.all<VariantRow>(sql`
-    SELECT id, sku, size, color, price_in_cents, price_promo_in_cents, stock, available
-    FROM product_variants
-    WHERE product_id = ${product.id}
-    ORDER BY color, CAST(size AS INTEGER)
-  `)
-
-  const related = await db.all<ProductCardData>(sql`
-    SELECT p.id, p.slug, p.name, b.name as brand_name, p.badge,
-           COALESCE(pi.url, '') as image_url, COALESCE(pi.alt, p.name) as image_alt,
-           MIN(v.price_in_cents) as min_price, MIN(v.price_promo_in_cents) as min_promo
-    FROM products p
-    JOIN brands b ON b.id = p.brand_id
-    LEFT JOIN product_images pi ON pi.product_id = p.id AND pi.is_primary = 1
-    LEFT JOIN product_variants v ON v.product_id = p.id AND v.available = 1
-    WHERE p.brand_id = ${product.brand_id} AND p.id != ${product.id} AND p.status = 'published'
-    GROUP BY p.id
-    ORDER BY RANDOM()
-    LIMIT 4
-  `)
+  // Round 2 — imagens, variantes, relacionados e favoritos em paralelo
+  const [images, variants, related, favRows] = await Promise.all([
+    db.all<ImageRow>(sql`
+      SELECT id, url, alt, is_primary, sort_order FROM product_images
+      WHERE product_id = ${product.id}
+      ORDER BY is_primary DESC, sort_order ASC
+    `),
+    db.all<VariantRow>(sql`
+      SELECT id, sku, size, color, price_in_cents, price_promo_in_cents, stock, available
+      FROM product_variants
+      WHERE product_id = ${product.id}
+      ORDER BY color, CAST(size AS INTEGER)
+    `),
+    db.all<ProductCardData>(sql`
+      SELECT p.id, p.slug, p.name, b.name as brand_name, p.badge,
+             COALESCE(pi.url, '') as image_url, COALESCE(pi.alt, p.name) as image_alt,
+             MIN(v.price_in_cents) as min_price, MIN(v.price_promo_in_cents) as min_promo
+      FROM products p
+      JOIN brands b ON b.id = p.brand_id
+      LEFT JOIN product_images pi ON pi.product_id = p.id AND pi.is_primary = 1
+      LEFT JOIN product_variants v ON v.product_id = p.id AND v.available = 1
+      WHERE p.brand_id = ${product.brand_id} AND p.id != ${product.id} AND p.status = 'published'
+      GROUP BY p.id
+      ORDER BY p.id DESC
+      LIMIT 4
+    `),
+    user
+      ? db.all(sql`
+          SELECT w.id FROM wishlists w
+          JOIN product_variants pv ON pv.id = w.variant_id
+          WHERE w.user_id = ${user.id} AND pv.product_id = ${product.id}
+          LIMIT 1
+        `)
+      : Promise.resolve([]),
+  ])
 
   const features: string[] = JSON.parse(product.features ?? '[]')
   const specs: Record<string, string> = JSON.parse(product.specs ?? '{}')
   const primaryImage = images.find(i => i.is_primary) ?? images[0]
-
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  const isLoggedIn = !!user
-  const favRows = user ? await db.all(sql`
-    SELECT w.id FROM wishlists w
-    JOIN product_variants pv ON pv.id = w.variant_id
-    WHERE w.user_id = ${user.id} AND pv.product_id = ${product.id}
-    LIMIT 1
-  `) : []
   const initialFavorited = favRows.length > 0
 
   const badgeEl =
