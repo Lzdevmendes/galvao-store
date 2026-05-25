@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 const CATALOG = [
+  { label: "Todos os Produtos", href: "/produtos" },
   { label: "Chuteiras Campo", href: "/categoria/campo" },
   { label: "Chuteiras Society", href: "/categoria/society" },
   { label: "Chuteiras Futsal", href: "/categoria/futsal" },
