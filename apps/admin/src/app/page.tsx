@@ -29,13 +29,51 @@ export default async function AdminDashboard() {
   const since30   = new Date(Date.now() - 30 * 86400000).toISOString()
   const since60   = new Date(Date.now() - 60 * 86400000).toISOString()
 
-  // ── KPIs ──
-  const [todayData]      = await db.all<{ n: number; total: number }>(sql`SELECT COUNT(*) n, COALESCE(SUM(total_in_cents),0) total FROM orders WHERE DATE(created_at) = ${today}`)
-  const [yesterdayData]  = await db.all<{ n: number; total: number }>(sql`SELECT COUNT(*) n, COALESCE(SUM(total_in_cents),0) total FROM orders WHERE DATE(created_at) = ${yesterday}`)
-  const [avgTicket]      = await db.all<{ avg: number }>(sql`SELECT COALESCE(AVG(total_in_cents),0) avg FROM orders WHERE status IN ('paid','processing','shipped','delivered') AND created_at >= ${since30}`)
-  const [totalRevenue]   = await db.all<{ total: number }>(sql`SELECT COALESCE(SUM(total_in_cents),0) total FROM orders WHERE status IN ('paid','processing','shipped','delivered')`)
-  const [pendingOrders]  = await db.all<{ n: number }>(sql`SELECT COUNT(*) n FROM orders WHERE status = 'pending_payment'`)
-  const [lowStockCount]  = await db.all<{ n: number }>(sql`SELECT COUNT(*) n FROM product_variants WHERE stock - stock_reserved <= 3`)
+  // ── All queries in parallel ──
+  const [
+    [todayData], [yesterdayData], [avgTicket], [totalRevenue], [pendingOrders], [lowStockCount],
+    daily30, daily60, brandRevenue, recentOrders, criticalStock,
+  ] = await Promise.all([
+    db.all<{ n: number; total: number }>(sql`SELECT COUNT(*) n, COALESCE(SUM(total_in_cents),0) total FROM orders WHERE DATE(created_at) = ${today}`),
+    db.all<{ n: number; total: number }>(sql`SELECT COUNT(*) n, COALESCE(SUM(total_in_cents),0) total FROM orders WHERE DATE(created_at) = ${yesterday}`),
+    db.all<{ avg: number }>(sql`SELECT COALESCE(AVG(total_in_cents),0) avg FROM orders WHERE status IN ('paid','processing','shipped','delivered') AND created_at >= ${since30}`),
+    db.all<{ total: number }>(sql`SELECT COALESCE(SUM(total_in_cents),0) total FROM orders WHERE status IN ('paid','processing','shipped','delivered')`),
+    db.all<{ n: number }>(sql`SELECT COUNT(*) n FROM orders WHERE status = 'pending_payment'`),
+    db.all<{ n: number }>(sql`SELECT COUNT(*) n FROM product_variants WHERE stock - stock_reserved <= 3`),
+    db.all<{ day: string; total: number; orders: number }>(sql`
+      SELECT DATE(created_at) day, COALESCE(SUM(total_in_cents),0) total, COUNT(*) orders
+      FROM orders WHERE created_at >= ${since30}
+      GROUP BY DATE(created_at) ORDER BY day
+    `),
+    db.all<{ day: string; total: number; orders: number }>(sql`
+      SELECT DATE(created_at) day, COALESCE(SUM(total_in_cents),0) total, COUNT(*) orders
+      FROM orders WHERE created_at >= ${since60} AND created_at < ${since30}
+      GROUP BY DATE(created_at) ORDER BY day
+    `),
+    db.all<{ brand_name: string; total: number }>(sql`
+      SELECT b.name brand_name, COALESCE(SUM(oi.total_in_cents),0) total
+      FROM order_items oi
+      JOIN orders o ON o.id = oi.order_id
+      JOIN products p ON p.name = oi.product_name
+      JOIN brands b ON b.id = p.brand_id
+      WHERE o.status IN ('paid','processing','shipped','delivered') AND o.created_at >= ${since30}
+      GROUP BY b.name ORDER BY total DESC LIMIT 5
+    `),
+    db.all<{ id: string; order_number: string; customer_name: string; status: string; total_in_cents: number; created_at: string }>(sql`
+      SELECT id, order_number, customer_name, status, total_in_cents, created_at
+      FROM orders ORDER BY created_at DESC LIMIT 8
+    `),
+    db.all<{ id: string; product_name: string; brand_name: string; sku: string; size: string; available: number; image_url: string | null }>(sql`
+      SELECT pv.id, p.name product_name, b.name brand_name, pv.sku, pv.size,
+             (pv.stock - pv.stock_reserved) available,
+             (SELECT url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) image_url
+      FROM product_variants pv
+      JOIN products p ON p.id = pv.product_id
+      JOIN brands b ON b.id = p.brand_id
+      WHERE pv.stock - pv.stock_reserved <= 3
+      ORDER BY available ASC LIMIT 6
+    `),
+  ])
 
   const revenueChange = yesterdayData?.total > 0
     ? Math.round(((todayData?.total ?? 0) - yesterdayData.total) / yesterdayData.total * 100)
@@ -45,17 +83,6 @@ export default async function AdminDashboard() {
     ? Math.round(((todayData?.n ?? 0) - yesterdayData.n) / yesterdayData.n * 100)
     : null
 
-  // ── Gráfico 30d vs 30d anterior ──
-  const daily30 = await db.all<{ day: string; total: number; orders: number }>(sql`
-    SELECT DATE(created_at) day, COALESCE(SUM(total_in_cents),0) total, COUNT(*) orders
-    FROM orders WHERE created_at >= ${since30}
-    GROUP BY DATE(created_at) ORDER BY day
-  `)
-  const daily60 = await db.all<{ day: string; total: number; orders: number }>(sql`
-    SELECT DATE(created_at) day, COALESCE(SUM(total_in_cents),0) total, COUNT(*) orders
-    FROM orders WHERE created_at >= ${since60} AND created_at < ${since30}
-    GROUP BY DATE(created_at) ORDER BY day
-  `)
   const salesData = Array.from({ length: 30 }, (_, i) => {
     const d = new Date(Date.now() - (29 - i) * 86400000)
     const label = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
@@ -67,15 +94,6 @@ export default async function AdminDashboard() {
   })
 
   // ── Brands share ──
-  const brandRevenue = await db.all<{ brand_name: string; total: number }>(sql`
-    SELECT b.name brand_name, COALESCE(SUM(oi.total_in_cents),0) total
-    FROM order_items oi
-    JOIN orders o ON o.id = oi.order_id
-    JOIN products p ON p.name = oi.product_name
-    JOIN brands b ON b.id = p.brand_id
-    WHERE o.status IN ('paid','processing','shipped','delivered') AND o.created_at >= ${since30}
-    GROUP BY b.name ORDER BY total DESC LIMIT 5
-  `)
   const totalBrandRev = brandRevenue.reduce((s, r) => s + r.total, 1)
   const brandColors   = ['#F26B1F', '#1FB5A8', '#3B82F6', '#2CB35A', '#9CA3AF']
   const brandsData    = brandRevenue.map((b, i) => ({
@@ -84,27 +102,6 @@ export default async function AdminDashboard() {
     revenue: b.total,
     color: brandColors[i] ?? '#4A5462',
   }))
-
-  // ── Pedidos recentes ──
-  const recentOrders = await db.all<{
-    id: string; order_number: string; customer_name: string
-    status: string; total_in_cents: number; created_at: string
-  }>(sql`SELECT id, order_number, customer_name, status, total_in_cents, created_at FROM orders ORDER BY created_at DESC LIMIT 8`)
-
-  // ── Estoque crítico ──
-  const criticalStock = await db.all<{
-    id: string; product_name: string; brand_name: string
-    sku: string; size: string; available: number; image_url: string | null
-  }>(sql`
-    SELECT pv.id, p.name product_name, b.name brand_name, pv.sku, pv.size,
-           (pv.stock - pv.stock_reserved) available,
-           (SELECT url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) image_url
-    FROM product_variants pv
-    JOIN products p ON p.id = pv.product_id
-    JOIN brands b ON b.id = p.brand_id
-    WHERE pv.stock - pv.stock_reserved <= 3
-    ORDER BY available ASC LIMIT 6
-  `)
 
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite'

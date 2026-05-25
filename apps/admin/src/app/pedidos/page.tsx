@@ -33,15 +33,17 @@ export default async function AdminPedidos({ searchParams }: PageProps) {
     ${q ? sql`AND (order_number LIKE ${'%'+q+'%'} OR customer_name LIKE ${'%'+q+'%'} OR customer_email LIKE ${'%'+q+'%'})` : sql``}
   `
 
-  const [{ total }] = await db.all<{ total: number }>(sql`SELECT COUNT(*) total FROM orders ${baseWhere}`)
-  const orders = await db.all<{
-    id: string; order_number: string; customer_name: string; customer_email: string
-    status: string; payment_method: string; total_in_cents: number
-    delivery_method: string; tracking_code: string | null; created_at: string
-  }>(sql`SELECT id, order_number, customer_name, customer_email, status, payment_method,
-    total_in_cents, delivery_method, tracking_code, created_at
-    FROM orders ${baseWhere}
-    ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`)
+  const [[{ total }], orders] = await Promise.all([
+    db.all<{ total: number }>(sql`SELECT COUNT(*) total FROM orders ${baseWhere}`),
+    db.all<{
+      id: string; order_number: string; customer_name: string; customer_email: string
+      status: string; payment_method: string; total_in_cents: number
+      delivery_method: string; tracking_code: string | null; created_at: string
+    }>(sql`SELECT id, order_number, customer_name, customer_email, status, payment_method,
+      total_in_cents, delivery_method, tracking_code, created_at
+      FROM orders ${baseWhere}
+      ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`),
+  ])
 
   const pages = Math.ceil(total / limit)
 

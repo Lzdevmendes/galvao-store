@@ -3,39 +3,63 @@ import { sql } from 'drizzle-orm'
 import { fmt } from '@/lib/utils'
 import Link from 'next/link'
 
-type PageProps = { searchParams: Promise<{ q?: string }> }
+type PageProps = { searchParams: Promise<{ q?: string; page?: string }> }
 
 export default async function AdminProdutos({ searchParams }: PageProps) {
-  const sp = await searchParams
-  const q  = sp.q?.trim() ?? ''
+  const sp    = await searchParams
+  const q     = sp.q?.trim() ?? ''
+  const page  = Math.max(1, Number(sp.page ?? 1))
+  const limit = 50
+  const offset = (page - 1) * limit
 
-  const produtos = await db.all<{
-    id: string; slug: string; name: string; brand_name: string
-    category_name: string; status: string
-    variant_count: number; total_stock: number; low_stock_count: number
-    min_price: number; max_price: number
-  }>(sql`
-    SELECT p.id, p.slug, p.name, b.name brand_name, c.name category_name,
-           p.status,
-           COUNT(pv.id) variant_count,
-           COALESCE(SUM(pv.stock - pv.stock_reserved), 0) total_stock,
-           COUNT(CASE WHEN pv.stock - pv.stock_reserved <= 2 THEN 1 END) low_stock_count,
-           MIN(pv.price_in_cents) min_price,
-           MAX(pv.price_in_cents) max_price
-    FROM products p
-    JOIN brands b ON b.id = p.brand_id
-    LEFT JOIN categories c ON c.id = p.category_id
-    LEFT JOIN product_variants pv ON pv.product_id = p.id
-    ${q ? sql`WHERE p.name LIKE ${'%'+q+'%'} OR b.name LIKE ${'%'+q+'%'}` : sql``}
-    GROUP BY p.id
-    ORDER BY p.name ASC
-  `)
+  const buildWhere = () => q
+    ? sql`WHERE (p.name LIKE ${'%'+q+'%'} OR b.name LIKE ${'%'+q+'%'})`
+    : sql``
+
+  const [[{ total }], produtos] = await Promise.all([
+    db.all<{ total: number }>(sql`
+      SELECT COUNT(DISTINCT p.id) total
+      FROM products p
+      JOIN brands b ON b.id = p.brand_id
+      ${buildWhere()}
+    `),
+    db.all<{
+      id: string; slug: string; name: string; brand_name: string
+      category_name: string; status: string
+      variant_count: number; total_stock: number; low_stock_count: number
+      min_price: number; max_price: number
+    }>(sql`
+      SELECT p.id, p.slug, p.name, b.name brand_name, c.name category_name,
+             p.status,
+             COUNT(pv.id) variant_count,
+             COALESCE(SUM(pv.stock - pv.stock_reserved), 0) total_stock,
+             COUNT(CASE WHEN pv.stock - pv.stock_reserved <= 2 THEN 1 END) low_stock_count,
+             MIN(pv.price_in_cents) min_price,
+             MAX(pv.price_in_cents) max_price
+      FROM products p
+      JOIN brands b ON b.id = p.brand_id
+      LEFT JOIN categories c ON c.id = p.category_id
+      LEFT JOIN product_variants pv ON pv.product_id = p.id
+      ${buildWhere()}
+      GROUP BY p.id
+      ORDER BY p.name ASC
+      LIMIT ${limit} OFFSET ${offset}
+    `)
+  ])
+
+  const pages = Math.ceil(total / limit)
+
+  const buildUrl = (params: Record<string, string>) => {
+    const p = new URLSearchParams({ q, page: String(page), ...params })
+    for (const [k, v] of p.entries()) if (!v) p.delete(k)
+    return `/produtos?${p}`
+  }
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <h1 style={{ fontFamily: 'Archivo Black, sans-serif', fontSize: 24, margin: 0 }}>
-          Produtos <span style={{ fontSize: 14, color: '#6B7280', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 400 }}>({produtos.length})</span>
+          Produtos <span style={{ fontSize: 14, color: '#6B7280', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 400 }}>({total})</span>
         </h1>
       </div>
 
@@ -97,6 +121,24 @@ export default async function AdminProdutos({ searchParams }: PageProps) {
           </tbody>
         </table>
       </div>
+
+      {pages > 1 && (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', marginTop: 24 }}>
+          {page > 1 && (
+            <Link href={buildUrl({ page: String(page - 1) })}
+              style={{ padding: '8px 16px', borderRadius: 8, background: '#1E2530', color: '#F8F9FB', textDecoration: 'none', fontSize: 13 }}>
+              ← Anterior
+            </Link>
+          )}
+          <span style={{ fontSize: 13, color: '#6B7280' }}>Página {page} de {pages}</span>
+          {page < pages && (
+            <Link href={buildUrl({ page: String(page + 1) })}
+              style={{ padding: '8px 16px', borderRadius: 8, background: '#1E2530', color: '#F8F9FB', textDecoration: 'none', fontSize: 13 }}>
+              Próxima →
+            </Link>
+          )}
+        </div>
+      )}
     </div>
   )
 }

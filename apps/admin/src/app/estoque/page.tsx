@@ -36,51 +36,51 @@ export default async function EstoquePage({ searchParams }: PageProps) {
   const page   = Math.max(1, Number(sp.page ?? 1))
   const offset = (page - 1) * LIMIT
 
-  const filterClause =
+  const mkFilter = () =>
     filter === 'low'  ? sql`AND (pv.stock - pv.stock_reserved) <= 3 AND (pv.stock - pv.stock_reserved) > 0` :
     filter === 'zero' ? sql`AND (pv.stock - pv.stock_reserved) <= 0` :
     sql``
 
-  const searchClause = q
+  const mkSearch = () => q
     ? sql`AND (p.name LIKE ${'%'+q+'%'} OR pv.sku LIKE ${'%'+q+'%'})`
     : sql``
 
-  const rows = await db.all<VariantRow>(sql`
-    SELECT
-      pv.id, p.name product_name, b.name brand_name,
-      pv.sku, pv.size, pv.color, pv.stock, pv.stock_reserved,
-      (pv.stock - pv.stock_reserved) available,
-      pv.price_in_cents
-    FROM product_variants pv
-    JOIN products p ON p.id = pv.product_id
-    JOIN brands b   ON b.id = p.brand_id
-    WHERE 1=1
-    ${searchClause}
-    ${filterClause}
-    ORDER BY available ASC, p.name ASC, pv.size ASC
-    LIMIT ${LIMIT} OFFSET ${offset}
-  `)
+  const [rows, totalRow, summary] = await Promise.all([
+    db.all<VariantRow>(sql`
+      SELECT
+        pv.id, p.name product_name, b.name brand_name,
+        pv.sku, pv.size, pv.color, pv.stock, pv.stock_reserved,
+        (pv.stock - pv.stock_reserved) available,
+        pv.price_in_cents
+      FROM product_variants pv
+      JOIN products p ON p.id = pv.product_id
+      JOIN brands b   ON b.id = p.brand_id
+      WHERE 1=1
+      ${mkSearch()}
+      ${mkFilter()}
+      ORDER BY available ASC, p.name ASC, pv.size ASC
+      LIMIT ${LIMIT} OFFSET ${offset}
+    `),
+    db.get<{ n: number }>(sql`
+      SELECT COUNT(*) n
+      FROM product_variants pv
+      JOIN products p ON p.id = pv.product_id
+      JOIN brands b   ON b.id = p.brand_id
+      WHERE 1=1
+      ${mkSearch()}
+      ${mkFilter()}
+    `),
+    db.get<{ total: number; low: number; zero: number }>(sql`
+      SELECT
+        COUNT(*) total,
+        COUNT(CASE WHEN (stock - stock_reserved) <= 3 AND (stock - stock_reserved) > 0 THEN 1 END) low,
+        COUNT(CASE WHEN (stock - stock_reserved) <= 0 THEN 1 END) zero
+      FROM product_variants
+    `),
+  ])
 
-  const totalRow = await db.get<{ n: number }>(sql`
-    SELECT COUNT(*) n
-    FROM product_variants pv
-    JOIN products p ON p.id = pv.product_id
-    JOIN brands b   ON b.id = p.brand_id
-    WHERE 1=1
-    ${searchClause}
-    ${filterClause}
-  `)
   const total = totalRow?.n ?? 0
-
   const totalPages = Math.max(1, Math.ceil(total / LIMIT))
-
-  const summary = await db.get<{ total: number; low: number; zero: number }>(sql`
-    SELECT
-      COUNT(*) total,
-      COUNT(CASE WHEN (stock - stock_reserved) <= 3 AND (stock - stock_reserved) > 0 THEN 1 END) low,
-      COUNT(CASE WHEN (stock - stock_reserved) <= 0 THEN 1 END) zero
-    FROM product_variants
-  `)
 
   function filterHref(f: string) {
     const params = new URLSearchParams()
