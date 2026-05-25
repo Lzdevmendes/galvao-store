@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
+import { db } from '@/lib/db'
+import { sql } from 'drizzle-orm'
 import { APP_URL, brand, font } from '@/emails/_components/email-layout'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-
-// In-memory dedup (restarts on cold start — acceptable for newsletter)
-const subscribers = new Set<string>()
 
 const FROM = process.env.NODE_ENV === 'production'
   ? "Galvão's Store <noreply@galvaosstore.com.br>"
@@ -19,12 +18,14 @@ export async function POST(req: NextRequest) {
   }
 
   const key = email.toLowerCase()
-  if (subscribers.has(key)) {
+
+  const existing = await db.all(sql`SELECT id FROM newsletter_subscriptions WHERE email = ${key} LIMIT 1`)
+  if (existing.length > 0) {
     return NextResponse.json({ ok: true, already: true })
   }
-  subscribers.add(key)
 
-  // Fire-and-forget welcome email
+  await db.run(sql`INSERT INTO newsletter_subscriptions (id, email) VALUES (${crypto.randomUUID()}, ${key})`)
+
   resend.emails.send({
     from: FROM,
     to: key,

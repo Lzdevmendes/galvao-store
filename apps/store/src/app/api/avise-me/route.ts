@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-const requests = new Map<string, { email: string; productName: string; at: string }>()
+import { db } from '@/lib/db'
+import { sql } from 'drizzle-orm'
 
 export async function POST(req: NextRequest) {
   const { email, variantId, productName } = await req.json()
@@ -9,13 +9,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Parâmetros em falta' }, { status: 400 })
   }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(email)) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return NextResponse.json({ error: 'E-mail inválido' }, { status: 400 })
   }
 
-  const key = `${variantId}:${email}`
-  requests.set(key, { email, productName, at: new Date().toISOString() })
+  const key = email.toLowerCase()
+  await db.run(sql`
+    INSERT INTO stock_alerts (id, email, variant_id, product_name)
+    VALUES (${crypto.randomUUID()}, ${key}, ${variantId}, ${productName ?? ''})
+    ON CONFLICT(email, variant_id) DO NOTHING
+  `)
 
   return NextResponse.json({ ok: true })
 }
