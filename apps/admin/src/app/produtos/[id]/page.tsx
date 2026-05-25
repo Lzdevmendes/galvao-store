@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import ImageManager from './image-manager'
 import { ProductEditForm } from './product-edit-form'
+import { VariantPriceForm } from './variant-price-form'
 import { fmt } from '@/lib/utils'
 
 export default async function ProdutoDetalhe({ params }: { params: Promise<{ id: string }> }) {
@@ -141,6 +142,11 @@ export default async function ProdutoDetalhe({ params }: { params: Promise<{ id:
                         <p style={{ fontSize: 11, margin: '2px 0 0', color: disponivel <= 0 ? '#E23B3B' : disponivel <= 3 ? '#F59E0B' : '#6B7280' }}>
                           estoque: {disponivel}
                         </p>
+                        <VariantPriceForm
+                          variantId={v.id}
+                          priceInCents={v.price_in_cents}
+                          promoInCents={v.price_promo_in_cents}
+                        />
                       </div>
                     </div>
                   )
