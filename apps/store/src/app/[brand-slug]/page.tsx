@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import {
-  queryProducts, queryAvailableSizes, queryBrandLines,
-  type CatalogFilters,
+  queryProducts, queryAvailableSizes, queryBrandLines, queryProductsCount,
+  PAGE_SIZE, type CatalogFilters,
 } from '@/lib/catalog-query'
 import { ProductCard } from '@/components/catalog/product-card'
 import { FilterSortBar } from '@/components/catalog/filter-sort-bar'
@@ -15,7 +16,7 @@ interface BrandRow {
   id: string; slug: string; name: string; tagline: string | null; gradient_css: string | null
 }
 
-type SearchParams = Promise<{ linha?: string; tamanho?: string; sort?: string }>
+type SearchParams = Promise<{ linha?: string; tamanho?: string; sort?: string; page?: string }>
 
 export async function generateStaticParams() {
   const rows = await db.all<{ slug: string }>(sql`SELECT slug FROM brands WHERE active = 1`)
@@ -42,7 +43,8 @@ export default async function BrandPage({
   searchParams: SearchParams
 }) {
   const { 'brand-slug': slug } = await params
-  const { linha = '', tamanho = '', sort = 'relevancia' } = await searchParams
+  const { linha = '', tamanho = '', sort = 'relevancia', page: pageStr } = await searchParams
+  const page = Math.max(1, Number(pageStr ?? 1))
 
   const [brand] = await db.all<BrandRow>(sql`
     SELECT id, slug, name, tagline, gradient_css
@@ -54,16 +56,28 @@ export default async function BrandPage({
     brandId: brand.id,
     line:    linha || undefined,
     size:    tamanho || undefined,
-    sort,
+    sort, page,
   }
 
-  const [products, sizes, lines] = await Promise.all([
+  const [products, total, sizes, lines] = await Promise.all([
     queryProducts(filters),
+    queryProductsCount({ brandId: brand.id, line: linha || undefined, size: tamanho || undefined }),
     queryAvailableSizes({ brandId: brand.id, line: linha || undefined }),
     queryBrandLines(brand.id),
   ])
 
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const gradient = brand.gradient_css ?? 'linear-gradient(135deg,#0B0E12,#1F252E)'
+
+  const buildHref = (p: number) => {
+    const params = new URLSearchParams()
+    if (linha) params.set('linha', linha)
+    if (tamanho) params.set('tamanho', tamanho)
+    if (sort !== 'relevancia') params.set('sort', sort)
+    if (p > 1) params.set('page', String(p))
+    const qs = params.toString()
+    return `/${slug}${qs ? `?${qs}` : ''}`
+  }
 
   return (
     <>
@@ -84,7 +98,7 @@ export default async function BrandPage({
 
       {/* Filtros */}
       <FilterSortBar
-        total={products.length}
+        total={total}
         availableSizes={sizes}
         lines={lines}
         currentLine={linha}
@@ -100,11 +114,51 @@ export default async function BrandPage({
             <p>Nenhum produto com esses filtros. <a href={`/${slug}`} style={{ color:'var(--brand-orange)' }}>Ver todos</a></p>
           </div>
         ) : (
-          <div className="grid-products" data-density="4">
-            {products.map(p => <ProductCard key={p.id} p={p} />)}
-          </div>
+          <>
+            <div className="grid-products" data-density="4">
+              {products.map(p => <ProductCard key={p.id} p={p} />)}
+            </div>
+            {totalPages > 1 && (
+              <Pagination page={page} totalPages={totalPages} buildHref={buildHref} />
+            )}
+          </>
         )}
       </div>
     </>
   )
+}
+
+// ── Pagination ─────────────────────────────────────────────────────────────────
+
+function Pagination({ page, totalPages, buildHref }: { page: number; totalPages: number; buildHref: (p: number) => string }) {
+  const pages = Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+    if (totalPages <= 7) return i + 1
+    if (page <= 4) return i + 1
+    if (page >= totalPages - 3) return totalPages - 6 + i
+    return page - 3 + i
+  })
+
+  return (
+    <nav style={{ display:'flex', justifyContent:'center', gap:8, marginTop:48, flexWrap:'wrap' }}>
+      {page > 1 && (
+        <Link href={buildHref(page - 1)} style={chipStyle(false)}>← Anterior</Link>
+      )}
+      {pages.map(p => (
+        <Link key={p} href={buildHref(p)} style={chipStyle(p === page)}>{p}</Link>
+      ))}
+      {page < totalPages && (
+        <Link href={buildHref(page + 1)} style={chipStyle(false)}>Próxima →</Link>
+      )}
+    </nav>
+  )
+}
+
+function chipStyle(active: boolean): React.CSSProperties {
+  return {
+    padding:'8px 14px', borderRadius:8, fontSize:13, fontFamily:'var(--font-ui)', fontWeight:600,
+    border: active ? '1.5px solid var(--brand-orange)' : '1.5px solid var(--border)',
+    background: active ? 'var(--brand-orange)' : 'var(--bg-elev)',
+    color: active ? '#fff' : 'var(--fg-muted)',
+    textDecoration:'none',
+  }
 }

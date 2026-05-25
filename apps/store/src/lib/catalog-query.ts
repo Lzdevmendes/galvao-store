@@ -4,12 +4,15 @@ import type { ProductCardData } from '@/components/catalog/product-card'
 
 export type SortOption = 'relevancia' | 'lancamentos' | 'menor-preco' | 'maior-preco'
 
+export const PAGE_SIZE = 24
+
 export interface CatalogFilters {
   brandId?:    string
   categoryId?: string
   line?:       string
   size?:       string
   sort?:       SortOption | string
+  page?:       number
 }
 
 function buildWhere(base: SQL, extra: SQL[]): SQL {
@@ -43,6 +46,8 @@ export async function queryProducts(filters: CatalogFilters): Promise<ProductCar
 
   const where = buildWhere(sql`p.status = 'published'`, extra)
   const order = orderClause(filters.sort)
+  const page   = Math.max(1, filters.page ?? 1)
+  const offset = (page - 1) * PAGE_SIZE
 
   return await db.all<ProductCardData>(sql`
     SELECT p.id, p.slug, p.name, b.name AS brand_name, p.badge,
@@ -57,7 +62,31 @@ export async function queryProducts(filters: CatalogFilters): Promise<ProductCar
     WHERE  ${where}
     GROUP  BY p.id
     ORDER  BY ${order}
+    LIMIT  ${PAGE_SIZE} OFFSET ${offset}
   `)
+}
+
+export async function queryProductsCount(filters: Omit<CatalogFilters, 'sort' | 'page'>): Promise<number> {
+  const extra: SQL[] = []
+  if (filters.brandId)    extra.push(sql`p.brand_id    = ${filters.brandId}`)
+  if (filters.categoryId) extra.push(sql`p.category_id = ${filters.categoryId}`)
+  if (filters.line)       extra.push(sql`p.line        = ${filters.line}`)
+  if (filters.size)       extra.push(sql`
+    EXISTS (
+      SELECT 1 FROM product_variants sv
+      WHERE sv.product_id = p.id
+        AND sv.size        = ${filters.size}
+        AND sv.available   = 1
+    )
+  `)
+  const where = buildWhere(sql`p.status = 'published'`, extra)
+  const rows = await db.all<{ n: number }>(sql`
+    SELECT COUNT(DISTINCT p.id) as n
+    FROM   products p
+    JOIN   brands b ON b.id = p.brand_id
+    WHERE  ${where}
+  `)
+  return rows[0]?.n ?? 0
 }
 
 export async function queryAvailableSizes(

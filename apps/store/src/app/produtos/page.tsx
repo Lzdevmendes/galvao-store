@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
-import { queryProducts, queryAvailableSizes, type CatalogFilters } from '@/lib/catalog-query'
+import { queryProducts, queryAvailableSizes, queryProductsCount, PAGE_SIZE, type CatalogFilters } from '@/lib/catalog-query'
 import { ProductCard } from '@/components/catalog/product-card'
 import { FilterSortBar } from '@/components/catalog/filter-sort-bar'
 
@@ -13,14 +13,15 @@ export const metadata: Metadata = {
   description: 'Chuteiras, tênis e acessórios Nike, Adidas, Puma, Umbro. Frete grátis acima de R$ 399.',
 }
 
-type SearchParams = Promise<{ marca?: string; categoria?: string; tamanho?: string; sort?: string }>
+type SearchParams = Promise<{ marca?: string; categoria?: string; tamanho?: string; sort?: string; page?: string }>
 
 export default async function ProdutosPage({
   searchParams,
 }: {
   searchParams: SearchParams
 }) {
-  const { marca = '', categoria = '', tamanho = '', sort = 'relevancia' } = await searchParams
+  const { marca = '', categoria = '', tamanho = '', sort = 'relevancia', page: pageStr } = await searchParams
+  const page = Math.max(1, Number(pageStr ?? 1))
 
   // Resolve IDs a partir de slugs
   const brandId = marca
@@ -33,21 +34,35 @@ export default async function ProdutosPage({
   const filters: CatalogFilters = {
     brandId, categoryId,
     size: tamanho || undefined,
-    sort,
+    sort, page,
   }
 
-  const [products, sizes, brands, categories] = await Promise.all([
+  const [products, total, sizes, brands, categories] = await Promise.all([
     queryProducts(filters),
+    queryProductsCount({ brandId, categoryId, size: tamanho || undefined }),
     queryAvailableSizes({ brandId, categoryId }),
-    await db.all<{ slug: string; name: string }>(sql`
+    db.all<{ slug: string; name: string }>(sql`
       SELECT slug, name FROM brands WHERE active = 1 ORDER BY name
     `),
-    await db.all<{ slug: string; name: string }>(sql`
+    db.all<{ slug: string; name: string }>(sql`
       SELECT c.slug, c.name FROM categories c
       JOIN products p ON p.category_id = c.id AND p.status = 'published'
       GROUP BY c.id ORDER BY c.sort_order
     `),
   ])
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+
+  const buildHref = (p: number) => {
+    const params = new URLSearchParams()
+    if (marca) params.set('marca', marca)
+    if (categoria) params.set('categoria', categoria)
+    if (tamanho) params.set('tamanho', tamanho)
+    if (sort !== 'relevancia') params.set('sort', sort)
+    if (p > 1) params.set('page', String(p))
+    const qs = params.toString()
+    return `/produtos${qs ? `?${qs}` : ''}`
+  }
 
   return (
     <>
@@ -77,7 +92,7 @@ export default async function ProdutosPage({
 
       {/* Sort + tamanho */}
       <FilterSortBar
-        total={products.length}
+        total={total}
         availableSizes={sizes}
         currentSize={tamanho}
         currentSort={sort}
@@ -91,13 +106,53 @@ export default async function ProdutosPage({
             <p>Nenhum produto com esses filtros. <Link href="/produtos" style={{ color:'var(--brand-orange)' }}>Ver todos</Link></p>
           </div>
         ) : (
-          <div className="grid-products" data-density="4">
-            {products.map(p => <ProductCard key={p.id} p={p} />)}
-          </div>
+          <>
+            <div className="grid-products" data-density="4">
+              {products.map(p => <ProductCard key={p.id} p={p} />)}
+            </div>
+            {totalPages > 1 && (
+              <Pagination page={page} totalPages={totalPages} buildHref={buildHref} />
+            )}
+          </>
         )}
       </div>
     </>
   )
+}
+
+// ── Pagination ─────────────────────────────────────────────────────────────────
+
+function Pagination({ page, totalPages, buildHref }: { page: number; totalPages: number; buildHref: (p: number) => string }) {
+  const pages = Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+    if (totalPages <= 7) return i + 1
+    if (page <= 4) return i + 1
+    if (page >= totalPages - 3) return totalPages - 6 + i
+    return page - 3 + i
+  })
+
+  return (
+    <nav style={{ display:'flex', justifyContent:'center', gap:8, marginTop:48, flexWrap:'wrap' }}>
+      {page > 1 && (
+        <Link href={buildHref(page - 1)} style={chipStyle(false)}>← Anterior</Link>
+      )}
+      {pages.map(p => (
+        <Link key={p} href={buildHref(p)} style={chipStyle(p === page)}>{p}</Link>
+      ))}
+      {page < totalPages && (
+        <Link href={buildHref(page + 1)} style={chipStyle(false)}>Próxima →</Link>
+      )}
+    </nav>
+  )
+}
+
+function chipStyle(active: boolean): React.CSSProperties {
+  return {
+    padding:'8px 14px', borderRadius:8, fontSize:13, fontFamily:'var(--font-ui)', fontWeight:600,
+    border: active ? '1.5px solid var(--brand-orange)' : '1.5px solid var(--border)',
+    background: active ? 'var(--brand-orange)' : 'var(--bg-elev)',
+    color: active ? '#fff' : 'var(--fg-muted)',
+    textDecoration:'none',
+  }
 }
 
 // ── Chips de filtro (links para manter SEO) ────────────────────────────────
