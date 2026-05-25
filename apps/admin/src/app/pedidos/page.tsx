@@ -33,8 +33,8 @@ export default async function AdminPedidos({ searchParams }: PageProps) {
     ${q ? sql`AND (order_number LIKE ${'%'+q+'%'} OR customer_name LIKE ${'%'+q+'%'} OR customer_email LIKE ${'%'+q+'%'})` : sql``}
   `
 
-  const [{ total }] = db.all<{ total: number }>(sql`SELECT COUNT(*) total FROM orders ${baseWhere}`)
-  const orders = db.all<{
+  const [{ total }] = await db.all<{ total: number }>(sql`SELECT COUNT(*) total FROM orders ${baseWhere}`)
+  const orders = await db.all<{
     id: string; order_number: string; customer_name: string; customer_email: string
     status: string; payment_method: string; total_in_cents: number
     delivery_method: string; tracking_code: string | null; created_at: string

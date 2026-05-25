@@ -4,7 +4,7 @@ import { fmt } from '@/lib/utils'
 import { CouponActions } from './coupon-actions'
 
 export default async function AdminCupons() {
-  const cupons = db.all<{
+  const cupons = await db.all<{
     id: string; code: string; type: string; value: number
     min_order_in_cents: number | null; max_uses: number | null
     used_count: number; active: number

@@ -27,14 +27,14 @@ function StatCard({ label, value, color = '#F8F9FB' }: { label: string; value: s
 export default async function ClienteDetailPage({ params }: PageProps) {
   const { id } = await params
 
-  const users = db.all<{
+  const users = await db.all<{
     id: string; email: string; name: string | null; phone: string | null
     cpf: string | null; created_at: string; is_club_member: number; marketing_opt_in: number
   }>(sql`SELECT * FROM users WHERE id = ${id} LIMIT 1`)
   const user = users[0]
   if (!user) notFound()
 
-  const [stats] = db.all<{ total_orders: number; confirmed: number; total_spent: number; avg_ticket: number; cancelled: number }>(sql`
+  const [stats] = await db.all<{ total_orders: number; confirmed: number; total_spent: number; avg_ticket: number; cancelled: number }>(sql`
     SELECT
       COUNT(*) total_orders,
       COUNT(CASE WHEN status IN ('paid','processing','shipped','delivered') THEN 1 END) confirmed,
@@ -44,7 +44,7 @@ export default async function ClienteDetailPage({ params }: PageProps) {
     FROM orders WHERE user_id = ${id} OR customer_email = ${user.email}
   `)
 
-  const orders = db.all<{
+  const orders = await db.all<{
     id: string; order_number: string; status: string; total_in_cents: number
     payment_method: string; created_at: string; delivery_method: string
   }>(sql`
@@ -53,7 +53,7 @@ export default async function ClienteDetailPage({ params }: PageProps) {
     ORDER BY created_at DESC LIMIT 20
   `)
 
-  const topProducts = db.all<{ product_name: string; brand_name: string; qty: number; total: number }>(sql`
+  const topProducts = await db.all<{ product_name: string; brand_name: string; qty: number; total: number }>(sql`
     SELECT oi.product_name, oi.brand_name, SUM(oi.qty) qty, SUM(oi.total_in_cents) total
     FROM order_items oi
     JOIN orders o ON o.id = oi.order_id

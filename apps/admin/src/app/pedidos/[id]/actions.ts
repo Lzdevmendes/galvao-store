@@ -18,7 +18,7 @@ export async function updateOrderStatus({ orderId, status, trackingCode }: Updat
   if (status === 'shipped') {
     if (!trackingCode?.trim()) return { success: false, error: 'Código de rastreio obrigatório para status Enviado.' }
 
-    db.run(sql`
+    await db.run(sql`
       UPDATE orders SET
         status = 'shipped',
         tracking_code = ${trackingCode.trim().toUpperCase()},
@@ -28,7 +28,7 @@ export async function updateOrderStatus({ orderId, status, trackingCode }: Updat
     `)
 
     // Buscar dados para e-mail
-    const orders = db.all<{
+    const orders = await db.all<{
       order_number: string; customer_name: string; customer_email: string; customer_phone: string | null
       delivery_method: string; estimated_days: number | null
       ship_street: string; ship_number: string; ship_complement: string | null
@@ -36,7 +36,7 @@ export async function updateOrderStatus({ orderId, status, trackingCode }: Updat
     }>(sql`SELECT order_number, customer_name, customer_email, customer_phone, delivery_method, estimated_days,
       ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state, ship_cep
       FROM orders WHERE id = ${orderId} LIMIT 1`)
-    const items = db.all<{
+    const items = await db.all<{
       product_name: string; brand_name: string; variant_size: string
       variant_color: string | null; image_url: string | null
       qty: number; unit_in_cents: number; total_in_cents: number
@@ -73,12 +73,12 @@ export async function updateOrderStatus({ orderId, status, trackingCode }: Updat
     }
 
   } else if (status === 'delivered') {
-    db.run(sql`
+    await db.run(sql`
       UPDATE orders SET status = 'delivered', delivered_at = ${now}, updated_at = ${now}
       WHERE id = ${orderId}
     `)
 
-    const deliveredOrders = db.all<{ order_number: string; customer_name: string; customer_phone: string | null }>(sql`
+    const deliveredOrders = await db.all<{ order_number: string; customer_name: string; customer_phone: string | null }>(sql`
       SELECT order_number, customer_name, customer_phone FROM orders WHERE id = ${orderId} LIMIT 1
     `)
     const d = deliveredOrders[0]
@@ -88,13 +88,13 @@ export async function updateOrderStatus({ orderId, status, trackingCode }: Updat
     }
 
   } else {
-    db.run(sql`
+    await db.run(sql`
       UPDATE orders SET status = ${status}, updated_at = ${now}
       WHERE id = ${orderId}
     `)
   }
 
-  db.run(sql`
+  await db.run(sql`
     INSERT INTO order_events (id, order_id, type, created_by, created_at)
     VALUES (${crypto.randomUUID()}, ${orderId}, ${status as 'paid'|'processing'|'shipped'|'delivered'|'cancelled'|'refunded'}, 'admin', ${now})
   `)

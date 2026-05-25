@@ -14,14 +14,14 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
   }
 }
 
-function searchProducts(q: string, marca?: string, categoria?: string, tamanho?: string, sort = 'relevancia'): ProductCardData[] {
+async function searchProducts(q: string, marca?: string, categoria?: string, tamanho?: string, sort = 'relevancia'): Promise<ProductCardData[]> {
   const term = `%${q}%`
   const brandFilter    = marca    ? sql`AND b.slug = ${marca}`    : sql``
   const catFilter      = categoria ? sql`AND c.slug = ${categoria}` : sql``
   const sizeFilter     = tamanho   ? sql`AND EXISTS (SELECT 1 FROM product_variants sv WHERE sv.product_id = p.id AND sv.size = ${tamanho} AND sv.available = 1 AND sv.stock > sv.stock_reserved)` : sql``
   const orderClause    = sort === 'menor-preco' ? sql`min_price ASC` : sort === 'maior-preco' ? sql`min_price DESC` : sort === 'lancamentos' ? sql`p.created_at DESC` : sql`p.rating DESC, p.review_count DESC`
 
-  return db.all<ProductCardData>(sql`
+  return await db.all<ProductCardData>(sql`
     SELECT p.id, p.slug, p.name, b.name as brand_name, p.badge,
            COALESCE(pi.url, '') as image_url,
            COALESCE(pi.alt, p.name) as image_alt,
@@ -53,10 +53,10 @@ export default async function BuscaPage({ searchParams }: { searchParams: Search
   const { q = '', marca, categoria, tamanho, sort } = await searchParams
 
   const [products, brands, categories, sizes] = await Promise.all([
-    q.trim() ? Promise.resolve(searchProducts(q.trim(), marca, categoria, tamanho, sort)) : Promise.resolve([] as ProductCardData[]),
-    Promise.resolve(db.all<{ slug: string; name: string }>(sql`SELECT slug, name FROM brands WHERE active = 1 ORDER BY name`)),
-    Promise.resolve(db.all<{ slug: string; name: string }>(sql`SELECT c.slug, c.name FROM categories c JOIN products p ON p.category_id = c.id WHERE p.status = 'published' GROUP BY c.id ORDER BY c.sort_order`)),
-    Promise.resolve(db.all<{ size: string }>(sql`SELECT DISTINCT size FROM product_variants WHERE available = 1 ORDER BY CAST(size AS REAL), size`)),
+    q.trim() ? searchProducts(q.trim(), marca, categoria, tamanho, sort) : Promise.resolve([] as ProductCardData[]),
+    Promise.resolve(await db.all<{ slug: string; name: string }>(sql`SELECT slug, name FROM brands WHERE active = 1 ORDER BY name`)),
+    Promise.resolve(await db.all<{ slug: string; name: string }>(sql`SELECT c.slug, c.name FROM categories c JOIN products p ON p.category_id = c.id WHERE p.status = 'published' GROUP BY c.id ORDER BY c.sort_order`)),
+    Promise.resolve(await db.all<{ size: string }>(sql`SELECT DISTINCT size FROM product_variants WHERE available = 1 ORDER BY CAST(size AS REAL), size`)),
   ])
 
   return (

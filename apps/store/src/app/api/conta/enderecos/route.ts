@@ -8,7 +8,7 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json([], { status: 401 })
 
-  const rows = db.all(sql`
+  const rows = await db.all(sql`
     SELECT id, label, street, number, complement, district, city, state, cep, is_default
     FROM addresses WHERE user_id = ${user.id} ORDER BY is_default DESC, created_at DESC
   `)

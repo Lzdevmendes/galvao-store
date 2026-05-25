@@ -10,22 +10,23 @@ export default async function AvaliarPage({ params }: { params: Promise<{ orderI
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const orders = db.all<{ id: string; order_number: string; customer_email: string; status: string }>(sql`
+  const orders = await db.all<{ id: string; order_number: string; customer_email: string; status: string }>(sql`
     SELECT id, order_number, customer_email, status FROM orders WHERE id = ${orderId} LIMIT 1
   `)
   const order = orders[0]
   if (!order || order.customer_email !== user.email) redirect('/conta/pedidos')
   if (order.status !== 'delivered') redirect('/conta/pedidos')
 
-  const items = db.all<{ product_id: string; product_name: string; brand_name: string; image_url: string | null }>(sql`
+  const items = await db.all<{ product_id: string; product_name: string; brand_name: string; image_url: string | null }>(sql`
     SELECT variant_id, product_name, brand_name, image_url,
       (SELECT p.id FROM products p JOIN product_variants pv ON pv.product_id = p.id WHERE pv.id = oi.variant_id LIMIT 1) product_id
     FROM order_items oi WHERE order_id = ${orderId}
   `)
 
-  const alreadyReviewed = db.all<{ product_id: string }>(sql`
+  const reviewedRows = await db.all<{ product_id: string }>(sql`
     SELECT product_id FROM reviews WHERE order_id = ${orderId} AND customer_id = ${user.id}
-  `).map(r => r.product_id)
+  `)
+  const alreadyReviewed = reviewedRows.map(r => r.product_id)
 
   const pending = items.filter(i => i.product_id && !alreadyReviewed.includes(i.product_id))
 

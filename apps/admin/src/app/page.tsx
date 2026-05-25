@@ -30,12 +30,12 @@ export default async function AdminDashboard() {
   const since60   = new Date(Date.now() - 60 * 86400000).toISOString()
 
   // ── KPIs ──
-  const [todayData]      = db.all<{ n: number; total: number }>(sql`SELECT COUNT(*) n, COALESCE(SUM(total_in_cents),0) total FROM orders WHERE DATE(created_at) = ${today}`)
-  const [yesterdayData]  = db.all<{ n: number; total: number }>(sql`SELECT COUNT(*) n, COALESCE(SUM(total_in_cents),0) total FROM orders WHERE DATE(created_at) = ${yesterday}`)
-  const [avgTicket]      = db.all<{ avg: number }>(sql`SELECT COALESCE(AVG(total_in_cents),0) avg FROM orders WHERE status IN ('paid','processing','shipped','delivered') AND created_at >= ${since30}`)
-  const [totalRevenue]   = db.all<{ total: number }>(sql`SELECT COALESCE(SUM(total_in_cents),0) total FROM orders WHERE status IN ('paid','processing','shipped','delivered')`)
-  const [pendingOrders]  = db.all<{ n: number }>(sql`SELECT COUNT(*) n FROM orders WHERE status = 'pending_payment'`)
-  const [lowStockCount]  = db.all<{ n: number }>(sql`SELECT COUNT(*) n FROM product_variants WHERE stock - stock_reserved <= 3`)
+  const [todayData]      = await db.all<{ n: number; total: number }>(sql`SELECT COUNT(*) n, COALESCE(SUM(total_in_cents),0) total FROM orders WHERE DATE(created_at) = ${today}`)
+  const [yesterdayData]  = await db.all<{ n: number; total: number }>(sql`SELECT COUNT(*) n, COALESCE(SUM(total_in_cents),0) total FROM orders WHERE DATE(created_at) = ${yesterday}`)
+  const [avgTicket]      = await db.all<{ avg: number }>(sql`SELECT COALESCE(AVG(total_in_cents),0) avg FROM orders WHERE status IN ('paid','processing','shipped','delivered') AND created_at >= ${since30}`)
+  const [totalRevenue]   = await db.all<{ total: number }>(sql`SELECT COALESCE(SUM(total_in_cents),0) total FROM orders WHERE status IN ('paid','processing','shipped','delivered')`)
+  const [pendingOrders]  = await db.all<{ n: number }>(sql`SELECT COUNT(*) n FROM orders WHERE status = 'pending_payment'`)
+  const [lowStockCount]  = await db.all<{ n: number }>(sql`SELECT COUNT(*) n FROM product_variants WHERE stock - stock_reserved <= 3`)
 
   const revenueChange = yesterdayData?.total > 0
     ? Math.round(((todayData?.total ?? 0) - yesterdayData.total) / yesterdayData.total * 100)
@@ -46,12 +46,12 @@ export default async function AdminDashboard() {
     : null
 
   // ── Gráfico 30d vs 30d anterior ──
-  const daily30 = db.all<{ day: string; total: number; orders: number }>(sql`
+  const daily30 = await db.all<{ day: string; total: number; orders: number }>(sql`
     SELECT DATE(created_at) day, COALESCE(SUM(total_in_cents),0) total, COUNT(*) orders
     FROM orders WHERE created_at >= ${since30}
     GROUP BY DATE(created_at) ORDER BY day
   `)
-  const daily60 = db.all<{ day: string; total: number; orders: number }>(sql`
+  const daily60 = await db.all<{ day: string; total: number; orders: number }>(sql`
     SELECT DATE(created_at) day, COALESCE(SUM(total_in_cents),0) total, COUNT(*) orders
     FROM orders WHERE created_at >= ${since60} AND created_at < ${since30}
     GROUP BY DATE(created_at) ORDER BY day
@@ -67,7 +67,7 @@ export default async function AdminDashboard() {
   })
 
   // ── Brands share ──
-  const brandRevenue = db.all<{ brand_name: string; total: number }>(sql`
+  const brandRevenue = await db.all<{ brand_name: string; total: number }>(sql`
     SELECT b.name brand_name, COALESCE(SUM(oi.total_in_cents),0) total
     FROM order_items oi
     JOIN orders o ON o.id = oi.order_id
@@ -86,13 +86,13 @@ export default async function AdminDashboard() {
   }))
 
   // ── Pedidos recentes ──
-  const recentOrders = db.all<{
+  const recentOrders = await db.all<{
     id: string; order_number: string; customer_name: string
     status: string; total_in_cents: number; created_at: string
   }>(sql`SELECT id, order_number, customer_name, status, total_in_cents, created_at FROM orders ORDER BY created_at DESC LIMIT 8`)
 
   // ── Estoque crítico ──
-  const criticalStock = db.all<{
+  const criticalStock = await db.all<{
     id: string; product_name: string; brand_name: string
     sku: string; size: string; available: number; image_url: string | null
   }>(sql`

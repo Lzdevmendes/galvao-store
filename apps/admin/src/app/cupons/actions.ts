@@ -5,7 +5,7 @@ import { sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 
 export async function toggleCoupon(couponId: string, active: boolean) {
-  db.run(sql`UPDATE coupons SET active = ${active ? 0 : 1} WHERE id = ${couponId}`)
+  await db.run(sql`UPDATE coupons SET active = ${active ? 0 : 1} WHERE id = ${couponId}`)
   revalidatePath('/cupons')
   return { success: true }
 }
@@ -21,12 +21,12 @@ export async function createCoupon(formData: FormData) {
   if (!code || !type || !value) return { success: false, error: 'Preencha todos os campos obrigatórios.' }
   if (code.length < 3) return { success: false, error: 'Código deve ter pelo menos 3 caracteres.' }
 
-  const existing = db.all(sql`SELECT id FROM coupons WHERE UPPER(code) = ${code} LIMIT 1`)
+  const existing = await db.all(sql`SELECT id FROM coupons WHERE UPPER(code) = ${code} LIMIT 1`)
   if (existing.length > 0) return { success: false, error: 'Já existe um cupom com este código.' }
 
   const valueStored = type === 'percent' ? value : Math.round(value * 100)
 
-  db.run(sql`
+  await db.run(sql`
     INSERT INTO coupons (id, code, type, value, min_order_in_cents, max_uses, used_count, active, expires_at, created_at)
     VALUES (${crypto.randomUUID()}, ${code}, ${type}, ${valueStored}, ${minOrder}, ${maxUses}, 0, 1, ${expires}, datetime('now'))
   `)

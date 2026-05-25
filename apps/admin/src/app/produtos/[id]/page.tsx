@@ -10,7 +10,7 @@ import { fmt } from '@/lib/utils'
 export default async function ProdutoDetalhe({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
 
-  const [produto] = db.all<{
+  const [produto] = await db.all<{
     id: string; name: string; slug: string; brand_name: string
     category: string; status: string; description: string
     line: string | null; badge: string | null
@@ -25,7 +25,7 @@ export default async function ProdutoDetalhe({ params }: { params: Promise<{ id:
   `)
   if (!produto) notFound()
 
-  const variantes = db.all<{
+  const variantes = await db.all<{
     id: string; sku: string; size: string; color: string | null
     price_in_cents: number; price_promo_in_cents: number | null
     stock: number; stock_reserved: number; available: number
@@ -34,7 +34,7 @@ export default async function ProdutoDetalhe({ params }: { params: Promise<{ id:
     FROM product_variants WHERE product_id = ${id} ORDER BY CAST(size AS INTEGER), size
   `)
 
-  const imagens = db.all<{
+  const imagens = await db.all<{
     id: string; url: string; alt: string; sort_order: number; is_primary: number
   }>(sql`
     SELECT id, url, alt, sort_order, is_primary

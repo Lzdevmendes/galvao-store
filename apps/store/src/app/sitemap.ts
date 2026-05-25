@@ -4,16 +4,16 @@ import { sql } from 'drizzle-orm'
 
 const BASE = process.env.NEXT_PUBLIC_APP_URL ?? 'https://galvaosstore.com.br'
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const products = db.all<{ slug: string; updated_at: string }>(sql`
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const products = await db.all<{ slug: string; updated_at: string }>(sql`
     SELECT slug, updated_at FROM products WHERE status = 'published'
   `)
 
-  const brands = db.all<{ slug: string }>(sql`
+  const brands = await db.all<{ slug: string }>(sql`
     SELECT slug FROM brands WHERE active = 1
   `)
 
-  const categories = db.all<{ slug: string }>(sql`
+  const categories = await db.all<{ slug: string }>(sql`
     SELECT slug FROM categories
   `)
 

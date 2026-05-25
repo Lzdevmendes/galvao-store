@@ -32,7 +32,7 @@ export default async function PedidosPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const orders = db.all<OrderRow>(sql`
+  const orders = await db.all<OrderRow>(sql`
     SELECT o.id, o.order_number, o.status, o.total_in_cents,
            o.payment_method, o.delivery_method, o.tracking_code, o.created_at,
            COUNT(oi.id)    AS item_count,

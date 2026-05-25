@@ -9,15 +9,15 @@ async function getUser() {
   return user
 }
 
-function firstVariantId(productId: string): string | null {
-  const rows = db.all<{ id: string }>(sql`SELECT id FROM product_variants WHERE product_id = ${productId} LIMIT 1`)
+async function firstVariantId(productId: string): Promise<string | null> {
+  const rows = await db.all<{ id: string }>(sql`SELECT id FROM product_variants WHERE product_id = ${productId} LIMIT 1`)
   return rows[0]?.id ?? null
 }
 
 export async function GET() {
   const user = await getUser()
   if (!user) return NextResponse.json({ ids: [] })
-  const rows = db.all<{ product_id: string }>(sql`
+  const rows = await db.all<{ product_id: string }>(sql`
     SELECT pv.product_id FROM wishlists w
     JOIN product_variants pv ON pv.id = w.variant_id
     WHERE w.user_id = ${user.id}
@@ -29,15 +29,15 @@ export async function POST(req: NextRequest) {
   const user = await getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
   const { productId } = await req.json()
-  const variantId = firstVariantId(productId)
+  const variantId = await firstVariantId(productId)
   if (!variantId) return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 })
-  const exists = db.all(sql`
+  const exists = await db.all(sql`
     SELECT w.id FROM wishlists w
     JOIN product_variants pv ON pv.id = w.variant_id
     WHERE w.user_id = ${user.id} AND pv.product_id = ${productId}
   `)
   if (exists.length === 0) {
-    db.run(sql`INSERT INTO wishlists (id, user_id, variant_id, created_at) VALUES (${crypto.randomUUID()}, ${user.id}, ${variantId}, datetime('now'))`)
+    await db.run(sql`INSERT INTO wishlists (id, user_id, variant_id, created_at) VALUES (${crypto.randomUUID()}, ${user.id}, ${variantId}, datetime('now'))`)
   }
   return NextResponse.json({ ok: true })
 }
@@ -46,7 +46,7 @@ export async function DELETE(req: NextRequest) {
   const user = await getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
   const { productId } = await req.json()
-  db.run(sql`
+  await db.run(sql`
     DELETE FROM wishlists WHERE user_id = ${user.id} AND variant_id IN (
       SELECT id FROM product_variants WHERE product_id = ${productId}
     )

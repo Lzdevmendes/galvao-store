@@ -6,7 +6,7 @@ import { ProductCard, type ProductCardData } from '@/components/catalog/product-
 export const metadata: Metadata = { title: 'Ofertas — Galvão\'s Store' }
 
 export default async function OfertasPage() {
-  const products = db.all<ProductCardData>(sql`
+  const products = await db.all<ProductCardData>(sql`
     SELECT p.id, p.slug, p.name, b.name as brand_name, p.badge,
            COALESCE(pi.url, '') as image_url, COALESCE(pi.alt, p.name) as image_alt,
            MIN(pv.price_in_cents) as min_price, MIN(pv.price_promo_in_cents) as min_promo

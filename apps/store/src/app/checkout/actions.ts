@@ -82,7 +82,7 @@ export async function calculateShipping(
   const options:  ShippingOption[] = []
 
   // 1. Entrega local (carro próprio) — prioridade se CEP bater
-  const zones = db.all<{
+  const zones = await db.all<{
     name: string; fee_in_cents: number; min_days: number; max_days: number
   }>(sql`
     SELECT name, fee_in_cents, min_days, max_days
@@ -114,7 +114,7 @@ export async function calculateShipping(
       // Buscar dimensões reais das variantes
       const meProducts: MEProduct[] = []
       for (const item of items) {
-        const rows = db.all<{
+        const rows = await db.all<{
           sku: string; weight_g: number; height_cm: number; width_cm: number; length_cm: number
         }>(sql`
           SELECT pv.sku, pv.weight_g, pv.height_cm, pv.width_cm, pv.length_cm
@@ -191,7 +191,7 @@ export async function validateCoupon(
 > {
   const now = new Date().toISOString()
 
-  const rows = db.all<{
+  const rows = await db.all<{
     id: string; type: string; value: number; min_order_in_cents: number | null
   }>(sql`
     SELECT id, type, value, min_order_in_cents
@@ -229,7 +229,7 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
     // Garantir que o utilizador logado existe na tabela users do SQLite
     // (Supabase gere auth; SQLite é o BD de negócio — precisamos sincronizar o UUID)
     if (user) {
-      db.run(sql`
+      await db.run(sql`
         INSERT INTO users (id, email, name, created_at, updated_at)
         VALUES (${user.id}, ${user.email ?? payload.email}, ${payload.name}, datetime('now'), datetime('now'))
         ON CONFLICT(id) DO NOTHING
@@ -249,14 +249,14 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
     const totalInCents   = subtotalInCents - totalDiscount + payload.shippingInCents
 
     // Número do pedido sequencial
-    const countRows  = db.all<{ n: number }>(sql`SELECT COUNT(*) as n FROM orders`)
+    const countRows  = await db.all<{ n: number }>(sql`SELECT COUNT(*) as n FROM orders`)
     const nextNum    = (countRows[0]?.n ?? 0) + 1
     const orderNumber = `GS-${new Date().getFullYear()}-${String(nextNum).padStart(6, '0')}`
     const orderId    = crypto.randomUUID()
 
     // Validar variantes e estoque
     for (const item of payload.cartItems) {
-      const vRows = db.all<{ stock: number; stock_reserved: number }>(sql`
+      const vRows = await db.all<{ stock: number; stock_reserved: number }>(sql`
         SELECT stock, stock_reserved FROM product_variants WHERE id = ${item.variantId}
       `)
       const v = vRows[0]
@@ -269,7 +269,7 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
     }
 
     // Criar pedido
-    db.run(sql`
+    await db.run(sql`
       INSERT INTO orders (
         id, user_id, order_number, status,
         customer_name, customer_email, customer_phone, customer_cpf,
@@ -295,10 +295,10 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
     for (const item of payload.cartItems) {
       const price     = item.pricePromoInCents != null && item.pricePromoInCents < item.priceInCents
         ? item.pricePromoInCents : item.priceInCents
-      const skuRows   = db.all<{ sku: string }>(sql`SELECT sku FROM product_variants WHERE id = ${item.variantId}`)
+      const skuRows   = await db.all<{ sku: string }>(sql`SELECT sku FROM product_variants WHERE id = ${item.variantId}`)
       const sku       = skuRows[0]?.sku ?? item.variantId
 
-      db.run(sql`
+      await db.run(sql`
         INSERT INTO order_items (
           id, order_id, variant_id,
           product_name, product_sku, brand_name,
@@ -315,7 +315,7 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
 
     // Reservar estoque (TTL 30min — liberado pelo webhook de cancelamento)
     for (const item of payload.cartItems) {
-      db.run(sql`
+      await db.run(sql`
         UPDATE product_variants
         SET stock_reserved = stock_reserved + ${item.quantity}
         WHERE id = ${item.variantId}
@@ -323,15 +323,15 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
     }
 
     // Primeiro evento da timeline
-    db.run(sql`
+    await db.run(sql`
       INSERT INTO order_events (id, order_id, type, created_by, created_at)
       VALUES (${crypto.randomUUID()}, ${orderId}, 'pending_payment', 'system', datetime('now'))
     `)
 
     // Registrar uso do cupom
     if (payload.couponId) {
-      db.run(sql`UPDATE coupons SET used_count = used_count + 1 WHERE id = ${payload.couponId}`)
-      db.run(sql`
+      await db.run(sql`UPDATE coupons SET used_count = used_count + 1 WHERE id = ${payload.couponId}`)
+      await db.run(sql`
         INSERT INTO coupon_uses (id, coupon_id, user_id, order_id, used_at)
         VALUES (${crypto.randomUUID()}, ${payload.couponId}, ${user?.id ?? null}, ${orderId}, datetime('now'))
       `)
@@ -397,7 +397,7 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
     if (isSandbox && payload.paymentMethod === 'pix') {
       const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString()
       const fakeKey   = `00020126580014BR.GOV.BCB.PIX0136${orderId.replace(/-/g,'').slice(0,32)}5204000053039865406${(totalInCents/100).toFixed(2)}5802BR5925GALVAO STORE LTDA6009SAO PAULO62070503***6304ABCD`
-      db.run(sql`
+      await db.run(sql`
         UPDATE orders SET pix_key = ${fakeKey}, pix_expires_at = ${expiresAt}
         WHERE id = ${orderId}
       `)
@@ -416,7 +416,7 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
       const fakeUrl     = `https://boleto.sandbox.mercadopago.com/sandbox/${orderId}`
       const fakeBarCode = `23793.38128 60007.827136 98000.063305 2 10010000${totalInCents}`
       const expiresAt   = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
-      db.run(sql`
+      await db.run(sql`
         UPDATE orders SET boleto_url = ${fakeUrl}, boleto_bar_code = ${fakeBarCode}, boleto_expires_at = ${expiresAt}
         WHERE id = ${orderId}
       `)
@@ -437,25 +437,25 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
     const mpPayment = new Payment(mpClient)
 
     // Helper: desfaz o pedido se o MP falhar (para o utilizador poder tentar de novo)
-    const rollbackOrder = () => {
+    const rollbackOrder = async () => {
       try {
         // Apagar na ordem inversa das FK constraints
-        db.run(sql`DELETE FROM order_events WHERE order_id = ${orderId}`)
-        db.run(sql`DELETE FROM order_items  WHERE order_id = ${orderId}`)
+        await db.run(sql`DELETE FROM order_events WHERE order_id = ${orderId}`)
+        await db.run(sql`DELETE FROM order_items  WHERE order_id = ${orderId}`)
         // Apagar coupon_uses e reverter contador se houve cupão
         if (payload.couponId) {
-          db.run(sql`DELETE FROM coupon_uses WHERE order_id = ${orderId}`)
-          db.run(sql`UPDATE coupons SET used_count = MAX(0, used_count - 1) WHERE id = ${payload.couponId}`)
+          await db.run(sql`DELETE FROM coupon_uses WHERE order_id = ${orderId}`)
+          await db.run(sql`UPDATE coupons SET used_count = MAX(0, used_count - 1) WHERE id = ${payload.couponId}`)
         }
         // Libertar stock reservado
         for (const item of payload.cartItems) {
-          db.run(sql`
+          await db.run(sql`
             UPDATE product_variants
             SET stock_reserved = MAX(0, stock_reserved - ${item.quantity})
             WHERE id = ${item.variantId}
           `)
         }
-        db.run(sql`DELETE FROM orders WHERE id = ${orderId}`)
+        await db.run(sql`DELETE FROM orders WHERE id = ${orderId}`)
       } catch (e) {
         console.error('[rollbackOrder] falhou:', e)
       }
@@ -495,7 +495,7 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
         const pixQr  = result.point_of_interaction?.transaction_data?.qr_code_base64 ?? undefined
         const pixKey = result.point_of_interaction?.transaction_data?.qr_code ?? undefined
 
-        db.run(sql`
+        await db.run(sql`
           UPDATE orders
           SET payment_id = ${String(result.id)},
               pix_qr_code = ${pixQr ?? null},
@@ -549,7 +549,7 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
           : undefined
         const boletoExpAt   = result.date_of_expiration ?? undefined
 
-        db.run(sql`
+        await db.run(sql`
           UPDATE orders
           SET payment_id = ${String(result.id)},
               boleto_url = ${boletoUrl ?? null},
@@ -600,12 +600,12 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
         })
 
         if (result.status === 'approved') {
-          db.run(sql`
+          await db.run(sql`
             UPDATE orders SET status = 'paid', payment_id = ${String(result.id)}, paid_at = datetime('now')
             WHERE id = ${orderId}
           `)
           for (const item of payload.cartItems) {
-            db.run(sql`
+            await db.run(sql`
               UPDATE product_variants
               SET stock = stock - ${item.quantity},
                   stock_reserved = stock_reserved - ${item.quantity}
@@ -613,7 +613,7 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
             `)
           }
         } else {
-          db.run(sql`UPDATE orders SET payment_id = ${String(result.id)} WHERE id = ${orderId}`)
+          await db.run(sql`UPDATE orders SET payment_id = ${String(result.id)} WHERE id = ${orderId}`)
         }
 
         void sendOrderCreatedEmail(payload.email, {

@@ -38,7 +38,7 @@ export default async function PedidoPage({ params, searchParams }: PageProps) {
   const boletoUrl = sp.burl
   const boletoBar = sp.bcode
 
-  const orders = db.all<OrderRow>(sql`
+  const orders = await db.all<OrderRow>(sql`
     SELECT id, order_number, status, customer_name, customer_email,
            ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state,
            delivery_method, shipping_in_cents, estimated_days,
@@ -50,7 +50,7 @@ export default async function PedidoPage({ params, searchParams }: PageProps) {
   const order = orders[0]
   if (!order) notFound()
 
-  const items = db.all<OrderItemRow>(sql`
+  const items = await db.all<OrderItemRow>(sql`
     SELECT product_name, brand_name, variant_size, variant_color, image_url, qty, unit_in_cents, total_in_cents
     FROM order_items WHERE order_id = ${id}
   `)

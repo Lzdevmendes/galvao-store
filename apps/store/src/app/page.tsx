@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 
 async function getFeatured(limit = 4, badge?: string): Promise<ProductCardData[]> {
   return badge
-    ? db.all<ProductCardData>(sql`
+    ? await db.all<ProductCardData>(sql`
         SELECT p.id, p.slug, p.name, b.name as brand_name, p.badge,
                COALESCE(pi.url, '') as image_url,
                COALESCE(pi.alt, p.name) as image_alt,
@@ -33,7 +33,7 @@ async function getFeatured(limit = 4, badge?: string): Promise<ProductCardData[]
         ORDER BY p.created_at DESC
         LIMIT ${limit}
       `)
-    : db.all<ProductCardData>(sql`
+    : await db.all<ProductCardData>(sql`
         SELECT p.id, p.slug, p.name, b.name as brand_name, p.badge,
                COALESCE(pi.url, '') as image_url,
                COALESCE(pi.alt, p.name) as image_alt,

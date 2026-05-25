@@ -20,10 +20,10 @@ export async function addAddress(payload: AddressPayload) {
   ensureLocalUser(user)
 
   if (payload.isDefault) {
-    db.run(sql`UPDATE addresses SET is_default = 0 WHERE user_id = ${user.id}`)
+    await db.run(sql`UPDATE addresses SET is_default = 0 WHERE user_id = ${user.id}`)
   }
 
-  db.run(sql`
+  await db.run(sql`
     INSERT INTO addresses (id, user_id, label, name, cep, street, number, complement, district, city, state, is_default, created_at)
     VALUES (${crypto.randomUUID()}, ${user.id}, ${payload.label || 'Casa'}, ${user.user_metadata?.full_name ?? ''}, ${payload.cep}, ${payload.street}, ${payload.number}, ${payload.complement || null}, ${payload.district}, ${payload.city}, ${payload.state}, ${payload.isDefault ? 1 : 0}, datetime('now'))
   `)
@@ -37,7 +37,7 @@ export async function deleteAddress(id: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Não autenticado' }
 
-  db.run(sql`DELETE FROM addresses WHERE id = ${id} AND user_id = ${user.id}`)
+  await db.run(sql`DELETE FROM addresses WHERE id = ${id} AND user_id = ${user.id}`)
   revalidatePath('/conta/enderecos')
   return { success: true }
 }
@@ -47,8 +47,8 @@ export async function setDefaultAddress(id: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Não autenticado' }
 
-  db.run(sql`UPDATE addresses SET is_default = 0 WHERE user_id = ${user.id}`)
-  db.run(sql`UPDATE addresses SET is_default = 1 WHERE id = ${id} AND user_id = ${user.id}`)
+  await db.run(sql`UPDATE addresses SET is_default = 0 WHERE user_id = ${user.id}`)
+  await db.run(sql`UPDATE addresses SET is_default = 1 WHERE id = ${id} AND user_id = ${user.id}`)
   revalidatePath('/conta/enderecos')
   return { success: true }
 }

@@ -53,7 +53,7 @@ export default async function PedidoDetailPage({ params }: { params: Promise<{ i
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const rows = db.all<OrderRow>(sql`
+  const rows = await db.all<OrderRow>(sql`
     SELECT * FROM orders
     WHERE id = ${id}
       AND (user_id = ${user.id} OR customer_email = ${user.email})
@@ -62,12 +62,12 @@ export default async function PedidoDetailPage({ params }: { params: Promise<{ i
   const order = rows[0]
   if (!order) notFound()
 
-  const items = db.all<ItemRow>(sql`
+  const items = await db.all<ItemRow>(sql`
     SELECT product_name, brand_name, variant_size, variant_color, image_url, qty, unit_in_cents, total_in_cents
     FROM order_items WHERE order_id = ${id}
   `)
 
-  const events = db.all<EventRow>(sql`
+  const events = await db.all<EventRow>(sql`
     SELECT type, created_at FROM order_events WHERE order_id = ${id} ORDER BY created_at ASC
   `)
 

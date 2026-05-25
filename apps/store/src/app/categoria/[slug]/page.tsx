@@ -15,15 +15,15 @@ interface CategoryRow {
 type SearchParams = Promise<{ tamanho?: string; sort?: string }>
 
 export async function generateStaticParams() {
-  return db.all<{ slug: string }>(sql`SELECT slug FROM categories`)
-    .map(c => ({ slug: c.slug }))
+  const rows = await db.all<{ slug: string }>(sql`SELECT slug FROM categories`)
+  return rows.map(c => ({ slug: c.slug }))
 }
 
 export async function generateMetadata(
   { params }: { params: Promise<{ slug: string }> }
 ): Promise<Metadata> {
   const { slug } = await params
-  const [cat] = db.all<CategoryRow>(sql`SELECT * FROM categories WHERE slug = ${slug}`)
+  const [cat] = await db.all<CategoryRow>(sql`SELECT * FROM categories WHERE slug = ${slug}`)
   if (!cat) return {}
   return {
     title: `${cat.name} — Galvão's Store`,
@@ -41,7 +41,7 @@ export default async function CategoriaPage({
   const { slug } = await params
   const { tamanho = '', sort = 'relevancia' } = await searchParams
 
-  const [cat] = db.all<CategoryRow>(sql`SELECT * FROM categories WHERE slug = ${slug}`)
+  const [cat] = await db.all<CategoryRow>(sql`SELECT * FROM categories WHERE slug = ${slug}`)
   if (!cat) notFound()
 
   const filters: CatalogFilters = {
@@ -51,8 +51,8 @@ export default async function CategoriaPage({
   }
 
   const [products, sizes] = await Promise.all([
-    Promise.resolve(queryProducts(filters)),
-    Promise.resolve(queryAvailableSizes({ categoryId: cat.id })),
+    queryProducts(filters),
+    queryAvailableSizes({ categoryId: cat.id }),
   ])
 
   return (

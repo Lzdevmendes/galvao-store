@@ -17,7 +17,7 @@ export async function updateProfile(data: { name: string; phone: string; cpf: st
   await supabase.auth.updateUser({ data: { full_name: data.name } })
 
   // Actualiza na DB local
-  db.run(sql`
+  await db.run(sql`
     UPDATE users
     SET name = ${data.name}, phone = ${data.phone || null}, cpf = ${data.cpf || null},
         birthday = ${data.birthday || null}, updated_at = datetime('now')

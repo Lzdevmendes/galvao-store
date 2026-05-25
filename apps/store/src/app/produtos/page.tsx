@@ -24,10 +24,10 @@ export default async function ProdutosPage({
 
   // Resolve IDs a partir de slugs
   const brandId = marca
-    ? db.all<{ id: string }>(sql`SELECT id FROM brands WHERE slug = ${marca} AND active = 1`)[0]?.id
+    ? (await db.all<{ id: string }>(sql`SELECT id FROM brands WHERE slug = ${marca} AND active = 1`))[0]?.id
     : undefined
   const categoryId = categoria
-    ? db.all<{ id: string }>(sql`SELECT id FROM categories WHERE slug = ${categoria}`)[0]?.id
+    ? (await db.all<{ id: string }>(sql`SELECT id FROM categories WHERE slug = ${categoria}`))[0]?.id
     : undefined
 
   const filters: CatalogFilters = {
@@ -37,16 +37,16 @@ export default async function ProdutosPage({
   }
 
   const [products, sizes, brands, categories] = await Promise.all([
-    Promise.resolve(queryProducts(filters)),
-    Promise.resolve(queryAvailableSizes({ brandId, categoryId })),
-    Promise.resolve(db.all<{ slug: string; name: string }>(sql`
+    queryProducts(filters),
+    queryAvailableSizes({ brandId, categoryId }),
+    await db.all<{ slug: string; name: string }>(sql`
       SELECT slug, name FROM brands WHERE active = 1 ORDER BY name
-    `)),
-    Promise.resolve(db.all<{ slug: string; name: string }>(sql`
+    `),
+    await db.all<{ slug: string; name: string }>(sql`
       SELECT c.slug, c.name FROM categories c
       JOIN products p ON p.category_id = c.id AND p.status = 'published'
       GROUP BY c.id ORDER BY c.sort_order
-    `)),
+    `),
   ])
 
   return (

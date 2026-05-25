@@ -10,7 +10,7 @@ export default async function FavoritosPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const products = db.all<ProductCardData>(sql`
+  const products = await db.all<ProductCardData>(sql`
     SELECT p.id, p.slug, p.name, b.name AS brand_name, p.badge,
            COALESCE(pi.url, '') AS image_url, COALESCE(pi.alt, p.name) AS image_alt,
            MIN(v.price_in_cents) AS min_price, MIN(v.price_promo_in_cents) AS min_promo

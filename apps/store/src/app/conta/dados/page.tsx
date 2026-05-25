@@ -9,7 +9,7 @@ export default async function DadosPage() {
   if (!user) redirect('/auth/login')
 
   ensureLocalUser(user)
-  const local = getLocalUser(user.id)
+  const local = await getLocalUser(user.id)
 
   return (
     <div className="container" style={{ paddingTop: 48, paddingBottom: 96, maxWidth: 640 }}>

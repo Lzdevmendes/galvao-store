@@ -9,7 +9,7 @@ export default async function AdminProdutos({ searchParams }: PageProps) {
   const sp = await searchParams
   const q  = sp.q?.trim() ?? ''
 
-  const produtos = db.all<{
+  const produtos = await db.all<{
     id: string; slug: string; name: string; brand_name: string
     category_name: string; status: string
     variant_count: number; total_stock: number; low_stock_count: number

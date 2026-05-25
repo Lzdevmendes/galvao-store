@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
   let filename = ''
 
   if (type === 'orders') {
-    const rows = db.all<Record<string, unknown>>(sql`
+    const rows = await db.all<Record<string, unknown>>(sql`
       SELECT order_number, status, customer_name, customer_email, customer_phone,
              payment_method, ROUND(subtotal_in_cents/100.0,2) subtotal,
              ROUND(discount_in_cents/100.0,2) desconto,
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (type === 'customers') {
-    const rows = db.all<Record<string, unknown>>(sql`
+    const rows = await db.all<Record<string, unknown>>(sql`
       SELECT u.email, u.name, u.phone, u.created_at,
              COUNT(o.id) total_pedidos,
              ROUND(COALESCE(SUM(o.total_in_cents),0)/100.0,2) total_gasto
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (type === 'products') {
-    const rows = db.all<Record<string, unknown>>(sql`
+    const rows = await db.all<Record<string, unknown>>(sql`
       SELECT p.name, b.name marca, c.name categoria, p.status,
              COUNT(DISTINCT pv.id) variantes,
              SUM(pv.stock) stock_total,

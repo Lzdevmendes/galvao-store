@@ -14,7 +14,7 @@ export async function adjustStock(
 ): Promise<{ success: boolean; error?: string }> {
   if (!variantId || delta === 0) return { success: false, error: 'Parâmetros inválidos.' }
 
-  const row = db.get<{ stock: number }>(
+  const row = await db.get<{ stock: number }>(
     sql`SELECT stock FROM product_variants WHERE id = ${variantId} LIMIT 1`
   )
   if (!row) return { success: false, error: 'Variante não encontrada.' }
@@ -22,9 +22,9 @@ export async function adjustStock(
   const newStock = row.stock + delta
   if (newStock < 0) return { success: false, error: `Stock insuficiente. Actual: ${row.stock}.` }
 
-  db.run(sql`UPDATE product_variants SET stock = ${newStock}, updated_at = datetime('now') WHERE id = ${variantId}`)
+  await db.run(sql`UPDATE product_variants SET stock = ${newStock}, updated_at = datetime('now') WHERE id = ${variantId}`)
 
-  db.run(sql`
+  await db.run(sql`
     INSERT INTO stock_movements (id, variant_id, delta, reason, reference_id, created_by, created_at)
     VALUES (${crypto.randomUUID()}, ${variantId}, ${delta}, ${reason}, ${note || null}, 'admin', datetime('now'))
   `)

@@ -14,7 +14,7 @@ const securityHeaders = [
 
 const config: NextConfig = {
   transpilePackages: ['@galvao/ui'],
-  serverExternalPackages: ['better-sqlite3'],
+  serverExternalPackages: ['@libsql/client'],
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '**.supabase.co' },

@@ -37,7 +37,7 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
 export default async function AdminOrderDetail({ params }: PageProps) {
   const { id } = await params
 
-  const orders = db.all<{
+  const orders = await db.all<{
     id: string; order_number: string; status: string; created_at: string; updated_at: string
     customer_name: string; customer_email: string; customer_phone: string | null; customer_cpf: string | null
     ship_street: string; ship_number: string; ship_complement: string | null
@@ -54,12 +54,12 @@ export default async function AdminOrderDetail({ params }: PageProps) {
   const order = orders[0]
   if (!order) notFound()
 
-  const items = db.all<{
+  const items = await db.all<{
     product_name: string; brand_name: string; variant_size: string
     variant_color: string | null; qty: number; unit_in_cents: number; total_in_cents: number
   }>(sql`SELECT product_name, brand_name, variant_size, variant_color, qty, unit_in_cents, total_in_cents FROM order_items WHERE order_id = ${id}`)
 
-  const events = db.all<{ type: string; created_by: string; created_at: string }>(
+  const events = await db.all<{ type: string; created_by: string; created_at: string }>(
     sql`SELECT type, created_by, created_at FROM order_events WHERE order_id = ${id} ORDER BY created_at ASC`
   )
 

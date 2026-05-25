@@ -7,7 +7,7 @@ export async function PATCH(req: NextRequest) {
   const auth = await requireAdmin()
   if (auth instanceof NextResponse) return auth
   const { imageId, productId } = await req.json() as { imageId: string; productId: string }
-  db.run(sql`UPDATE product_images SET is_primary = 0 WHERE product_id = ${productId}`)
-  db.run(sql`UPDATE product_images SET is_primary = 1 WHERE id = ${imageId}`)
+  await db.run(sql`UPDATE product_images SET is_primary = 0 WHERE product_id = ${productId}`)
+  await db.run(sql`UPDATE product_images SET is_primary = 1 WHERE id = ${imageId}`)
   return NextResponse.json({ ok: true })
 }

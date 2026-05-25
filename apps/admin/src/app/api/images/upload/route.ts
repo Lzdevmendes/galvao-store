@@ -32,12 +32,12 @@ export async function POST(req: NextRequest) {
 
   const { data: { publicUrl } } = supabaseAdmin.storage.from(BUCKET).getPublicUrl(path)
 
-  const countRows  = db.all<{ n: number }>(sql`SELECT COUNT(*) as n FROM product_images WHERE product_id = ${productId}`)
+  const countRows  = await db.all<{ n: number }>(sql`SELECT COUNT(*) as n FROM product_images WHERE product_id = ${productId}`)
   const sortOrder  = countRows[0]?.n ?? 0
   const isPrimary  = sortOrder === 0
   const imageId    = crypto.randomUUID()
 
-  db.run(sql`
+  await db.run(sql`
     INSERT INTO product_images (id, product_id, url, alt, sort_order, is_primary)
     VALUES (${imageId}, ${productId}, ${publicUrl}, '', ${sortOrder}, ${isPrimary ? 1 : 0})
   `)

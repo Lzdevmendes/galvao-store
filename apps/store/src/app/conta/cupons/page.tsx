@@ -31,7 +31,7 @@ export default async function CuponsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const used = db.all<CouponRow>(sql`
+  const used = await db.all<CouponRow>(sql`
     SELECT c.id, c.code, c.type, c.value, c.min_order_in_cents, c.expires_at,
            cu.used_at, cu.order_id
     FROM coupon_uses cu
@@ -40,7 +40,7 @@ export default async function CuponsPage() {
     ORDER BY cu.used_at DESC
   `)
 
-  const available = db.all<CouponRow>(sql`
+  const available = await db.all<CouponRow>(sql`
     SELECT c.id, c.code, c.type, c.value, c.min_order_in_cents, c.expires_at
     FROM coupons c
     WHERE c.active = 1

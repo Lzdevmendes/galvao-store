@@ -16,9 +16,9 @@ export default async function AdminClientes({ searchParams }: PageProps) {
     ? sql`WHERE u.email LIKE ${'%'+q+'%'} OR u.name LIKE ${'%'+q+'%'}`
     : sql``
 
-  const [{ total }] = db.all<{ total: number }>(sql`SELECT COUNT(*) total FROM users u ${where}`)
+  const [{ total }] = await db.all<{ total: number }>(sql`SELECT COUNT(*) total FROM users u ${where}`)
 
-  const clientes = db.all<{
+  const clientes = await db.all<{
     id: string; email: string; name: string | null; phone: string | null
     created_at: string; order_count: number; total_spent: number
   }>(sql`

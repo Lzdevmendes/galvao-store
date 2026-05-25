@@ -18,15 +18,15 @@ interface BrandRow {
 type SearchParams = Promise<{ linha?: string; tamanho?: string; sort?: string }>
 
 export async function generateStaticParams() {
-  return db.all<{ slug: string }>(sql`SELECT slug FROM brands WHERE active = 1`)
-    .map(b => ({ 'brand-slug': b.slug }))
+  const rows = await db.all<{ slug: string }>(sql`SELECT slug FROM brands WHERE active = 1`)
+  return rows.map(b => ({ 'brand-slug': b.slug }))
 }
 
 export async function generateMetadata(
   { params }: { params: Promise<{ 'brand-slug': string }> }
 ): Promise<Metadata> {
   const { 'brand-slug': slug } = await params
-  const [brand] = db.all<BrandRow>(sql`SELECT * FROM brands WHERE slug = ${slug} AND active = 1`)
+  const [brand] = await db.all<BrandRow>(sql`SELECT * FROM brands WHERE slug = ${slug} AND active = 1`)
   if (!brand) return {}
   return {
     title: `${brand.name} — Chuteiras e Tênis`,
@@ -44,7 +44,7 @@ export default async function BrandPage({
   const { 'brand-slug': slug } = await params
   const { linha = '', tamanho = '', sort = 'relevancia' } = await searchParams
 
-  const [brand] = db.all<BrandRow>(sql`
+  const [brand] = await db.all<BrandRow>(sql`
     SELECT id, slug, name, tagline, gradient_css
     FROM   brands WHERE slug = ${slug} AND active = 1
   `)
@@ -58,9 +58,9 @@ export default async function BrandPage({
   }
 
   const [products, sizes, lines] = await Promise.all([
-    Promise.resolve(queryProducts(filters)),
-    Promise.resolve(queryAvailableSizes({ brandId: brand.id, line: linha || undefined })),
-    Promise.resolve(queryBrandLines(brand.id)),
+    queryProducts(filters),
+    queryAvailableSizes({ brandId: brand.id, line: linha || undefined }),
+    queryBrandLines(brand.id),
   ])
 
   const gradient = brand.gradient_css ?? 'linear-gradient(135deg,#0B0E12,#1F252E)'

@@ -15,7 +15,7 @@ export async function updateProduct(productId: string, formData: FormData) {
 
   if (!name || !description) return { error: 'Nome e descrição são obrigatórios.' }
 
-  db.run(sql`
+  await db.run(sql`
     UPDATE products
     SET name = ${name},
         description = ${description},
@@ -36,7 +36,7 @@ export async function updateProduct(productId: string, formData: FormData) {
 export async function updateVariantPrice(variantId: string, priceInCents: number, promoInCents: number | null) {
   if (priceInCents <= 0) return { error: 'Preço inválido.' }
 
-  db.run(sql`
+  await db.run(sql`
     UPDATE product_variants
     SET price_in_cents = ${priceInCents},
         price_promo_in_cents = ${promoInCents},

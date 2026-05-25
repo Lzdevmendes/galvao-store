@@ -41,10 +41,10 @@ export async function createProduct(formData: FormData) {
   const suffix    = Math.random().toString(36).slice(2, 5).toUpperCase()
   const skuBase   = `${brandId.toUpperCase().slice(0, 3)}-${skuRaw}-${suffix}`
 
-  const existing = db.all(sql`SELECT id FROM products WHERE id = ${productId} OR slug = ${baseSlug} LIMIT 1`)
+  const existing = await db.all(sql`SELECT id FROM products WHERE id = ${productId} OR slug = ${baseSlug} LIMIT 1`)
   if (existing.length > 0) return { error: 'Já existe um produto com este nome/slug.' }
 
-  db.run(sql`
+  await db.run(sql`
     INSERT INTO products (id, slug, brand_id, category_id, name, sku_base, description, features, specs, tags, status, line, created_at, updated_at)
     VALUES (${productId}, ${baseSlug}, ${brandId}, ${categoryId}, ${name}, ${skuBase}, ${description}, '[]', '{}', '[]', ${status}, ${line}, datetime('now'), datetime('now'))
   `)
@@ -58,7 +58,7 @@ export async function createProduct(formData: FormData) {
   for (const size of sizes) {
     const variantId = crypto.randomUUID()
     const sku = `${skuBase}-${size}`
-    db.run(sql`
+    await db.run(sql`
       INSERT INTO product_variants (id, product_id, sku, size, color, price_in_cents, price_promo_in_cents, stock, stock_reserved, available, weight_g, height_cm, width_cm, length_cm, created_at, updated_at)
       VALUES (${variantId}, ${productId}, ${sku}, ${size}, null, ${priceInCents}, ${promoInCents}, 0, 0, 1, 500, 12, 22, 30, datetime('now'), datetime('now'))
     `)

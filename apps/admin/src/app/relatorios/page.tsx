@@ -23,34 +23,34 @@ export default async function RelatoriosPage({ searchParams }: PageProps) {
   const since = new Date(Date.now() - days * 86400000).toISOString()
 
   // ── KPIs ──
-  const [revenue]  = db.all<{ total: number; count: number }>(sql`
+  const [revenue]  = await db.all<{ total: number; count: number }>(sql`
     SELECT COALESCE(SUM(total_in_cents),0) total, COUNT(*) count
     FROM orders WHERE status IN ('paid','processing','shipped','delivered') AND created_at >= ${since}
   `)
-  const [cancelled] = db.all<{ count: number }>(sql`SELECT COUNT(*) count FROM orders WHERE status='cancelled' AND created_at >= ${since}`)
-  const [avgTicket] = db.all<{ avg: number }>(sql`SELECT COALESCE(AVG(total_in_cents),0) avg FROM orders WHERE status IN ('paid','processing','shipped','delivered') AND created_at >= ${since}`)
-  const [newCustomers] = db.all<{ count: number }>(sql`SELECT COUNT(*) count FROM users WHERE created_at >= ${since}`)
+  const [cancelled] = await db.all<{ count: number }>(sql`SELECT COUNT(*) count FROM orders WHERE status='cancelled' AND created_at >= ${since}`)
+  const [avgTicket] = await db.all<{ avg: number }>(sql`SELECT COALESCE(AVG(total_in_cents),0) avg FROM orders WHERE status IN ('paid','processing','shipped','delivered') AND created_at >= ${since}`)
+  const [newCustomers] = await db.all<{ count: number }>(sql`SELECT COUNT(*) count FROM users WHERE created_at >= ${since}`)
 
   // ── Receita por dia ──
-  const dailyData = db.all<{ day: string; total: number; orders: number }>(sql`
+  const dailyData = (await db.all<{ day: string; total: number; orders: number }>(sql`
     SELECT DATE(created_at) day,
            COALESCE(SUM(CASE WHEN status IN ('paid','processing','shipped','delivered') THEN total_in_cents ELSE 0 END),0) total,
            COUNT(CASE WHEN status IN ('paid','processing','shipped','delivered') THEN 1 END) orders
     FROM orders WHERE created_at >= ${since}
     GROUP BY DATE(created_at) ORDER BY day
-  `).map(r => ({ label: new Date(r.day).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' }), total: r.total, orders: r.orders }))
+  `)).map(r => ({ label: new Date(r.day).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' }), total: r.total, orders: r.orders }))
 
   // ── Pedidos por dia (total + cancelados) ──
-  const ordersData = db.all<{ day: string; orders: number; cancelled: number }>(sql`
+  const ordersData = (await db.all<{ day: string; orders: number; cancelled: number }>(sql`
     SELECT DATE(created_at) day,
            COUNT(*) orders,
            COUNT(CASE WHEN status='cancelled' THEN 1 END) cancelled
     FROM orders WHERE created_at >= ${since}
     GROUP BY DATE(created_at) ORDER BY day
-  `).map(r => ({ label: new Date(r.day).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' }), orders: r.orders, cancelled: r.cancelled }))
+  `)).map(r => ({ label: new Date(r.day).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' }), orders: r.orders, cancelled: r.cancelled }))
 
   // ── Mix de pagamento ──
-  const payData = db.all<{ method: string; count: number }>(sql`
+  const payData = await db.all<{ method: string; count: number }>(sql`
     SELECT payment_method method, COUNT(*) count
     FROM orders WHERE status IN ('paid','processing','shipped','delivered') AND created_at >= ${since}
     GROUP BY payment_method
@@ -65,7 +65,7 @@ export default async function RelatoriosPage({ searchParams }: PageProps) {
   }))
 
   // ── Top produtos ──
-  const topProducts = db.all<{ name: string; total: number }>(sql`
+  const topProducts = await db.all<{ name: string; total: number }>(sql`
     SELECT oi.product_name name, SUM(oi.total_in_cents) total
     FROM order_items oi
     JOIN orders o ON o.id = oi.order_id
@@ -75,7 +75,7 @@ export default async function RelatoriosPage({ searchParams }: PageProps) {
   `)
 
   // ── Status breakdown ──
-  const statusBreak = db.all<{ status: string; count: number; total: number }>(sql`
+  const statusBreak = await db.all<{ status: string; count: number; total: number }>(sql`
     SELECT status, COUNT(*) count, COALESCE(SUM(total_in_cents),0) total
     FROM orders WHERE created_at >= ${since}
     GROUP BY status ORDER BY count DESC

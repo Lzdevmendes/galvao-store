@@ -45,7 +45,7 @@ export default async function EstoquePage({ searchParams }: PageProps) {
     ? sql`AND (p.name LIKE ${'%'+q+'%'} OR pv.sku LIKE ${'%'+q+'%'})`
     : sql``
 
-  const rows = db.all<VariantRow>(sql`
+  const rows = await db.all<VariantRow>(sql`
     SELECT
       pv.id, p.name product_name, b.name brand_name,
       pv.sku, pv.size, pv.color, pv.stock, pv.stock_reserved,
@@ -61,7 +61,7 @@ export default async function EstoquePage({ searchParams }: PageProps) {
     LIMIT ${LIMIT} OFFSET ${offset}
   `)
 
-  const total = db.get<{ n: number }>(sql`
+  const totalRow = await db.get<{ n: number }>(sql`
     SELECT COUNT(*) n
     FROM product_variants pv
     JOIN products p ON p.id = pv.product_id
@@ -69,11 +69,12 @@ export default async function EstoquePage({ searchParams }: PageProps) {
     WHERE 1=1
     ${searchClause}
     ${filterClause}
-  `)?.n ?? 0
+  `)
+  const total = totalRow?.n ?? 0
 
   const totalPages = Math.max(1, Math.ceil(total / LIMIT))
 
-  const summary = db.get<{ total: number; low: number; zero: number }>(sql`
+  const summary = await db.get<{ total: number; low: number; zero: number }>(sql`
     SELECT
       COUNT(*) total,
       COUNT(CASE WHEN (stock - stock_reserved) <= 3 AND (stock - stock_reserved) > 0 THEN 1 END) low,

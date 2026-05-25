@@ -30,7 +30,7 @@ interface VariantRow {
 }
 
 export async function generateStaticParams() {
-  const products = db.all<{ slug: string }>(sql`SELECT slug FROM products WHERE status = 'published'`)
+  const products = await db.all<{ slug: string }>(sql`SELECT slug FROM products WHERE status = 'published'`)
   return products.map(p => ({ slug: p.slug }))
 }
 
@@ -40,7 +40,7 @@ export async function generateMetadata(
   const { slug } = await params
   const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://galvaosstore.com.br'
 
-  const [p] = db.all<ProductRow & { meta_title: string | null; meta_description: string | null; meta_image: string | null; primary_image: string | null }>(sql`
+  const [p] = await db.all<ProductRow & { meta_title: string | null; meta_description: string | null; meta_image: string | null; primary_image: string | null }>(sql`
     SELECT p.*, b.name as brand_name,
       (SELECT url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as primary_image
     FROM products p
@@ -76,7 +76,7 @@ export default async function ProdutoPage(
 ) {
   const { slug } = await params
 
-  const [product] = db.all<ProductRow>(sql`
+  const [product] = await db.all<ProductRow>(sql`
     SELECT p.id, p.slug, p.name, p.badge, p.line, p.description, p.features, p.specs,
            p.brand_id,
            b.name as brand_name, b.slug as brand_slug, b.gradient_css as brand_gradient,
@@ -88,20 +88,20 @@ export default async function ProdutoPage(
   `)
   if (!product) notFound()
 
-  const images = db.all<ImageRow>(sql`
+  const images = await db.all<ImageRow>(sql`
     SELECT id, url, alt, is_primary, sort_order FROM product_images
     WHERE product_id = ${product.id}
     ORDER BY is_primary DESC, sort_order ASC
   `)
 
-  const variants = db.all<VariantRow>(sql`
+  const variants = await db.all<VariantRow>(sql`
     SELECT id, sku, size, color, price_in_cents, price_promo_in_cents, stock, available
     FROM product_variants
     WHERE product_id = ${product.id}
     ORDER BY color, CAST(size AS INTEGER)
   `)
 
-  const related = db.all<ProductCardData>(sql`
+  const related = await db.all<ProductCardData>(sql`
     SELECT p.id, p.slug, p.name, b.name as brand_name, p.badge,
            COALESCE(pi.url, '') as image_url, COALESCE(pi.alt, p.name) as image_alt,
            MIN(v.price_in_cents) as min_price, MIN(v.price_promo_in_cents) as min_promo
@@ -122,12 +122,13 @@ export default async function ProdutoPage(
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   const isLoggedIn = !!user
-  const initialFavorited = user ? db.all(sql`
+  const favRows = user ? await db.all(sql`
     SELECT w.id FROM wishlists w
     JOIN product_variants pv ON pv.id = w.variant_id
     WHERE w.user_id = ${user.id} AND pv.product_id = ${product.id}
     LIMIT 1
-  `).length > 0 : false
+  `) : []
+  const initialFavorited = favRows.length > 0
 
   const badgeEl =
     product.badge === 'new'        ? <span style={{ background:'#0B0E12', color:'#fff', padding:'6px 14px', borderRadius:999, fontSize:12, fontWeight:700, fontFamily:'var(--font-ui)', letterSpacing:'.04em' }}>LANÇAMENTO</span>

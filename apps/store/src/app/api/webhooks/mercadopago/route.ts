@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     if (!orderId) return NextResponse.json({ ok: true })
 
     // Buscar pedido
-    const orders = db.all<{ id: string; status: string }>(sql`
+    const orders = await db.all<{ id: string; status: string }>(sql`
       SELECT id, status FROM orders WHERE id = ${orderId} LIMIT 1
     `)
     const order = orders[0]
@@ -90,18 +90,18 @@ export async function POST(req: NextRequest) {
 
     // Atualizar status do pedido
     if (newStatus === 'paid') {
-      db.run(sql`
+      await db.run(sql`
         UPDATE orders
         SET status = 'paid', paid_at = datetime('now'), updated_at = datetime('now')
         WHERE id = ${orderId}
       `)
 
       // Decrementar estoque definitivo
-      const items = db.all<{ variant_id: string; qty: number }>(sql`
+      const items = await db.all<{ variant_id: string; qty: number }>(sql`
         SELECT variant_id, qty FROM order_items WHERE order_id = ${orderId}
       `)
       for (const item of items) {
-        db.run(sql`
+        await db.run(sql`
           UPDATE product_variants
           SET stock          = stock          - ${item.qty},
               stock_reserved = stock_reserved - ${item.qty}
@@ -110,13 +110,13 @@ export async function POST(req: NextRequest) {
       }
 
       // Evento na timeline
-      db.run(sql`
+      await db.run(sql`
         INSERT INTO order_events (id, order_id, type, created_by, created_at)
         VALUES (${crypto.randomUUID()}, ${orderId}, 'paid', 'system', datetime('now'))
       `)
 
       // E-mail de pagamento confirmado
-      const fullOrder = db.all<{
+      const fullOrder = await db.all<{
         order_number: string; customer_name: string; customer_email: string; customer_phone: string | null
         delivery_method: string; estimated_days: number | null
         subtotal_in_cents: number; discount_in_cents: number
@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
         coupon_code: string | null; payment_method: string
       }>(sql`SELECT * FROM orders WHERE id = ${orderId} LIMIT 1`)
 
-      const fullItems = db.all<{
+      const fullItems = await db.all<{
         product_name: string; brand_name: string; variant_size: string
         variant_color: string | null; image_url: string | null
         qty: number; unit_in_cents: number; total_in_cents: number
@@ -164,25 +164,25 @@ export async function POST(req: NextRequest) {
       }
 
     } else if (newStatus === 'cancelled' || newStatus === 'refunded') {
-      db.run(sql`
+      await db.run(sql`
         UPDATE orders
         SET status = ${newStatus}, updated_at = datetime('now')
         WHERE id = ${orderId}
       `)
 
       // Liberar reserva de estoque
-      const items = db.all<{ variant_id: string; qty: number }>(sql`
+      const items = await db.all<{ variant_id: string; qty: number }>(sql`
         SELECT variant_id, qty FROM order_items WHERE order_id = ${orderId}
       `)
       for (const item of items) {
-        db.run(sql`
+        await db.run(sql`
           UPDATE product_variants
           SET stock_reserved = MAX(0, stock_reserved - ${item.qty})
           WHERE id = ${item.variant_id}
         `)
       }
 
-      db.run(sql`
+      await db.run(sql`
         INSERT INTO order_events (id, order_id, type, created_by, created_at)
         VALUES (${crypto.randomUUID()}, ${orderId}, ${newStatus as 'cancelled' | 'refunded'}, 'system', datetime('now'))
       `)
