@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next'
+import { withSentryConfig } from '@sentry/nextjs'
 
 const CSP = [
   "default-src 'self'",
@@ -45,4 +46,11 @@ const config: NextConfig = {
   },
 }
 
-export default config
+export default withSentryConfig(config, {
+  org:     process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  silent:  !process.env.CI,
+  widenClientFileUpload: true,
+  disableLogger: true,
+  automaticVercelMonitors: true,
+})
