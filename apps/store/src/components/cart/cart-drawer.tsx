@@ -90,7 +90,7 @@ export function CartDrawer() {
               <span style={{ fontFamily:'var(--font-stencil)', fontSize:28, color:'var(--brand-green)' }}>{fmt(subtotal)}</span>
             </div>
             <div style={{ fontFamily:'var(--font-ui)', fontSize:11, color:'var(--fg-muted)', textAlign:'right' }}>
-              ou <strong style={{ color:'var(--brand-green)' }}>{fmt(subtotal * 0.95)} no Pix (5% OFF)</strong>
+              ou <strong style={{ color:'var(--brand-green)' }}>{fmt(Math.round(subtotal * 0.95))} no Pix (5% OFF)</strong>
             </div>
             <Link
               href="/checkout"
