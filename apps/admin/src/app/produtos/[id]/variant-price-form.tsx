@@ -21,16 +21,19 @@ export function VariantPriceForm({
   variantId,
   priceInCents,
   promoInCents,
+  costInCents,
 }: {
   variantId: string
   priceInCents: number
   promoInCents: number | null
+  costInCents: number | null
 }) {
-  const [open, setOpen]     = useState(false)
-  const [price, setPrice]   = useState((priceInCents / 100).toFixed(2))
-  const [promo, setPromo]   = useState(promoInCents != null ? (promoInCents / 100).toFixed(2) : '')
-  const [pending, start]    = useTransition()
-  const toast               = useToast()
+  const [open, setOpen]   = useState(false)
+  const [price, setPrice] = useState((priceInCents / 100).toFixed(2))
+  const [promo, setPromo] = useState(promoInCents != null ? (promoInCents / 100).toFixed(2) : '')
+  const [cost, setCost]   = useState(costInCents != null ? (costInCents / 100).toFixed(2) : '')
+  const [pending, start]  = useTransition()
+  const toast             = useToast()
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -39,8 +42,10 @@ export function VariantPriceForm({
     const prm = promo.trim() ? toCents(promo) : null
     if (promo.trim() && prm === null) { toast.error('Promoção inválida.'); return }
     if (prm !== null && prm >= p) { toast.error('Promoção deve ser menor que o preço normal.'); return }
+    const cst = cost.trim() ? toCents(cost) : null
+    if (cost.trim() && cst === null) { toast.error('Custo inválido.'); return }
     start(async () => {
-      const res = await updateVariantPrice(variantId, p, prm)
+      const res = await updateVariantPrice(variantId, p, prm, cst)
       if (res.error) { toast.error(res.error) }
       else { toast.success('Preço actualizado.'); setOpen(false) }
     })
@@ -75,6 +80,12 @@ export function VariantPriceForm({
             Promo (R$)
           </label>
           <input style={INP} value={promo} onChange={e => setPromo(e.target.value)} placeholder="Opcional" />
+        </div>
+        <div style={{ flex: 1 }}>
+          <label style={{ fontSize: 10, color: '#2CB35A', display: 'block', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '.06em' }}>
+            Custo (R$)
+          </label>
+          <input style={INP} value={cost} onChange={e => setCost(e.target.value)} placeholder="Opcional" />
         </div>
       </div>
       <div style={{ display: 'flex', gap: 5 }}>

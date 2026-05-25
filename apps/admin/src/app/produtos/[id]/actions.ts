@@ -33,13 +33,19 @@ export async function updateProduct(productId: string, formData: FormData) {
   return { ok: true }
 }
 
-export async function updateVariantPrice(variantId: string, priceInCents: number, promoInCents: number | null) {
+export async function updateVariantPrice(
+  variantId: string,
+  priceInCents: number,
+  promoInCents: number | null,
+  costInCents: number | null,
+) {
   if (priceInCents <= 0) return { error: 'Preço inválido.' }
 
   await db.run(sql`
     UPDATE product_variants
     SET price_in_cents = ${priceInCents},
         price_promo_in_cents = ${promoInCents},
+        cost_in_cents = ${costInCents},
         updated_at = datetime('now')
     WHERE id = ${variantId}
   `)

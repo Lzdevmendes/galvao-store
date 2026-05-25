@@ -28,9 +28,10 @@ export default async function ProdutoDetalhe({ params }: { params: Promise<{ id:
   const variantes = await db.all<{
     id: string; sku: string; size: string; color: string | null
     price_in_cents: number; price_promo_in_cents: number | null
+    cost_in_cents: number | null
     stock: number; stock_reserved: number; available: number
   }>(sql`
-    SELECT id, sku, size, color, price_in_cents, price_promo_in_cents, stock, stock_reserved, available
+    SELECT id, sku, size, color, price_in_cents, price_promo_in_cents, cost_in_cents, stock, stock_reserved, available
     FROM product_variants WHERE product_id = ${id} ORDER BY CAST(size AS INTEGER), size
   `)
 
@@ -146,6 +147,7 @@ export default async function ProdutoDetalhe({ params }: { params: Promise<{ id:
                           variantId={v.id}
                           priceInCents={v.price_in_cents}
                           promoInCents={v.price_promo_in_cents}
+                          costInCents={v.cost_in_cents}
                         />
                       </div>
                     </div>
