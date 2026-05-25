@@ -92,6 +92,7 @@ export default function CheckoutPage() {
   const [shippingOpts, setShippingOpts] = useState<ShippingOption[]>([])
   const [loading, setLoading]           = useState(false)
   const [submitError, setSubmitError]   = useState('')
+  const [idempotencyKey]                = useState(() => crypto.randomUUID())
   const [cepLoading, setCepLoading]     = useState(false)
   const [couponInput, setCouponInput]   = useState('')
   const [couponMsg, setCouponMsg]       = useState('')
@@ -210,6 +211,7 @@ export default function CheckoutPage() {
       couponCode:            form.couponCode            || undefined,
       couponDiscountInCents: form.couponDiscountInCents || undefined,
       couponId:              form.couponId              || undefined,
+      idempotencyKey,
     })
     if (!result.success) { setSubmitError(result.error); setLoading(false); return }
     clear()

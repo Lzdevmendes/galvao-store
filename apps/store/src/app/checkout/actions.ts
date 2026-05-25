@@ -53,6 +53,7 @@ export type CheckoutPayload = {
   couponDiscountInCents?: number
   couponId?: string
   cartItems: CartItemData[]
+  idempotencyKey?: string
 }
 
 export type CreateOrderResult =
@@ -223,6 +224,26 @@ export async function validateCoupon(
 
 export async function createOrder(payload: CheckoutPayload): Promise<CreateOrderResult> {
   try {
+    // Idempotência: evita double-submit se o user clicar duas vezes
+    if (payload.idempotencyKey) {
+      const cached = await db.all<{ result_json: string }>(sql`
+        SELECT result_json FROM checkout_idempotency WHERE key = ${payload.idempotencyKey} LIMIT 1
+      `)
+      if (cached.length > 0) {
+        return JSON.parse(cached[0].result_json) as CreateOrderResult
+      }
+    }
+
+    const saveAndReturn = async (result: CreateOrderResult): Promise<CreateOrderResult> => {
+      if (payload.idempotencyKey && result.success) {
+        await db.run(sql`
+          INSERT OR IGNORE INTO checkout_idempotency (key, order_id, result_json)
+          VALUES (${payload.idempotencyKey}, ${(result as { orderId: string }).orderId}, ${JSON.stringify(result)})
+        `)
+      }
+      return result
+    }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -388,7 +409,7 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
       void waSendOrderCreated(payload.phone || null, orderNumber, payload.name)
         .catch(e => console.error('[whatsapp] order-created:', e))
 
-      return { success: true, orderId, orderNumber, paymentMethod: payload.paymentMethod }
+      return saveAndReturn({ success: true, orderId, orderNumber, paymentMethod: payload.paymentMethod })
     }
 
     // ── Sandbox bypass: conta TEST- geralmente não tem PIX configurado ────
@@ -409,7 +430,7 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
       }).catch(e => console.error('[email] order-created pix sandbox:', e))
       void waSendOrderCreated(payload.phone || null, orderNumber, payload.name)
         .catch(e => console.error('[whatsapp] order-created pix sandbox:', e))
-      return { success: true, orderId, orderNumber, paymentMethod: 'pix', pixKey: fakeKey, pixExpiresAt: expiresAt }
+      return saveAndReturn({ success: true, orderId, orderNumber, paymentMethod: 'pix', pixKey: fakeKey, pixExpiresAt: expiresAt })
     }
 
     if (isSandbox && payload.paymentMethod === 'boleto') {
@@ -428,7 +449,7 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
       }).catch(e => console.error('[email] order-created boleto sandbox:', e))
       void waSendOrderCreated(payload.phone || null, orderNumber, payload.name)
         .catch(e => console.error('[whatsapp] order-created boleto sandbox:', e))
-      return { success: true, orderId, orderNumber, paymentMethod: 'boleto', boletoUrl: fakeUrl, boletoBarCode: fakeBarCode, boletoExpiresAt: expiresAt }
+      return saveAndReturn({ success: true, orderId, orderNumber, paymentMethod: 'boleto', boletoUrl: fakeUrl, boletoBarCode: fakeBarCode, boletoExpiresAt: expiresAt })
     }
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -521,7 +542,7 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
         void waSendOrderCreated(payload.phone || null, orderNumber, payload.name)
           .catch(e => console.error('[whatsapp] order-created pix:', e))
 
-        return { success: true, orderId, orderNumber, paymentMethod: 'pix', pixQr, pixKey, pixExpiresAt: expiresAt }
+        return saveAndReturn({ success: true, orderId, orderNumber, paymentMethod: 'pix', pixQr, pixKey, pixExpiresAt: expiresAt })
       }
 
       // ── Boleto ──────────────────────────────────────────────────────────
@@ -575,10 +596,10 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
         void waSendOrderCreated(payload.phone || null, orderNumber, payload.name)
           .catch(e => console.error('[whatsapp] order-created boleto:', e))
 
-        return {
+        return saveAndReturn({
           success: true, orderId, orderNumber, paymentMethod: 'boleto',
           boletoUrl, boletoBarCode, boletoExpiresAt: boletoExpAt,
-        }
+        })
       }
 
       // ── Cartão ──────────────────────────────────────────────────────────
@@ -630,10 +651,10 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
         void waSendOrderCreated(payload.phone || null, orderNumber, payload.name)
           .catch(e => console.error('[whatsapp] order-created card:', e))
 
-        return { success: true, orderId, orderNumber, paymentMethod: 'credit_card' }
+        return saveAndReturn({ success: true, orderId, orderNumber, paymentMethod: 'credit_card' })
       }
 
-      return { success: true, orderId, orderNumber, paymentMethod: payload.paymentMethod }
+      return saveAndReturn({ success: true, orderId, orderNumber, paymentMethod: payload.paymentMethod })
 
     } catch (mpErr) {
       // Desfaz o pedido para o utilizador poder tentar novamente
