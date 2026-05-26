@@ -16,7 +16,7 @@ out
 # DB
 *.db
 *.db-journal
-drizzle/
+# drizzle/ — migrations devem ser versionadas, não ignoradas
 
 # Editor
 .vscode
