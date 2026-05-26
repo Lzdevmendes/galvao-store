@@ -141,7 +141,7 @@ export default async function HomePage() {
           <>
             <SectionHead pre="★ Recém-chegadas" title="LANÇA" accent="MENTOS." href="/busca?sort=lancamentos" />
             <div className="grid-products" data-density="4">
-              {arrivals.map(p => <ProductCard key={p.id} p={p} />)}
+              {arrivals.map((p, i) => <ProductCard key={p.id} p={p} priority={i < 4} />)}
             </div>
           </>
         )}

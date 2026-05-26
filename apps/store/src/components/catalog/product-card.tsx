@@ -18,7 +18,7 @@ export interface ProductCardData {
   min_promo: number | null
 }
 
-export function ProductCard({ p, initialFavorited }: { p: ProductCardData; initialFavorited?: boolean }) {
+export function ProductCard({ p, initialFavorited, priority }: { p: ProductCardData; initialFavorited?: boolean; priority?: boolean }) {
   const hasValidPromo = p.min_promo != null && p.min_promo < p.min_price
   const active = hasValidPromo ? p.min_promo! : p.min_price
   const pix    = Math.round(active * 0.95)
@@ -47,8 +47,10 @@ export function ProductCard({ p, initialFavorited }: { p: ProductCardData; initi
             <Image
               src={p.image_url} alt={p.image_alt}
               width={400} height={400}
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
               style={{ width:'92%', height:'92%', objectFit:'contain', mixBlendMode:'multiply' }}
-              loading="lazy"
+              priority={priority}
+              loading={priority ? undefined : 'lazy'}
             />
           )}
         </div>

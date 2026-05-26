@@ -72,6 +72,12 @@ export default function RootLayout({
           name="viewport"
           content="width=device-width, initial-scale=1, viewport-fit=cover"
         />
+        {/* Preconnect para Google Fonts — reduz TTFB das fontes */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* DNS prefetch para serviços externos */}
+        <link rel="dns-prefetch" href="https://api.mercadopago.com" />
+        <link rel="dns-prefetch" href="https://sdk.mercadopago.com" />
       </head>
       <body>
         {/* JSON-LD — Organisation */}
