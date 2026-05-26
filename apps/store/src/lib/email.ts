@@ -4,7 +4,11 @@ import { OrderCreatedEmail, type OrderCreatedEmailProps } from '@/emails/order-c
 import { PaymentConfirmedEmail, type PaymentConfirmedEmailProps } from '@/emails/payment-confirmed'
 import { OrderShippedEmail, type OrderShippedEmailProps } from '@/emails/order-shipped'
 import { OrderDeliveredEmail, type OrderDeliveredEmailProps } from '@/emails/order-delivered'
+import { OrderCancelledEmail, type OrderCancelledEmailProps } from '@/emails/order-cancelled'
 import { PasswordResetEmail, type PasswordResetEmailProps } from '@/emails/password-reset'
+import { WelcomeClubEmail, type WelcomeClubEmailProps } from '@/emails/welcome-club'
+import { CartAbandonedEmail, type CartAbandonedEmailProps } from '@/emails/cart-abandoned'
+import { BackInStockEmail, type BackInStockEmailProps } from '@/emails/back-in-stock'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -92,6 +96,59 @@ export async function sendPasswordResetEmail(
     to,
     subject: `🔐 Redefinição de senha — Galvão's Store`,
     component: PasswordResetEmail(props),
+  })
+}
+
+// ── 6. Pedido cancelado ───────────────────────────────────
+export async function sendOrderCancelledEmail(
+  to: string,
+  props: OrderCancelledEmailProps,
+) {
+  return sendEmail({
+    to,
+    subject: `Pedido ${props.orderNumber} cancelado — Galvão's Store`,
+    component: OrderCancelledEmail(props),
+  })
+}
+
+// ── 7. Boas-vindas ao Clube ───────────────────────────────
+export async function sendWelcomeClubEmail(
+  to: string,
+  props: WelcomeClubEmailProps,
+) {
+  return sendEmail({
+    to,
+    subject: `⭐ Bem-vindo ao Clube Galvão's Store, ${props.customerName.split(' ')[0]}!`,
+    component: WelcomeClubEmail(props),
+  })
+}
+
+// ── 8. Carrinho abandonado ────────────────────────────────
+export async function sendCartAbandonedEmail(
+  to: string,
+  props: CartAbandonedEmailProps,
+) {
+  const subjects: Record<CartAbandonedEmailProps['variant'], string> = {
+    '1h':  'Esqueceu alguma coisa? Seu carrinho está esperando!',
+    '24h': 'Seus produtos ainda estão no carrinho 🛒',
+    '72h': 'Última chamada — seu carrinho está quase expirando ⏰',
+  }
+  return sendEmail({
+    to,
+    subject: subjects[props.variant],
+    component: CartAbandonedEmail(props),
+  })
+}
+
+// ── 9. Produto de volta ao estoque ───────────────────────
+export async function sendBackInStockEmail(
+  to: string,
+  props: BackInStockEmailProps,
+) {
+  return sendEmail({
+    to,
+    subject: `🎉 ${props.productName} (Tam. ${props.variantSize}) voltou ao estoque!`,
+    component: BackInStockEmail(props),
   })
 }
 
@@ -183,6 +240,18 @@ export async function dispatchOrderStatusEmail(
         customerName: order.customerName,
         deliveredAt:  order.deliveredAt ?? new Date().toISOString(),
         items:        order.items,
+      })
+
+    case 'cancelled':
+    case 'refunded':
+      return sendOrderCancelledEmail(to, {
+        orderNumber:   order.orderNumber,
+        customerName:  order.customerName,
+        cancelledAt:   new Date().toISOString(),
+        items:         order.items,
+        totalInCents:  order.totalInCents,
+        paymentMethod: order.paymentMethod,
+        refundExpected: order.status === 'refunded',
       })
   }
 }
