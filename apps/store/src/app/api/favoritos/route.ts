@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
+
+const productIdSchema = z.object({ productId: z.string().min(1, 'productId obrigatório') })
 
 async function getUser() {
   const supabase = await createClient()
@@ -28,7 +31,9 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const user = await getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
-  const { productId } = await req.json()
+  const parsed = productIdSchema.safeParse(await req.json().catch(() => ({})))
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
+  const { productId } = parsed.data
   const variantId = await firstVariantId(productId)
   if (!variantId) return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 })
   const exists = await db.all(sql`
@@ -45,7 +50,9 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const user = await getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
-  const { productId } = await req.json()
+  const parsed = productIdSchema.safeParse(await req.json().catch(() => ({})))
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
+  const { productId } = parsed.data
   await db.run(sql`
     DELETE FROM wishlists WHERE user_id = ${user.id} AND variant_id IN (
       SELECT id FROM product_variants WHERE product_id = ${productId}

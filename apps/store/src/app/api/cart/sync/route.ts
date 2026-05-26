@@ -1,8 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import type { CartItem } from '@/store/cart'
+
+const cartItemSchema = z.object({
+  variantId:         z.string().min(1),
+  quantity:          z.number().int().min(1).max(99),
+  productId:         z.string().optional(),
+  productSlug:       z.string().optional(),
+  productName:       z.string().optional(),
+  brandName:         z.string().optional(),
+  imageUrl:          z.string().optional(),
+  size:              z.string().optional(),
+  color:             z.string().optional(),
+  priceInCents:      z.number().int().min(0).optional(),
+  pricePromoInCents: z.number().int().min(0).nullable().optional(),
+})
+const syncSchema = z.object({ items: z.array(cartItemSchema).max(50) })
 
 // POST: guest cart → DB + return merged cart
 export async function POST(req: NextRequest) {
@@ -10,7 +26,9 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
-  const { items } = await req.json() as { items: CartItem[] }
+  const parsed = syncSchema.safeParse(await req.json().catch(() => ({})))
+  if (!parsed.success) return NextResponse.json({ error: 'Payload inválido' }, { status: 400 })
+  const { items } = parsed.data as { items: CartItem[] }
 
   // Upsert cada item do guest cart na DB (não substituir qty se já existe mais)
   for (const item of items) {

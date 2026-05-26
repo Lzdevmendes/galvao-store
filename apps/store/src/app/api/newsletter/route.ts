@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { Resend } from 'resend'
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
@@ -10,14 +11,15 @@ const FROM = process.env.NODE_ENV === 'production'
   ? "Galvão's Store <noreply@galvaosstore.com.br>"
   : "Galvão's Store <onboarding@resend.dev>"
 
-export async function POST(req: NextRequest) {
-  const { email } = await req.json().catch(() => ({})) as { email?: string }
+const schema = z.object({ email: z.string().email('E-mail inválido') })
 
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return NextResponse.json({ error: 'E-mail inválido' }, { status: 400 })
+export async function POST(req: NextRequest) {
+  const parsed = schema.safeParse(await req.json().catch(() => ({})))
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
 
-  const key = email.toLowerCase()
+  const key = parsed.data.email.toLowerCase()
 
   const existing = await db.all(sql`SELECT id FROM newsletter_subscriptions WHERE email = ${key} LIMIT 1`)
   if (existing.length > 0) {
@@ -30,7 +32,7 @@ export async function POST(req: NextRequest) {
     from: FROM,
     to: key,
     subject: "Bem-vindo ao time Galvão's Store! ⚽",
-    html: welcomeHtml(email),
+    html: welcomeHtml(key),
   }).catch(() => { /* silent */ })
 
   return NextResponse.json({ ok: true })
