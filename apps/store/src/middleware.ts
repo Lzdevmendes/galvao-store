@@ -44,7 +44,11 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // ── 2. Supabase session refresh ─────────────────────────────────────────
+  // ── 2. Supabase session — só para rotas que precisam de auth (não /api/*)
+  // Evita chamar getUser() em todas as API routes públicas (adiciona ~50ms por req)
+  const needsAuth = pathname.startsWith('/conta') || pathname === '/auth/login' || pathname === '/auth/cadastro'
+  if (!needsAuth) return NextResponse.next({ request })
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -52,9 +56,7 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
+        getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({ request })
@@ -77,9 +79,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && (pathname === '/auth/login' || pathname === '/auth/cadastro')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/conta'
-    return NextResponse.redirect(url)
+    return NextResponse.redirect(new URL('/conta', request.url))
   }
 
   return supabaseResponse
@@ -87,11 +87,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Rotas autenticadas + auth
     '/conta/:path*',
     '/auth/login',
     '/auth/cadastro',
-    // Todas as API routes (para rate limiting global)
-    '/api/:path*',
+    '/api/:path*',  // rate limiting only — sem auth check para /api
   ],
 }
