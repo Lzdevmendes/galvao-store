@@ -88,8 +88,8 @@ export default async function HomePage() {
     <>
       <HomeAnimations />
 
-      {/* ── Hero ── */}
-      <section className="hero">
+      {/* ── Hero Desktop ── */}
+      <section className="hero hero-desktop">
         <div className="container">
           <div className="row">
             <div>
@@ -115,6 +115,37 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ── Hero Mobile — foto rotacionada, compacto ── */}
+      <div className="mhero-wrap">
+        <div className="mhero" style={{ position:'relative', overflow:'hidden' }}>
+          <div className="pre">PRONTA ENTREGA · 2026</div>
+          <h1>JOGO<br /><span className="t">RÁPIDO.</span></h1>
+          <p style={{ maxWidth:180 }}>Phantom GX III, F50 Elite e Future 8. Já tão aqui.</p>
+          <Link href="/produtos" className="btn">Comprar →</Link>
+          {heroProduct && (
+            <div className="mhero-photo">
+              <Image src={heroProduct.image_url} alt={heroProduct.image_alt} width={200} height={200} priority />
+            </div>
+          )}
+        </div>
+
+        {/* Category circles — scroll horizontal */}
+        <div className="mcats">
+          {[
+            { href:'/categoria/campo',    label:'Campo',    icon:<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18L21 18L19 21L5 21ZM5 13Q12 8 19 13L19 18L5 18Z"/></svg> },
+            { href:'/categoria/society',  label:'Society',  icon:<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="20" r="1.5"/><circle cx="15" cy="20" r="1.5"/><path d="M5 13Q12 9 19 13L19 18L5 18Z"/></svg> },
+            { href:'/categoria/futsal',   label:'Futsal',   icon:<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M3 16L21 16L21 19L3 19ZM5 11Q12 8 19 11L19 16L5 16Z"/></svg> },
+            { href:'/categoria/corrida',  label:'Corrida',  icon:<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 17Q12 11 21 17L21 19L3 19Z"/><path d="M5 14L8 11L13 13L18 11"/></svg> },
+            { href:'/produtos',           label:'Casual',   icon:<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 17Q12 11 21 17L21 19L3 19Z"/></svg> },
+          ].map(({ href, label, icon }) => (
+            <Link key={label} href={href} className="mcat" style={{ textDecoration:'none', color:'var(--fg)' }}>
+              <div className="circ">{icon}</div>
+              <div className="name">{label}</div>
+            </Link>
+          ))}
+        </div>
+      </div>
 
       {/* ── Trust bar ── */}
       <div className="trust">
