@@ -112,12 +112,12 @@ export function SizePicker({ variants, productId, productSlug, productName, bran
         </div>
       )}
 
-      {/* Size selector */}
+      {/* Size selector — sz-grid para grid 4-col no mobile */}
       <div style={{ marginBottom: 28 }}>
         <div style={{ fontFamily:'var(--font-ui)', fontSize:12, fontWeight:700, letterSpacing:'.1em', textTransform:'uppercase', color:'var(--fg-muted)', marginBottom:10 }}>
           Tamanho{selectedSize ? `: ${selectedSize}` : ''}
         </div>
-        <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+        <div className="sz-grid" style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
           {colorVariants.map(v => (
             <button
               key={v.size}
@@ -187,6 +187,32 @@ export function SizePicker({ variants, productId, productSlug, productName, bran
           ⚠️ Restam apenas {selectedVariant.stock} unidade{selectedVariant.stock > 1 ? 's' : ''}!
         </div>
       )}
+
+      {/* ── Mobile CTA fixo — só aparece em ≤768px (via CSS) ── */}
+      <div className="pdp-mobile-cta">
+        <button
+          className="wish"
+          aria-label="Favoritar"
+          style={{ background:'none', border:'1.5px solid var(--border-strong)', cursor:'pointer' }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/>
+          </svg>
+        </button>
+        <button
+          className="buy"
+          disabled={!selectedSize}
+          onClick={handleBuyNow}
+          style={{ opacity: selectedSize ? 1 : .6, cursor: selectedSize ? 'pointer' : 'not-allowed' }}
+        >
+          <span>{selectedSize ? 'Comprar agora' : 'Selecione o tamanho'}</span>
+          {displayVariant && (
+            <span style={{ fontSize:11, opacity:.9, fontFamily:'var(--font-mono)', fontWeight:500 }}>
+              {fmt(activePrice(displayVariant))} · 12× {fmt(activePrice(displayVariant) / 12)}
+            </span>
+          )}
+        </button>
+      </div>
     </div>
   )
 }
