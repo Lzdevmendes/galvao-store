@@ -4,6 +4,8 @@ import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { sendBackInStockEmail } from '@/lib/email'
+import { requireAdmin } from '@/lib/require-admin'
+import { NextResponse } from 'next/server'
 
 type Reason = 'purchase' | 'return' | 'adjustment' | 'reservation' | 'reservation_expired' | 'import'
 
@@ -13,6 +15,9 @@ export async function adjustStock(
   reason: Reason,
   note: string,
 ): Promise<{ success: boolean; error?: string }> {
+  const auth = await requireAdmin()
+  if (auth instanceof NextResponse) return { success: false, error: 'Não autorizado.' }
+
   if (!variantId || delta === 0) return { success: false, error: 'Parâmetros inválidos.' }
 
   const row = await db.get<{ stock: number }>(

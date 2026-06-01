@@ -3,14 +3,22 @@
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { requireAdmin } from '@/lib/require-admin'
+import { NextResponse } from 'next/server'
 
 export async function toggleCoupon(couponId: string, active: boolean) {
+  const auth = await requireAdmin()
+  if (auth instanceof NextResponse) return { success: false, error: 'Não autorizado.' }
+
   await db.run(sql`UPDATE coupons SET active = ${active ? 0 : 1} WHERE id = ${couponId}`)
   revalidatePath('/cupons')
   return { success: true }
 }
 
 export async function createCoupon(formData: FormData) {
+  const authC = await requireAdmin()
+  if (authC instanceof NextResponse) return { success: false, error: 'Não autorizado.' }
+
   const code    = String(formData.get('code')).trim().toUpperCase()
   const type    = String(formData.get('type'))
   const value   = Number(formData.get('value'))

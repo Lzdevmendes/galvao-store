@@ -5,6 +5,8 @@ import { sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { sendOrderShippedEmail } from '@/lib/email'
 import { waSendOrderShipped, waSendOrderDelivered } from '@/lib/whatsapp'
+import { requireAdmin } from '@/lib/require-admin'
+import { NextResponse } from 'next/server'
 
 export type UpdateOrderPayload = {
   orderId:      string
@@ -13,6 +15,9 @@ export type UpdateOrderPayload = {
 }
 
 export async function updateOrderStatus({ orderId, status, trackingCode }: UpdateOrderPayload) {
+  const auth = await requireAdmin()
+  if (auth instanceof NextResponse) return { success: false, error: 'Não autorizado.' }
+
   const now = new Date().toISOString()
 
   if (status === 'shipped') {
