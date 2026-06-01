@@ -4,9 +4,18 @@ import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import { requireAdmin } from '@/lib/require-admin'
 
-const BUCKET    = 'product-images'
-const MAX_SIZE  = 10 * 1024 * 1024
-const ALLOWED   = ['image/jpeg', 'image/png', 'image/webp']
+const BUCKET   = 'product-images'
+const MAX_SIZE = 5 * 1024 * 1024  // 5 MB
+
+// Valida tipo real pelo magic bytes — não confia no file.type do cliente
+// JPEG: FF D8 FF | PNG: 89 50 4E 47 | WebP: 52 49 46 46 ... 57 45 42 50
+function detectMimeFromBuffer(buf: Buffer): string | null {
+  if (buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF) return 'image/jpeg'
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) return 'image/png'
+  if (buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
+      buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50) return 'image/webp'
+  return null  // SVG, HTML, executáveis, etc. — REJEITADOS
+}
 
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin()
@@ -16,17 +25,23 @@ export async function POST(req: NextRequest) {
   const file      = form.get('file') as File | null
   const productId = form.get('productId') as string | null
 
-  if (!file || !productId)          return NextResponse.json({ error: 'Parâmetros em falta' }, { status: 400 })
-  if (file.size > MAX_SIZE)         return NextResponse.json({ error: 'Arquivo muito grande (máx. 5 MB)' }, { status: 400 })
-  if (!ALLOWED.includes(file.type)) return NextResponse.json({ error: 'Formato não suportado (JPG, PNG, WebP)' }, { status: 400 })
+  if (!file || !productId) return NextResponse.json({ error: 'Parâmetros em falta' }, { status: 400 })
+  if (file.size > MAX_SIZE) return NextResponse.json({ error: 'Arquivo muito grande (máx. 5 MB)' }, { status: 400 })
+  // Rejeitar se productId tiver path traversal (ex: "../../../etc")
+  if (!/^[a-zA-Z0-9_-]{1,100}$/.test(productId)) return NextResponse.json({ error: 'productId inválido' }, { status: 400 })
 
-  const ext    = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg'
-  const path   = `${productId}/${crypto.randomUUID()}.${ext}`
   const buffer = Buffer.from(await file.arrayBuffer())
+
+  // Validar tipo pelo conteúdo real do arquivo — não pelo Content-Type do cliente
+  const realMime = detectMimeFromBuffer(buffer)
+  if (!realMime) return NextResponse.json({ error: 'Formato não suportado. Use JPG, PNG ou WebP.' }, { status: 400 })
+
+  const ext  = realMime === 'image/png' ? 'png' : realMime === 'image/webp' ? 'webp' : 'jpg'
+  const path = `${productId}/${crypto.randomUUID()}.${ext}`
 
   const { error: storageErr } = await supabaseAdmin.storage
     .from(BUCKET)
-    .upload(path, buffer, { contentType: file.type, upsert: false })
+    .upload(path, buffer, { contentType: realMime, upsert: false })
 
   if (storageErr) return NextResponse.json({ error: storageErr.message }, { status: 500 })
 
