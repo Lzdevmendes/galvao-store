@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { AuthShell, Field, ErrorMsg, SuccessMsg, SubmitBtn } from '../login/page'
+import { AuthShell, Field, ErrorMsg, SuccessMsg, SubmitBtn } from '../shared'
 
 export default function EsqueciSenhaPage() {
   const [email,   setEmail]   = useState('')
