@@ -68,6 +68,7 @@ export default async function BrandPage({
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const gradient = brand.gradient_css ?? 'linear-gradient(135deg,#0B0E12,#1F252E)'
+  const minPrice = products.length > 0 ? Math.min(...products.map(p => p.min_promo ?? p.min_price)) : null
 
   const buildHref = (p: number) => {
     const params = new URLSearchParams()
@@ -81,20 +82,60 @@ export default async function BrandPage({
 
   return (
     <>
-      {/* Hero */}
-      <div style={{ background: gradient, color: '#fff', padding: '56px 0 48px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position:'absolute', right:'-5%', top:'-30%', width:'50%', height:'160%', background:'radial-gradient(ellipse,rgba(242,107,31,.2) 0%,transparent 65%)', pointerEvents:'none' }} />
+      {/* Hero — com stripe de cor da marca + meta stats */}
+      <div className={`bhero ${slug}`} style={{ background: gradient }}>
         <div className="container" style={{ position:'relative', zIndex:1 }}>
-          {brand.tagline && (
-            <div style={{ fontFamily:'var(--font-ui)', fontSize:11, letterSpacing:'.32em', textTransform:'uppercase', color:'rgba(255,255,255,.5)', marginBottom:14, fontWeight:700 }}>
-              {brand.tagline}
+          <div style={{ display:'grid', gridTemplateColumns:'1.4fr 1fr', gap:48, alignItems:'center' }}>
+            <div>
+              {brand.tagline && (
+                <div style={{ fontFamily:'var(--font-ui)', fontSize:11, letterSpacing:'.32em', textTransform:'uppercase', color:'rgba(255,255,255,.5)', marginBottom:14, fontWeight:700 }}>
+                  {brand.tagline}
+                </div>
+              )}
+              <h1 style={{ fontFamily:'var(--font-stencil)', fontSize:'clamp(80px,10vw,140px)', lineHeight:.88, margin:0, letterSpacing:'.03em' }}>
+                {brand.name.toUpperCase()}
+              </h1>
+              {/* Meta stats */}
+              <div className="bhero-meta">
+                <div className="bhero-meta-item">
+                  <div className="k">Produtos</div>
+                  <div className="v">{total}</div>
+                </div>
+                {lines.length > 0 && (
+                  <div className="bhero-meta-item">
+                    <div className="k">Linhas</div>
+                    <div className="v">{lines.length}</div>
+                  </div>
+                )}
+                {minPrice && (
+                  <div className="bhero-meta-item">
+                    <div className="k">A partir de</div>
+                    <div className="v">R$ {(minPrice / 100).toFixed(0)}</div>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-          <h1 style={{ fontFamily:'var(--font-stencil)', fontSize:'clamp(80px,10vw,140px)', lineHeight:.88, margin:'0 0 16px', letterSpacing:'.03em' }}>
-            {brand.name.toUpperCase()}
-          </h1>
+          </div>
         </div>
+        {/* Stripe de cor — identidade visual da marca */}
+        <div className="bhero-stripe" />
       </div>
+
+      {/* Brand lines nav */}
+      {lines.length > 0 && (
+        <div className="brandlines">
+          <div className="container">
+            <div className="brandlines-row">
+              <a href={`/${slug}`} className={!linha ? 'active' : ''}>Todos</a>
+              {lines.map(l => (
+                <a key={l} href={`/${slug}?linha=${encodeURIComponent(l)}${tamanho ? `&tamanho=${tamanho}` : ''}`} className={linha === l ? 'active' : ''}>
+                  {l}
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filtros */}
       <FilterSortBar
