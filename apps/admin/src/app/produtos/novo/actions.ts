@@ -4,6 +4,8 @@ import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { requireAdmin } from '@/lib/require-admin'
+import { NextResponse } from 'next/server'
 
 function slugify(str: string): string {
   return str
@@ -16,6 +18,9 @@ function slugify(str: string): string {
 }
 
 export async function createProduct(formData: FormData) {
+  const auth = await requireAdmin()
+  if (auth instanceof NextResponse) return { error: 'Não autorizado.' }
+
   const name        = String(formData.get('name') ?? '').trim()
   const brandId     = String(formData.get('brand_id') ?? '').trim()
   const categoryId  = String(formData.get('category_id') ?? '').trim()

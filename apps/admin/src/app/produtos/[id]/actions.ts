@@ -3,8 +3,12 @@
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { requireAdmin } from '@/lib/require-admin'
+import { NextResponse } from 'next/server'
 
 export async function updateProduct(productId: string, formData: FormData) {
+  const auth = await requireAdmin()
+  if (auth instanceof NextResponse) return { error: 'Não autorizado.' }
   const name        = String(formData.get('name') ?? '').trim()
   const description = String(formData.get('description') ?? '').trim()
   const line        = String(formData.get('line') ?? '').trim() || null
