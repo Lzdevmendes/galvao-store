@@ -82,7 +82,14 @@ export default async function BrandPage({
 
   return (
     <>
-      {/* Hero — com stripe de cor da marca + meta stats */}
+      {/* Header Mobile compacto */}
+      <div className="lhead-m">
+        <div className="crumb">PRODUTOS · {brand.name.toUpperCase()}</div>
+        <h1>{brand.name.toUpperCase()}<span className="o">.</span></h1>
+        <div className="sub">{total} produtos{lines.length > 0 ? ` · ${lines.join(' · ')}` : ''}</div>
+      </div>
+
+      {/* Hero Desktop — com stripe de cor da marca + meta stats */}
       <div className={`bhero ${slug}`} style={{ background: gradient }}>
         <div className="container" style={{ position:'relative', zIndex:1 }}>
           <div style={{ display:'grid', gridTemplateColumns:'1.4fr 1fr', gap:48, alignItems:'center' }}>
