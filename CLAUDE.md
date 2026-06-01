@@ -26,6 +26,19 @@ pnpm --filter @galvao/store test      # unit tests (vitest)
 pnpm --filter @galvao/store test:e2e  # playwright
 ```
 
+## Componentes UI novos (design system)
+
+| Componente | Arquivo | Uso |
+|-----------|---------|-----|
+| `<Badge variant="orange\|teal\|sale\|new\|stock\|soft">` | `src/components/ui/badge.tsx` | Tags/status em qualquer contexto |
+| `.bhero.{nike\|adidas\|puma\|umbro}` | CSS class | Hero de marca com stripe, meta stats |
+| `.brandlines` + `.brandlines-row` | CSS class | Nav de linhas de produto |
+| `.stock-msg` | CSS class | Aviso de estoque baixo (≤3 unidades) |
+| `.main-img-zoom` | CSS class | Botão zoom na galeria do PDP |
+| `[data-card-style="flat\|shadow\|bold"]` | CSS atributo | Variante visual nos cards de produto |
+| `.pdp-mobile-cta` | CSS class | CTA fixo mobile (só em ≤768px) |
+| Skeletons em `loading.tsx` | Todos usam `.skeleton` | Shimmer automático durante RSC fetch |
+
 ## Camada de Segurança — arquivos chave
 
 | Arquivo | Responsabilidade |

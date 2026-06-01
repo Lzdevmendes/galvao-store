@@ -158,6 +158,40 @@ perf: image priority nos primeiros 4 cards
 chore: atualizar @mercadopago/sdk para 2.12.1
 ```
 
+## Como usar o Badge
+
+```tsx
+import { Badge } from '@/components/ui/badge'
+
+<Badge variant="sale">-15% OFF</Badge>
+<Badge variant="new">LANÇAMENTO</Badge>
+<Badge variant="stock">Em estoque</Badge>
+<Badge variant="soft">Marca</Badge>
+```
+
+Variantes: `orange` `teal` `sale` `new` `stock` `soft`
+
+## Como criar loading skeleton
+
+Cada loading.tsx usa apenas a classe `.skeleton` do globals.css (shimmer automático):
+
+```tsx
+function Bone({ w, h, r = 6, style }: { w: number|string; h: number|string; r?: number; style?: React.CSSProperties }) {
+  return <div className="skeleton" style={{ width: w, height: h, borderRadius: r, ...style }} />
+}
+```
+
+## Como criar um novo loading.tsx
+
+1. Criar `app/<rota>/loading.tsx`
+2. Usar `Bone` para replicar o layout da página com dimensões aproximadas
+3. Não usar `'use client'` — é RSC puro
+4. Não usar framer-motion (imports pesados) — o shimmer é CSS puro
+
+## Regras de page.tsx (Next.js)
+
+**Não exportar componentes de `page.tsx`** — Next.js só aceita o `default export` e exports nomeados específicos (`metadata`, `generateStaticParams`, `revalidate`, etc.). Componentes auxiliares ficam em arquivos separados (ex: `shared.tsx`, `components/`).
+
 ## Ordem dos imports
 
 1. Next.js (`next/server`, `next/navigation`)
