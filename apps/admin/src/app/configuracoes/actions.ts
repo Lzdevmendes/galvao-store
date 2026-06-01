@@ -3,8 +3,12 @@
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { requireAdmin } from '@/lib/require-admin'
+import { NextResponse } from 'next/server'
 
 export async function saveSettings(formData: FormData) {
+  const auth = await requireAdmin()
+  if (auth instanceof NextResponse) return { success: false, error: 'Não autorizado.' }
   const settings = [
     'store_name', 'store_phone', 'store_whatsapp', 'store_email',
     'store_address', 'free_shipping_threshold', 'pix_discount_pct',
