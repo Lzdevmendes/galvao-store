@@ -124,8 +124,8 @@ export default async function AdminDashboard() {
         </Link>
       </div>
 
-      {/* KPI cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr 1fr', gap: 14, marginBottom: 24 }}>
+      {/* KPI cards — kpi-row colapsa para 2×2 no mobile via CSS do layout */}
+      <div className="kpi-row" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr 1fr', gap: 14, marginBottom: 24 }}>
         {/* Featured — Vendas hoje */}
         <div style={{ background: 'linear-gradient(135deg, #141922 0%, #0F1318 100%)', border: '1px solid #F26B1F33', borderRadius: 14, padding: '22px 24px', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: '#F26B1F', opacity: 0.06, filter: 'blur(30px)' }} />
@@ -154,8 +154,8 @@ export default async function AdminDashboard() {
           href="/pedidos" />
       </div>
 
-      {/* Charts row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 16, marginBottom: 24 }}>
+      {/* Charts row — colapsa para 1-col no mobile */}
+      <div className="admin-2col-grid" style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 16, marginBottom: 24 }}>
         <SalesDashboardChart data={salesData} />
         {brandsData.length > 0
           ? <BrandsSharePanel brands={brandsData} />
@@ -167,15 +167,16 @@ export default async function AdminDashboard() {
         }
       </div>
 
-      {/* Bottom row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 16 }}>
+      {/* Bottom row — colapsa para 1-col no mobile */}
+      <div className="admin-2col-grid" style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 16 }}>
         {/* Pedidos recentes */}
         <div style={{ background: '#0F1318', border: '1px solid #1E2530', borderRadius: 14, overflow: 'hidden' }}>
           <div style={{ padding: '16px 20px', borderBottom: '1px solid #1E2530', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <p style={{ fontFamily: 'Archivo Black, sans-serif', fontSize: 14, margin: 0 }}>Pedidos recentes</p>
             <Link href="/pedidos" style={{ fontSize: 12, color: '#F26B1F', textDecoration: 'none', fontWeight: 600 }}>Ver todos →</Link>
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          {/* Desktop table */}
+          <table className="adm" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #1E2530' }}>
                 {['Pedido', 'Cliente', 'Total', 'Status', 'Quando'].map(h => (
@@ -190,7 +191,7 @@ export default async function AdminDashboard() {
               {recentOrders.map(o => (
                 <tr key={o.id} style={{ borderBottom: '1px solid #141922' }}>
                   <td style={{ padding: '10px 16px' }}>
-                    <Link href={`/pedidos/${o.id}`} style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#F26B1F', textDecoration: 'none' }}>{o.order_number}</Link>
+                    <Link href={`/pedidos/${o.id}`} style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#F26B1F' }}>{o.order_number}</Link>
                   </td>
                   <td style={{ padding: '10px 16px', fontSize: 12, color: '#D1D5DB' }}>
                     {o.customer_name.split(' ')[0]} {o.customer_name.split(' ').slice(-1)[0]}
@@ -207,6 +208,29 @@ export default async function AdminDashboard() {
               ))}
             </tbody>
           </table>
+
+          {/* Mobile cards — ocultos no desktop */}
+          <div className="mobile-cards" style={{ flexDirection: 'column', display: 'none' }}>
+            {recentOrders.length === 0 && (
+              <p style={{ padding: '24px 16px', textAlign: 'center', color: '#4A5462', fontSize: 13 }}>Nenhum pedido ainda.</p>
+            )}
+            {recentOrders.map(o => (
+              <Link key={o.id} href={`/pedidos/${o.id}`}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid #141922' }}>
+                <div>
+                  <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#F26B1F', marginBottom: 3 }}>{o.order_number}</div>
+                  <div style={{ fontSize: 12, color: '#D1D5DB' }}>{o.customer_name.split(' ')[0]}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 3 }}>{fmt(o.total_in_cents)}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: statusColor[o.status] ?? '#6B7280' }} />
+                    <span style={{ fontSize: 10, color: statusColor[o.status] ?? '#9CA3AF', fontWeight: 600 }}>{statusLabel[o.status] ?? o.status}</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
 
         {/* Estoque crítico */}

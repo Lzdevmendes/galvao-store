@@ -94,9 +94,10 @@ export default async function AdminPedidos({ searchParams }: PageProps) {
         </div>
       </div>
 
-      {/* Tabela */}
+      {/* Tabela / Cards */}
       <div style={{ background: '#0F1318', border: '1px solid #1E2530', borderRadius: 12, overflow: 'hidden', marginBottom: 24 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        {/* Desktop table */}
+        <table className="adm" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #1E2530' }}>
               {['Pedido', 'Cliente', 'Pagamento', 'Frete', 'Total', 'Status', 'Data', ''].map(h => (
@@ -124,10 +125,7 @@ export default async function AdminPedidos({ searchParams }: PageProps) {
                 </td>
                 <td style={{ padding: '12px 20px', fontSize: 14, fontWeight: 700 }}>{fmt(o.total_in_cents)}</td>
                 <td style={{ padding: '12px 20px' }}>
-                  <span style={{
-                    fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 99,
-                    background: `${statusColor[o.status]}22`, color: statusColor[o.status] ?? '#9CA3AF',
-                  }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 99, background: `${statusColor[o.status]}22`, color: statusColor[o.status] ?? '#9CA3AF' }}>
                     {STATUS_OPTIONS.find(s => s.value === o.status)?.label ?? o.status}
                   </span>
                 </td>
@@ -135,12 +133,38 @@ export default async function AdminPedidos({ searchParams }: PageProps) {
                   {new Date(o.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })}
                 </td>
                 <td style={{ padding: '12px 20px' }}>
-                  <Link href={`/pedidos/${o.id}`} style={{ fontSize: 12, color: '#F26B1F', textDecoration: 'none', whiteSpace: 'nowrap' }}>Ver →</Link>
+                  <Link href={`/pedidos/${o.id}`} style={{ fontSize: 12, color: '#F26B1F', whiteSpace: 'nowrap' }}>Ver →</Link>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+
+        {/* Mobile cards */}
+        <div className="mobile-cards" style={{ flexDirection: 'column', display: 'none' }}>
+          {orders.length === 0 && (
+            <p style={{ padding: '32px 16px', textAlign: 'center', color: '#4A5462', fontSize: 13 }}>Nenhum pedido encontrado.</p>
+          )}
+          {orders.map(o => (
+            <Link key={o.id} href={`/pedidos/${o.id}`}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderBottom: '1px solid #141922' }}>
+              <div>
+                <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#F26B1F', marginBottom: 3 }}>{o.order_number}</div>
+                <div style={{ fontSize: 12, color: '#D1D5DB', marginBottom: 2 }}>{o.customer_name.split(' ')[0]}</div>
+                <div style={{ fontSize: 10, color: '#6B7280' }}>
+                  {new Date(o.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                  {' · '}{o.payment_method === 'credit_card' ? 'Cartão' : o.payment_method.toUpperCase()}
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 5 }}>{fmt(o.total_in_cents)}</div>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: `${statusColor[o.status]}22`, color: statusColor[o.status] ?? '#9CA3AF' }}>
+                  {STATUS_OPTIONS.find(s => s.value === o.status)?.label ?? o.status}
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
 
       {/* Paginação */}

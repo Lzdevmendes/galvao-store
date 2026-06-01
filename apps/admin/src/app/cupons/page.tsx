@@ -142,7 +142,7 @@ export default async function AdminCupons({ searchParams }: { searchParams: Sear
           <div style={{ fontSize:14 }}>Nenhum cupom nesta categoria.</div>
         </div>
       ) : (
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16 }}>
+        <div className="cupons-grid" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16 }}>
           {displayed.map(c => {
             const status = getCouponStatus(c)
             return (

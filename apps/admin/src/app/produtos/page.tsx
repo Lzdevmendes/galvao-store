@@ -73,7 +73,8 @@ export default async function AdminProdutos({ searchParams }: PageProps) {
       </form>
 
       <div style={{ background: '#0F1318', border: '1px solid #1E2530', borderRadius: 12, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        {/* Desktop table */}
+        <table className="adm" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #1E2530' }}>
               {['Produto', 'Marca', 'Cat.', 'Variantes', 'Stock', 'Preço', 'Status', ''].map(h => (
@@ -95,31 +96,40 @@ export default async function AdminProdutos({ searchParams }: PageProps) {
                   <span style={{ fontSize: 13, fontWeight: 700, color: p.total_stock <= 0 ? '#E23B3B' : p.low_stock_count > 0 ? '#F59E0B' : '#2CB35A' }}>
                     {p.total_stock}
                   </span>
-                  {p.low_stock_count > 0 && (
-                    <span style={{ fontSize: 10, color: '#F59E0B', marginLeft: 6 }}>({p.low_stock_count} baixo)</span>
-                  )}
+                  {p.low_stock_count > 0 && <span style={{ fontSize: 10, color: '#F59E0B', marginLeft: 6 }}>({p.low_stock_count} baixo)</span>}
                 </td>
                 <td style={{ padding: '12px 20px', fontSize: 13 }}>
                   {p.min_price === p.max_price ? fmt(p.min_price) : `${fmt(p.min_price)} – ${fmt(p.max_price)}`}
                 </td>
                 <td style={{ padding: '12px 20px' }}>
-                  <span style={{
-                    fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 99,
-                    background: p.status === 'published' ? '#2CB35A22' : p.status === 'archived' ? '#E23B3B22' : '#F59E0B22',
-                    color:      p.status === 'published' ? '#2CB35A'   : p.status === 'archived' ? '#E23B3B'   : '#F59E0B',
-                  }}>
-                    {p.status === 'published' ? 'Publicado' : p.status === 'archived' ? 'Arquivado' : 'Rascunho'}
-                  </span>
+                  <StatusPill status={p.status} />
                 </td>
                 <td style={{ padding: '12px 20px' }}>
-                  <Link href={`/produtos/${p.id}`} style={{ fontSize: 12, color: '#F26B1F', textDecoration: 'none', fontWeight: 600 }}>
-                    Editar →
-                  </Link>
+                  <Link href={`/produtos/${p.id}`} style={{ fontSize: 12, color: '#F26B1F', fontWeight: 600 }}>Editar →</Link>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+
+        {/* Mobile cards */}
+        <div className="mobile-cards" style={{ flexDirection: 'column', display: 'none' }}>
+          {produtos.map(p => (
+            <Link key={p.id} href={`/produtos/${p.id}`}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderBottom: '1px solid #141922', opacity: p.status === 'archived' ? 0.5 : 1 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
+                <div style={{ fontSize: 11, color: '#9CA3AF' }}>{p.brand_name} · {p.variant_count} var. · stock {p.total_stock}</div>
+              </div>
+              <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>
+                  {p.min_price === p.max_price ? fmt(p.min_price) : fmt(p.min_price)}
+                </div>
+                <StatusPill status={p.status} />
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
 
       {pages > 1 && (
@@ -140,5 +150,20 @@ export default async function AdminProdutos({ searchParams }: PageProps) {
         </div>
       )}
     </div>
+  )
+}
+
+function StatusPill({ status }: { status: string }) {
+  const map: Record<string, [string, string]> = {
+    published: ['#2CB35A22', '#2CB35A'],
+    archived:  ['#E23B3B22', '#E23B3B'],
+    draft:     ['#F59E0B22', '#F59E0B'],
+  }
+  const [bg, color] = map[status] ?? ['#1E253088', '#9CA3AF']
+  const label = status === 'published' ? 'Publicado' : status === 'archived' ? 'Arquivado' : 'Rascunho'
+  return (
+    <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 99, background: bg, color }}>
+      {label}
+    </span>
   )
 }
