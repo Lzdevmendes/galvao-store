@@ -341,3 +341,85 @@ html { scroll-behavior: smooth; }
   .cta-banner { padding: 32px 24px; }
   .cta-banner h3 { font-size: 48px; }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   DESIGN SYSTEM — novos componentes do handoff visual
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Badge / Tag ────────────────────────────────────────────────── */
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--r-pill); font-family: var(--font-ui); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; line-height: 1; }
+.badge-orange { background: var(--brand-orange); color: #fff; }
+.badge-teal   { background: var(--brand-teal-100,rgba(31,181,168,.15)); color: var(--brand-teal,#1FB5A8); }
+.badge-sale   { background: var(--brand-red,#E23B3B); color: #fff; }
+.badge-new    { background: var(--ink-950,#0B0E12); color: #fff; }
+.badge-stock  { background: var(--brand-green,#2CB35A); color: #fff; }
+.badge-soft   { background: var(--bg-sunk); color: var(--fg); border: 1px solid var(--border); }
+
+/* ── Product card — style variants via [data-card-style] ──────── */
+.grid[data-card-style="flat"] .pcard { border-radius: 0; border-color: var(--border); }
+.grid[data-card-style="shadow"] .pcard { border: none; box-shadow: var(--sh-sm); }
+.grid[data-card-style="shadow"] .pcard:hover { box-shadow: var(--sh-lg); }
+.grid[data-card-style="bold"] .pcard { border: 2px solid var(--ink-950); border-radius: var(--r-md); box-shadow: 4px 4px 0 var(--ink-950); }
+.grid[data-card-style="bold"] .pcard:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink-950); border-color: var(--ink-950); }
+/* aplica em .grid-products também */
+.grid-products[data-card-style="flat"] .pcard { border-radius: 0; }
+.grid-products[data-card-style="shadow"] .pcard { border: none; box-shadow: var(--sh-sm); }
+.grid-products[data-card-style="shadow"] .pcard:hover { box-shadow: var(--sh-lg); }
+.grid-products[data-card-style="bold"] .pcard { border: 2px solid var(--ink-950); box-shadow: 4px 4px 0 var(--ink-950); }
+.grid-products[data-card-style="bold"] .pcard:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink-950); }
+
+/* ── PDP — zoom button sobre a imagem principal ─────────────────── */
+.main-img-zoom { position: absolute; bottom: 16px; right: 16px; background: #fff; padding: 8px; border-radius: 50%; border: 1px solid var(--border); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink-600); transition: box-shadow .15s; z-index: 2; }
+.main-img-zoom:hover { box-shadow: var(--sh-sm); }
+
+/* ── PDP — stock warning ────────────────────────────────────────── */
+.stock-msg { display: flex; gap: 8px; align-items: center; padding: 10px 12px; background: rgba(255,200,58,.15); border-radius: var(--r-sm); font-family: var(--font-ui); font-size: 13px; color: #8a6a0e; font-weight: 600; margin-bottom: 16px; }
+[data-theme="dark"] .stock-msg { color: #FFC83A; background: rgba(255,200,58,.1); }
+
+/* ── Brand hero — stripe + meta stats + brandlines ──────────────── */
+.bhero { color: #fff; padding: 80px 0 64px; position: relative; overflow: hidden; }
+.bhero::after { content: ""; position: absolute; right: -10%; top: -30%; width: 60%; height: 160%; border-radius: 50%; pointer-events: none; }
+.bhero.nike    { background: #0B0E12; }
+.bhero.nike::after    { background: radial-gradient(ellipse,rgba(242,107,31,.3),transparent 60%); }
+.bhero.adidas  { background: linear-gradient(135deg,#000,#1F252E); }
+.bhero.adidas h1 { font-style: italic; }
+.bhero.adidas::after  { background: radial-gradient(ellipse,rgba(255,255,255,.08),transparent 60%); }
+.bhero.puma    { background: linear-gradient(135deg,#14181F,#000); }
+.bhero.puma::after    { background: radial-gradient(ellipse,rgba(31,181,168,.35),transparent 60%); }
+.bhero.umbro   { background: linear-gradient(135deg,#003366,#0B1A2E); }
+.bhero.umbro::after   { background: radial-gradient(ellipse,rgba(31,181,168,.25),transparent 60%); }
+
+.bhero-stripe { position: absolute; left: 0; right: 0; bottom: 0; height: 8px; background: var(--brand-orange); z-index: 1; }
+.bhero.adidas .bhero-stripe { background: repeating-linear-gradient(90deg,#fff 0 30px,transparent 30px 60px); height: 6px; }
+.bhero.puma   .bhero-stripe { background: var(--brand-teal,#1FB5A8); }
+.bhero.umbro  .bhero-stripe { background: repeating-linear-gradient(90deg,var(--brand-orange) 0 20px,#fff 20px 40px,#003366 40px 60px); }
+
+.bhero-meta { display: flex; gap: 24px; margin-top: 32px; flex-wrap: wrap; }
+.bhero-meta-item .k { font-family: var(--font-mono); font-size: 10px; letter-spacing: .18em; color: rgba(255,255,255,.5); text-transform: uppercase; }
+.bhero-meta-item .v { font-family: var(--font-mono); font-size: 18px; font-weight: 700; margin-top: 4px; color: #fff; }
+
+.brandlines { background: var(--bg-elev); border-bottom: 1px solid var(--border); padding: 14px 0; margin-bottom: 24px; }
+.brandlines-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.brandlines a { padding: 8px 16px; border-radius: var(--r-pill); font-family: var(--font-ui); font-size: 13px; font-weight: 600; background: var(--bg-sunk); color: var(--fg); text-decoration: none; transition: background .15s; }
+.brandlines a:hover { background: var(--ink-200); }
+.brandlines a.active { background: var(--ink-950); color: #fff; }
+[data-theme="dark"] .brandlines a.active { background: #fff; color: var(--ink-950); }
+
+/* ── Mobile hero — foto do produto rotacionada ──────────────────── */
+.mhero-photo { position: absolute; right: -30px; top: 50%; transform: translateY(-50%) rotate(-15deg); width: 180px; z-index: 0; opacity: .95; pointer-events: none; }
+.mhero-photo img { width: 100%; filter: drop-shadow(0 12px 24px rgba(0,0,0,.5)); }
+
+/* ── Mobile category circles ────────────────────────────────────── */
+.mcats { display: flex; gap: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 8px 0; scrollbar-width: none; }
+.mcats::-webkit-scrollbar { display: none; }
+.mcat { flex-shrink: 0; width: 80px; text-align: center; }
+.mcat .circ { width: 64px; height: 64px; border-radius: 50%; background: var(--ink-100); display: flex; align-items: center; justify-content: center; margin: 0 auto 4px; color: var(--brand-orange); }
+.mcat .name { font-family: var(--font-ui); font-size: 10px; font-weight: 600; color: var(--fg-muted); }
+
+/* ── PDP mobile — CTA bar fixa ──────────────────────────────────── */
+.pdp-mobile-cta { display: none; }
+@media (max-width: 768px) {
+  .pdp-mobile-cta { display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 90; background: var(--bg-elev); border-top: 1px solid var(--border); padding: 12px 16px max(12px,env(safe-area-inset-bottom)); gap: 10px; align-items: center; box-shadow: 0 -4px 20px rgba(0,0,0,.1); }
+  .pdp-mobile-cta .wish { flex-shrink: 0; width: 48px; height: 48px; border-radius: var(--r-md); border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; background: transparent; color: var(--fg); cursor: pointer; }
+  .pdp-mobile-cta .buy { flex: 1; height: 48px; border-radius: var(--r-md); background: var(--brand-orange); color: #fff; font-family: var(--font-ui); font-weight: 700; font-size: 15px; border: none; cursor: pointer; }
+}
