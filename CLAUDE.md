@@ -26,6 +26,32 @@ pnpm --filter @galvao/store test      # unit tests (vitest)
 pnpm --filter @galvao/store test:e2e  # playwright
 ```
 
+## Camada de Segurança — arquivos chave
+
+| Arquivo | Responsabilidade |
+|---------|-----------------|
+| `src/lib/ratelimit.ts` | Singleton Redis, todos os limiters, `getRealIp()` anti-spoofing, `checkRateLimit()` |
+| `src/middleware.ts` | Rate limit global `/api/*` (300/min), login (5/15min), session refresh |
+| `src/lib/validate.ts` | CPF (algoritmo real), CEP, telefone, sanitizeText |
+| `src/app/api/webhooks/mercadopago/route.ts` | HMAC timingSafeEqual + janela 5min anti-replay + idempotência |
+| `src/app/checkout/actions.ts` | Rate limit checkout (5/5min), validação completa, preços do banco |
+| `apps/admin/src/middleware.ts` | Bloqueia tudo exceto /login, verifica ADMIN_EMAILS |
+| `apps/admin/src/lib/require-admin.ts` | Chamado em TODA server action e API route do admin |
+| `apps/admin/src/app/api/images/upload/route.ts` | Magic bytes validation (não confia em file.type) |
+
+## Rate Limiting — limites por rota
+
+| Rota / Ação | Limite | Janela | Chave |
+|-------------|--------|--------|-------|
+| `/auth/login` | 5 | 15min | IP (anti-spoofing) |
+| `/api/*` (global) | 300 | 1min | IP |
+| `createOrder` (checkout) | 5 | 5min | IP |
+| `/api/newsletter` (IP) | 3 | 10min | IP |
+| `/api/newsletter` (email) | 1 | 24h | email |
+| `/api/avise-me` | 5 | 10min | IP |
+| `/api/cart/sync` | 30 | 1min | userId |
+| `/api/webhooks/mercadopago` | **Sem limite** | — | (nunca bloquear) |
+
 ## 5 Regras Invioláveis
 
 ### 1. NUNCA confiar em valores financeiros vindos do cliente
@@ -40,8 +66,14 @@ Todos os campos monetários no schema Drizzle são `integer` (centavos). R$ 529,
 ### 4. Admin exige `requireAdmin()` em TODA server action e API route
 O middleware do admin (`apps/admin/src/middleware.ts`) protege a UI, mas server actions precisam chamar `requireAdmin()` de `@/lib/require-admin` individualmente — Next.js não garante que o middleware proteja actions chamadas diretamente.
 
-### 5. E-mail não pode derrubar o fluxo de pedido
+### 5. Erros internos nunca vazam para o cliente
+Mensagens de erro no checkout e APIs públicas são genéricas (`'Erro interno.'`). O `console.error` com detalhes fica só no servidor/Sentry. Nunca expor stack trace, mensagem de DB ou detalhe de lib de pagamento ao browser.
+
+### 7. E-mail não pode derrubar o fluxo de pedido
 Toda chamada de e-mail usa `void sendEmail(...).catch(e => console.error(...))` — falha silenciosa. Nunca `await` e-mail no caminho crítico do checkout ou webhook.
+
+### 8. Toda nova rota/action/upload exige checklist de segurança
+Ao criar qualquer nova funcionalidade verificar: (1) autenticação? (2) rate limit? (3) validação Zod no boundary? (4) IDOR — filtra por userId? (5) erros genéricos para o cliente? (6) upload valida magic bytes? E atualizar CLAUDE.md + agents/ com o que mudou.
 
 ## Estrutura de imports
 
