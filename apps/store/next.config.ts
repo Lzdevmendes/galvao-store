@@ -9,7 +9,7 @@ const CSP = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com https://www.google-analytics.com https://www.googletagmanager.com https://www.clarity.ms https://*.mercadopago.com",
-  "connect-src 'self' https://*.supabase.co https://api.mercadopago.com https://*.upstash.io https://www.google-analytics.com https://region1.analytics.google.com https://www.clarity.ms wss://*.supabase.co https://o0.ingest.sentry.io",
+  "connect-src 'self' https://*.supabase.co https://api.mercadopago.com https://*.upstash.io https://www.google-analytics.com https://region1.analytics.google.com https://www.clarity.ms wss://*.supabase.co https://o0.ingest.sentry.io https://viacep.com.br",
   "frame-src 'self' https://*.mercadopago.com https://*.mercadolibre.com",
   "worker-src 'self' blob:",
   "object-src 'none'",

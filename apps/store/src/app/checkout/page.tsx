@@ -118,28 +118,36 @@ export default function CheckoutPage() {
     setErrors(e => { const next = { ...e }; delete next[key as string]; return next })
   }, [])
 
-  // ViaCEP
+  // ViaCEP — autocomplete de endereço por CEP
   const lookupCep = useCallback(async (cep: string) => {
-    if (cep.replace(/\D/g, '').length !== 8) return
+    const digits = cep.replace(/\D/g, '')
+    if (digits.length !== 8) return
     setCepLoading(true)
     try {
-      const res  = await fetch(`https://viacep.com.br/ws/${cep.replace(/\D/g, '')}/json/`)
+      const res  = await fetch(`https://viacep.com.br/ws/${digits}/json/`)
+      if (!res.ok) throw new Error('fetch failed')
       const data = await res.json()
-      if (!data.erro) {
+      if (data.erro) {
+        setErrors(e => ({ ...e, cep: 'CEP não encontrado.' }))
+      } else {
         setForm(f => ({
           ...f,
-          street:   data.logradouro ?? f.street,
-          district: data.bairro     ?? f.district,
-          city:     data.localidade ?? f.city,
-          state:    data.uf         ?? f.state,
+          street:   data.logradouro || f.street,
+          district: data.bairro     || f.district,
+          city:     data.localidade || f.city,
+          state:    data.uf         || f.state,
         }))
         setErrors(e => {
           const next = { ...e }
-          delete next.street; delete next.district; delete next.city; delete next.state
+          delete next.cep; delete next.street; delete next.district; delete next.city; delete next.state
           return next
         })
       }
-    } catch { /* silent */ } finally { setCepLoading(false) }
+    } catch {
+      // Se a CSP ou rede bloquear, não quebra o fluxo — usuário preenche manualmente
+    } finally {
+      setCepLoading(false)
+    }
   }, [])
 
   // Avançar step 1 → 2
@@ -332,9 +340,23 @@ export default function CheckoutPage() {
 
                 <Field label="CEP *" error={errors.cep}>
                   <div style={{ position: 'relative' }}>
-                    <input style={field(errors.cep)} value={form.cep}
-                      onChange={e => { const v = maskCep(e.target.value); set('cep', v); if (v.length === 9) lookupCep(v) }}
-                      placeholder="00000-000" />
+                    <input
+                      style={field(errors.cep)}
+                      value={form.cep}
+                      inputMode="numeric"
+                      autoComplete="postal-code"
+                      placeholder="00000-000"
+                      onChange={e => {
+                        const v = maskCep(e.target.value)
+                        set('cep', v)
+                        if (v.length === 9) lookupCep(v)
+                      }}
+                      onBlur={e => {
+                        // cobre paste e preenchimento automático
+                        const v = maskCep(e.target.value)
+                        if (v.length === 9 && !form.street) lookupCep(v)
+                      }}
+                    />
                     {cepLoading && <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--fg-muted)' }}>...</span>}
                   </div>
                 </Field>
