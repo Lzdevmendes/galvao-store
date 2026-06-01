@@ -151,7 +151,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             storeUrl={process.env.STORE_URL}
           />
           <div className="admin-main">
-            <ToastProvider>{children}</ToastProvider>
+            <div className="admin-content">
+              <ToastProvider>{children}</ToastProvider>
+            </div>
           </div>
         </div>
       </body>
