@@ -13,11 +13,11 @@ export default async function ContaPage() {
   const email = user.email ?? ''
 
   const menuItems = [
-    { href:'/conta/pedidos',   icon:'📦', label:'Meus pedidos',   desc:'Histórico e rastreio' },
-    { href:'/conta/enderecos', icon:'📍', label:'Endereços',       desc:'Gerenciar endereços salvos' },
-    { href:'/conta/favoritos', icon:'❤️',  label:'Favoritos',       desc:'Produtos que você curtiu' },
-    { href:'/conta/cupons',    icon:'🏷️',  label:'Cupons',          desc:'Seus cupons de desconto' },
-    { href:'/conta/dados',     icon:'✏️',  label:'Dados pessoais',  desc:'Editar perfil e senha' },
+    { href:'/conta/pedidos',   icon:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/></svg>, label:'Meus pedidos',   desc:'Histórico e rastreio' },
+    { href:'/conta/enderecos', icon:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>, label:'Endereços', desc:'Gerenciar endereços salvos' },
+    { href:'/conta/favoritos', icon:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/></svg>, label:'Favoritos', desc:'Produtos que você curtiu' },
+    { href:'/conta/cupons',    icon:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1" fill="currentColor"/></svg>, label:'Cupons', desc:'Seus cupons de desconto' },
+    { href:'/conta/dados',     icon:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="m16 11 2 2 4-4" strokeWidth="1.5"/></svg>, label:'Dados pessoais', desc:'Editar perfil e senha' },
   ]
 
   const firstName = name.split(' ')[0]
@@ -80,7 +80,7 @@ export default async function ContaPage() {
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:16 }}>
           {menuItems.map(item => (
             <Link key={item.href} href={item.href} style={{ background:'var(--bg-elev)', border:'1px solid var(--border)', borderRadius:14, padding:'24px', display:'flex', gap:16, alignItems:'flex-start', textDecoration:'none' }}>
-              <span style={{ fontSize:28, flexShrink:0 }}>{item.icon}</span>
+              <span style={{ color:'var(--brand-orange)', flexShrink:0, marginTop:2 }}>{item.icon}</span>
               <div>
                 <div style={{ fontFamily:'var(--font-ui)', fontWeight:700, fontSize:15, color:'var(--fg)', marginBottom:4 }}>{item.label}</div>
                 <div style={{ fontFamily:'var(--font-ui)', fontSize:13, color:'var(--fg-muted)' }}>{item.desc}</div>

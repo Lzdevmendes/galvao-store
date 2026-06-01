@@ -152,13 +152,13 @@ export default async function HomePage() {
         <div className="container">
           <div className="row">
             {[
-              { icon:'💳', t:'12x sem juros',      s:'no cartão de crédito' },
-              { icon:'🔒', t:'Compra 100% segura',  s:'site protegido por SSL' },
-              { icon:'📦', t:'Frete grátis Brasil', s:'acima de R$ 399' },
-              { icon:'✓',  t:'5% OFF no Pix',       s:'aprovação imediata' },
+              { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>, t:'12x sem juros', s:'no cartão de crédito' },
+              { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>, t:'Compra 100% segura', s:'site protegido por SSL' },
+              { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>, t:'Frete grátis Brasil', s:'acima de R$ 399' },
+              { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><polyline points="20 6 9 17 4 12"/></svg>, t:'5% OFF no Pix', s:'aprovação imediata' },
             ].map(({ icon, t, s }) => (
               <div key={t} className="item">
-                <span style={{ fontSize:28 }}>{icon}</span>
+                <span style={{ color:'var(--brand-orange)', display:'flex', alignItems:'center' }}>{icon}</span>
                 <div><div className="t">{t}</div><div className="s">{s}</div></div>
               </div>
             ))}
