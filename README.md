@@ -155,7 +155,48 @@ Opcionais mas recomendados:
 
 ---
 
+## Testes
+
+```bash
+# Unit tests (vitest)
+pnpm --filter @galvao/store test
+
+# E2E (Playwright) — requer store rodando em :3010
+pnpm --filter @galvao/store test:e2e
+
+# TypeScript check
+cd apps/store && npx tsc --noEmit
+cd apps/admin && npx tsc --noEmit
+```
+
+---
+
+## Documentação adicional
+
+| Documento | Conteúdo |
+|-----------|---------|
+| [`CLAUDE.md`](./CLAUDE.md) | Guia rápido para IA — regras invioláveis e fluxo |
+| [`agents/overview.md`](./agents/overview.md) | Domínio e regras de negócio |
+| [`agents/architecture.md`](./agents/architecture.md) | Arquitetura e estrutura de arquivos |
+| [`agents/stack.md`](./agents/stack.md) | Cada lib e por que existe |
+| [`agents/conventions.md`](./agents/conventions.md) | Como criar features, convenção de commits |
+| [`agents/glossary.md`](./agents/glossary.md) | Entidades do schema Drizzle |
+| [`docs/EXPLICACAO.md`](./docs/EXPLICACAO.md) | Explicação didática ponta a ponta |
+
+---
+
 ## Commits
 
-- Somente `git commit -m 'título'` — nunca body nem tópicos
-- Separados por responsabilidade
+Títulos apenas, separados por responsabilidade:
+
+```
+feat: nova funcionalidade
+fix: correcção de bug
+security: correcção de segurança
+perf: melhoria de performance
+refactor: sem mudança de comportamento
+style: formatação/CSS
+test: testes
+docs: documentação
+chore: deps/config/build
+```
