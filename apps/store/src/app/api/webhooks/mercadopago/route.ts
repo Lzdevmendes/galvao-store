@@ -11,7 +11,8 @@ import { waSendPaymentConfirmed } from '@/lib/whatsapp'
 
 function validateSignature(req: NextRequest, _body: string): boolean {
   const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET
-  if (!secret) return true // dev mode sem secret
+  // Em produção, bloquear se o secret não estiver configurado
+  if (!secret) return process.env.NODE_ENV !== 'production'
 
   const sig       = req.headers.get('x-signature') ?? ''
   const requestId = req.headers.get('x-request-id') ?? ''
@@ -21,7 +22,12 @@ function validateSignature(req: NextRequest, _body: string): boolean {
   const v1Match = sig.match(/v1=([a-f0-9]+)/)
   if (!tsMatch || !v1Match) return false
 
-  const ts        = tsMatch[1]
+  const ts = tsMatch[1]
+
+  // Rejeitar webhooks com timestamp fora de janela de 5 minutos (replay attack)
+  const tsAge = Math.abs(Date.now() / 1000 - parseInt(ts, 10))
+  if (tsAge > 300) return false
+
   const expected  = v1Match[1]
   const manifest  = `id:${dataId};request-id:${requestId};ts:${ts};`
   const computed  = createHmac('sha256', secret).update(manifest).digest('hex')
