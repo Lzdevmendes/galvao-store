@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import type { CartItem } from '@/store/cart'
+import { limiters, checkRateLimit } from '@/lib/ratelimit'
 
 const cartItemSchema = z.object({
   variantId:         z.string().min(1),
@@ -25,6 +26,10 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+
+  // Rate limit por userId (autenticado) — 30 syncs por minuto
+  const blocked = await checkRateLimit(limiters.cartSync, `cart:${user.id}`, 30, 60 * 1000, 60)
+  if (blocked) return blocked
 
   const parsed = syncSchema.safeParse(await req.json().catch(() => ({})))
   if (!parsed.success) return NextResponse.json({ error: 'Payload inválido' }, { status: 400 })

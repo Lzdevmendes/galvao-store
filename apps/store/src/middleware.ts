@@ -1,58 +1,50 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { Redis } from '@upstash/redis'
-import { Ratelimit } from '@upstash/ratelimit'
-
-const hasUpstash = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
-
-const ratelimit = hasUpstash
-  ? new Ratelimit({
-      redis: new Redis({
-        url: process.env.UPSTASH_REDIS_REST_URL!,
-        token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-      }),
-      limiter: Ratelimit.slidingWindow(5, '15 m'),
-      prefix: 'galvao:login',
-    })
-  : null
-
-// Fallback in-memory (single-instance dev only)
-const loginAttempts = new Map<string, { count: number; firstAt: number }>()
+import { limiters, getRealIp, checkMemory, rateLimitResponse } from '@/lib/ratelimit'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const reqMethod = request.method
+  const ip = getRealIp(request)
 
-  if (pathname === '/auth/login' && reqMethod === 'POST') {
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ?? 'unknown'
+  // ── 1. Rate limiting por rota ───────────────────────────────────────────
+  // O webhook MP é explicitamente excluído — nunca bloquear notificações de pagamento
+  const isWebhook = pathname.startsWith('/api/webhooks/')
 
-    if (ratelimit) {
-      const { success } = await ratelimit.limit(ip)
-      if (!success) {
-        const url = request.nextUrl.clone()
-        url.pathname = '/auth/login'
-        url.searchParams.set('error', 'too_many_requests')
-        return NextResponse.redirect(url)
-      }
-    } else {
-      const now = Date.now()
-      const window = 15 * 60 * 1000
-      for (const [key, val] of loginAttempts.entries()) {
-        if (now - val.firstAt > window) loginAttempts.delete(key)
-      }
-      const entry = loginAttempts.get(ip) ?? { count: 0, firstAt: now }
-      entry.count++
-      if (entry.count === 1) entry.firstAt = now
-      loginAttempts.set(ip, entry)
-      if (entry.count > 5) {
+  if (!isWebhook) {
+    // Login — 5 tentativas por IP / 15min
+    if (pathname === '/auth/login' && request.method === 'POST') {
+      if (limiters.login) {
+        const { success, reset } = await limiters.login.limit(ip)
+        if (!success) {
+          const retryAfter = reset ? Math.ceil((reset - Date.now()) / 1000) : 900
+          const url = request.nextUrl.clone()
+          url.pathname = '/auth/login'
+          url.searchParams.set('error', 'too_many_requests')
+          return NextResponse.redirect(url, {
+            headers: { 'Retry-After': String(retryAfter) },
+          })
+        }
+      } else if (!checkMemory(`login:${ip}`, 5, 15 * 60 * 1000)) {
         const url = request.nextUrl.clone()
         url.pathname = '/auth/login'
         url.searchParams.set('error', 'too_many_requests')
         return NextResponse.redirect(url)
       }
     }
+
+    // API global — 300 req/min por IP (DDoS e scraping)
+    // Aplicado em todas as rotas /api/* exceto o webhook
+    if (pathname.startsWith('/api/')) {
+      if (limiters.apiGlobal) {
+        const { success } = await limiters.apiGlobal.limit(ip)
+        if (!success) return rateLimitResponse(60)
+      } else if (!checkMemory(`api:${ip}`, 300, 60 * 1000)) {
+        return rateLimitResponse(60)
+      }
+    }
   }
 
+  // ── 2. Supabase session refresh ─────────────────────────────────────────
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -76,6 +68,7 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
+  // ── 3. Protecção de rotas autenticadas ───────────────────────────────────
   if (!user && pathname.startsWith('/conta')) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
@@ -94,8 +87,11 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    // Rotas autenticadas + auth
     '/conta/:path*',
     '/auth/login',
     '/auth/cadastro',
+    // Todas as API routes (para rate limiting global)
+    '/api/:path*',
   ],
 }

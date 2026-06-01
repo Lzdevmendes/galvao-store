@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { Resend } from 'resend'
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
-import { newsletterLimit, checkInMemory } from '@/lib/ratelimit'
+import { limiters, getRealIp, checkRateLimit } from '@/lib/ratelimit'
 import { APP_URL, brand, font } from '@/emails/_components/email-layout'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -15,13 +15,10 @@ const FROM = process.env.NODE_ENV === 'production'
 const schema = z.object({ email: z.string().email('E-mail inválido') })
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0] ?? 'unknown'
-  if (newsletterLimit) {
-    const { success } = await newsletterLimit.limit(ip)
-    if (!success) return NextResponse.json({ error: 'Muitas tentativas. Tente novamente em alguns minutos.' }, { status: 429 })
-  } else if (!checkInMemory(`newsletter:${ip}`, 5, 10 * 60 * 1000)) {
-    return NextResponse.json({ error: 'Muitas tentativas. Tente novamente em alguns minutos.' }, { status: 429 })
-  }
+  // Rate limit por IP (anti-spam geral)
+  const ip = getRealIp(req)
+  const blockedIp = await checkRateLimit(limiters.newsletter, `newsletter:${ip}`, 3, 10 * 60 * 1000, 600)
+  if (blockedIp) return blockedIp
 
   const parsed = schema.safeParse(await req.json().catch(() => ({})))
   if (!parsed.success) {
@@ -29,6 +26,10 @@ export async function POST(req: NextRequest) {
   }
 
   const key = parsed.data.email.toLowerCase()
+
+  // Rate limit por e-mail — 1 inscrição por e-mail a cada 24h (bloqueia spam com e-mails gerados)
+  const blockedEmail = await checkRateLimit(limiters.newsletterEmail, `newsletter_email:${key}`, 1, 24 * 60 * 60 * 1000, 86400)
+  if (blockedEmail) return NextResponse.json({ ok: true, already: true }) // silencioso — não revelar o limite
 
   const existing = await db.all(sql`SELECT id FROM newsletter_subscriptions WHERE email = ${key} LIMIT 1`)
   if (existing.length > 0) {

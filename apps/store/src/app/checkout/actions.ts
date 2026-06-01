@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fmt } from "@/lib/utils";
 import { waSendOrderCreated } from "@/lib/whatsapp";
 import { sql } from "drizzle-orm";
+import { limiters, getRealIpFromHeaders, checkMemory } from "@/lib/ratelimit";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -300,6 +301,17 @@ export async function createOrder(
   payload: CheckoutPayload,
 ): Promise<CreateOrderResult> {
   try {
+    // Rate limiting anti-fraude — 5 tentativas por IP / 5min
+    // Impede bots de testar cartões roubados em loop
+    const ip = await getRealIpFromHeaders()
+    const limitKey = `checkout:${ip}`
+    if (limiters.checkout) {
+      const { success } = await limiters.checkout.limit(limitKey)
+      if (!success) return { success: false, error: 'Muitas tentativas. Tente novamente em alguns minutos.' }
+    } else if (!checkMemory(limitKey, 5, 5 * 60 * 1000)) {
+      return { success: false, error: 'Muitas tentativas. Tente novamente em alguns minutos.' }
+    }
+
     // Idempotência: evita double-submit se o user clicar duas vezes
     if (payload.idempotencyKey) {
       const cached = await db.all<{ result_json: string }>(sql`
