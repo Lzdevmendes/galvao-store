@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
+import { aviseMeLimit, checkInMemory } from '@/lib/ratelimit'
 
 const schema = z.object({
   email:       z.string().email('E-mail inválido'),
@@ -10,6 +11,14 @@ const schema = z.object({
 })
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0] ?? 'unknown'
+  if (aviseMeLimit) {
+    const { success } = await aviseMeLimit.limit(ip)
+    if (!success) return NextResponse.json({ error: 'Muitas tentativas. Tente novamente em alguns minutos.' }, { status: 429 })
+  } else if (!checkInMemory(`aviseme:${ip}`, 10, 10 * 60 * 1000)) {
+    return NextResponse.json({ error: 'Muitas tentativas. Tente novamente em alguns minutos.' }, { status: 429 })
+  }
+
   const parsed = schema.safeParse(await req.json().catch(() => ({})))
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { Resend } from 'resend'
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
+import { newsletterLimit, checkInMemory } from '@/lib/ratelimit'
 import { APP_URL, brand, font } from '@/emails/_components/email-layout'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -14,6 +15,14 @@ const FROM = process.env.NODE_ENV === 'production'
 const schema = z.object({ email: z.string().email('E-mail inválido') })
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0] ?? 'unknown'
+  if (newsletterLimit) {
+    const { success } = await newsletterLimit.limit(ip)
+    if (!success) return NextResponse.json({ error: 'Muitas tentativas. Tente novamente em alguns minutos.' }, { status: 429 })
+  } else if (!checkInMemory(`newsletter:${ip}`, 5, 10 * 60 * 1000)) {
+    return NextResponse.json({ error: 'Muitas tentativas. Tente novamente em alguns minutos.' }, { status: 429 })
+  }
+
   const parsed = schema.safeParse(await req.json().catch(() => ({})))
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
