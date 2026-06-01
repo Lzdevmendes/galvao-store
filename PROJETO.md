@@ -27,7 +27,6 @@ Caraguatatuba / SP · galvaosstore.com.br
 ## Estrutura do Monorepo
 
 ```
-.Lipecrg22!
 ├── apps/
 │   ├── store/          # loja pública — porta 3010
 │   └── admin/          # backoffice — porta 3011
@@ -263,6 +262,7 @@ turso db shell galvao-store < packages/db/schema.sql
 ### PASSO 2 — Preencher variáveis de ambiente
 
 **`apps/store/.env.local`** — adicionar as que faltam:
+
 ```env
 DATABASE_URL=libsql://<seu-banco>.turso.io
 DATABASE_AUTH_TOKEN=<token-gerado>
@@ -270,21 +270,24 @@ MERCADOPAGO_WEBHOOK_SECRET=<gerar no painel MP>
 ```
 
 **`apps/admin/.env.local`** — adicionar as que faltam:
+
 ```env
 DATABASE_URL=libsql://<seu-banco>.turso.io
 DATABASE_AUTH_TOKEN=<token-gerado>
-RESEND_API_KEY=re_REDACTED_REVOGAR
-MERCADOPAGO_ACCESS_TOKEN=TEST-8206096742567619-...
-CRON_SECRET=REDACTED_CRON_ROTACIONAR
+RESEND_API_KEY=<obter em resend.com → API Keys>
+MERCADOPAGO_ACCESS_TOKEN=<obter em mercadopago.com.br → Desenvolvedores>
+CRON_SECRET=<gerar com: openssl rand -hex 32>
 ```
 
 **Variáveis recomendadas (rate limiting + error tracking):**
+
 - Criar conta grátis em [upstash.com](https://upstash.com) → Redis → copiar `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` para os dois `.env.local`
 - Criar conta em [sentry.io](https://sentry.io) → criar projeto Next.js → copiar `NEXT_PUBLIC_SENTRY_DSN` + `SENTRY_AUTH_TOKEN`
 
 ### PASSO 3 — Seed com produtos reais
 
 Quando o cliente enviar a lista de produtos (planilha ou lista), rodar:
+
 ```bash
 # Editar packages/db/seed.ts com os dados reais
 cd packages/db && pnpm seed
@@ -293,6 +296,7 @@ cd packages/db && pnpm seed
 ### PASSO 4 — Deploy na Vercel
 
 **Store:**
+
 1. Acesse [vercel.com](https://vercel.com) → Add New Project → importar repositório
 2. Root Directory: `apps/store`
 3. Framework: Next.js (detecta automático)
@@ -301,6 +305,7 @@ cd packages/db && pnpm seed
 6. Deploy → configurar domínio `galvaosstore.com.br`
 
 **Admin:**
+
 1. Add New Project → mesmo repositório
 2. Root Directory: `apps/admin`
 3. Adicionar variáveis de ambiente do admin
@@ -331,7 +336,7 @@ cd packages/db && pnpm seed
 
 ```bash
 # Testar cron de limpeza de reservas em produção
-curl -H "Authorization: Bearer REDACTED_CRON_ROTACIONAR" \
+curl -H "Authorization: Bearer <CRON_SECRET>" \
   https://galvaosstore.com.br/api/cron/clear-reservations
 ```
 
