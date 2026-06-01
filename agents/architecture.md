@@ -29,15 +29,20 @@ galvao-store/
 ### `apps/store` — Loja pública
 
 **Rotas de página** (App Router/RSC):
-- `/` — Home com hero, marcas, promoções
+- `/` — Home: hero desktop + hero mobile com foto rotacionada + category circles
 - `/produtos` — Catálogo com filtros + paginação
-- `/[brand-slug]` — Catálogo por marca
-- `/produto/[slug]` — PDP (product detail page)
+- `/[brand-slug]` — Catálogo por marca — lhead-m mobile + bhero desktop (stripe por marca)
+- `/produto/[slug]` — PDP: galeria + dots mobile + size grid + CTA bar fixo mobile
 - `/busca` — Full-text search
 - `/carrinho` — Carrinho (localStorage + sync DB)
-- `/checkout` — 3 passos: dados → frete → pagamento
-- `/obrigado/[id]` — Confirmação de pedido
-- `/conta/*` — Área do cliente (pedidos, endereços, favoritos)
+- `/checkout` — 3 passos: dados → frete → pagamento (steps bar mobile)
+- `/pedido/[id]` — Confirmação: banner adaptativo + PIX grid + **order tracker 5 etapas**
+- `/conta/` — Área do cliente: header dark mobile + menu SVG icons
+- `/conta/pedidos` — Histórico de pedidos
+- `/conta/enderecos` — Endereços salvos
+- `/conta/favoritos` — Wishlist
+- `/conta/dados` — Dados pessoais
+- `/conta/cupons` — Cupons do cliente
 - `/auth/*` — Login, cadastro, recuperação, callback OAuth
 
 **API Routes**:
@@ -78,9 +83,23 @@ galvao-store/
 
 **API Routes** (todas chamam `requireAdmin()`):
 - `/api/images/[id]` DELETE — apaga imagem do Supabase Storage
-- `/api/images/upload` POST — faz upload de imagem
+- `/api/images/upload` POST — faz upload de imagem (valida magic bytes reais)
 - `/api/images/reorder` POST — reordena fotos
 - `/api/images/primary` POST — define foto principal
+
+**Admin cliente 360° (`/clientes/[id]`):**
+- Hero dark gradient + avatar inicial + nome Bebas Neue + tags dinâmicas (CLUBE/VIP/RECORRENTE)
+- KPIs: LTV, Pedidos, Ticket médio, Cliente desde, Último pedido
+- Score calculado dinamicamente (pedidos × 5 + LTV + clube - cancelamentos)
+- Tabs: Visão geral / Pedidos / Endereços / Notas
+- Sidebar: dados de contacto + endereços + preferências de marca (barra proporcional)
+
+**Layout responsivo do admin:**
+- `AdminSidebar` (`src/components/admin-sidebar.tsx`) — client component com estado open/close
+- Desktop: sidebar fixa 220px com `position: sticky`
+- Mobile ≤768px: sidebar oculta (`translateX(-100%)`) → drawer com backdrop ao abrir
+- Hamburger fixo `position: fixed; top:12px; left:16px` visível só no mobile
+- Fecha ao navegar (useEffect no pathname) ou Escape
 
 ## Fronteiras de import
 

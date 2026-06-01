@@ -26,18 +26,47 @@ pnpm --filter @galvao/store test      # unit tests (vitest)
 pnpm --filter @galvao/store test:e2e  # playwright
 ```
 
-## Componentes UI novos (design system)
+## Componentes UI — design system completo
+
+### Store (`apps/store`)
 
 | Componente | Arquivo | Uso |
 |-----------|---------|-----|
 | `<Badge variant="orange\|teal\|sale\|new\|stock\|soft">` | `src/components/ui/badge.tsx` | Tags/status em qualquer contexto |
-| `.bhero.{nike\|adidas\|puma\|umbro}` | CSS class | Hero de marca com stripe, meta stats |
-| `.brandlines` + `.brandlines-row` | CSS class | Nav de linhas de produto |
-| `.stock-msg` | CSS class | Aviso de estoque baixo (≤3 unidades) |
-| `.main-img-zoom` | CSS class | Botão zoom na galeria do PDP |
+| `<MobileTabBar>` | `src/components/layout/mobile-tab-bar.tsx` | Barra de navegação fixa no bottom (só ≤768px) |
+| `<SiteHeader>` | `src/components/layout/site-header.tsx` | Header com search collapsível no mobile |
+| `.bhero.{nike\|adidas\|puma\|umbro}` | globals.css | Hero de marca com stripe colorida + meta stats |
+| `.brandlines` + `.brandlines-row` | globals.css | Nav de linhas de produto (scroll horizontal) |
+| `.stock-msg` | globals.css | Aviso "⚡ Última unidade" (≤3 unidades) |
+| `.main-img-zoom` | globals.css | Botão zoom circular SVG na galeria PDP |
 | `[data-card-style="flat\|shadow\|bold"]` | CSS atributo | Variante visual nos cards de produto |
-| `.pdp-mobile-cta` | CSS class | CTA fixo mobile (só em ≤768px) |
-| Skeletons em `loading.tsx` | Todos usam `.skeleton` | Shimmer automático durante RSC fetch |
+| `.pdp-mobile-cta` | globals.css | CTA bar fixo mobile (coração + comprar + preço) |
+| `.mhero-wrap` | globals.css | Hero mobile com foto rotacionada (só ≤768px) |
+| `.mcats` + `.mcat` | globals.css | Category circles scroll horizontal (só ≤768px) |
+| `.lhead-m` | globals.css | Header compacto da listagem em mobile |
+| `.ltools .chip` | globals.css | Filter chips scroll horizontal (só ≤768px) |
+| `.sz-grid` | globals.css | Size grid 4-col no mobile |
+| `.acc-mobile-head` | globals.css | Header dark da conta no mobile |
+| `.chk-steps-bar .stp` | globals.css | Barra de steps do checkout (só ≤768px) |
+| Skeletons `loading.tsx` | Todos usam `.skeleton` | Shimmer automático durante RSC fetch |
+
+### Admin (`apps/admin`)
+
+| Componente | Arquivo | Uso |
+|-----------|---------|-----|
+| `<AdminSidebar>` | `src/components/admin-sidebar.tsx` | Sidebar desktop + drawer mobile com hamburger |
+| `.admin-hamburger` | layout CSS | Botão hamburguer (só ≤768px) |
+| `.mobile-cards` | layout CSS | Cards alternativos às tabelas (só ≤768px) |
+| `.kpi-row` | layout CSS | Grid KPIs — 4-col desktop, 2×2 mobile |
+| `.admin-2col-grid` | layout CSS | Grid 2-col — colapsa para 1-col no mobile |
+| `.cupons-grid` | layout CSS | Grid cupons — 3-col desktop, 1-col mobile |
+
+### Páginas especiais
+
+| Página | Arquivo | Destaques |
+|--------|---------|-----------|
+| Confirmação de pedido | `store/src/app/pedido/[id]/page.tsx` | Banner gradiente adaptativo (orange/verde/vermelho), tracker 5 etapas, PIX grid |
+| Admin cliente 360° | `admin/src/app/clientes/[id]/page.tsx` | Hero dark com avatar+tags, score, KPIs 5-col, sidebar com preferências de marca |
 
 ## Camada de Segurança — arquivos chave
 
@@ -104,6 +133,11 @@ Cliente → checkout/actions.ts (createOrder)
   ↓ chama Mercado Pago
   ↓ retorna PIX/boleto/aprovação imediata
   ↓
+  → /pedido/[id] — confirmação com:
+      • Banner laranja (pendente) / verde (pago) / vermelho (cancelado)
+      • PIX box: QR grid + PixTimer countdown + CopyButton
+      • Order tracker: 5 etapas (dots + linhas) — estado mapeado ao order.status
+  ↓
 MP → /api/webhooks/mercadopago (confirma na API do MP, não no payload)
   ↓ UPDATE orders WHERE status != 'paid'  ← idempotente
   ↓ decrementa stock + stock_reserved
@@ -113,3 +147,33 @@ Cron /api/cron/clear-reservations (a cada 30min)
   ↓ cancela pending_payment > 30min
   ↓ libera stock_reserved
 ```
+
+## Order Tracker — mapeamento de status
+
+```typescript
+const STATUS_TRACKER: Record<string, number> = {
+  pending_payment: 1,  // dot "AGUARDANDO PIX" ativo
+  paid:            2,  // dot "EM SEPARAÇÃO"
+  processing:      2,
+  shipped:         3,  // dot "EM TRÂNSITO"
+  delivered:       4,  // dot "ENTREGUE" (todos verdes)
+  cancelled:      -1,  // banner vermelho, sem tracker
+}
+```
+
+## Mobile — sistema de responsividade
+
+**Breakpoints:**
+- `≤768px` — mobile (tabbar fixa, hero mobile, search collapsível, tables→cards)
+- `769px+` — desktop (sidebar fixa, hero desktop, search inline, tables)
+
+**Fundações globais (globals.css):**
+- `touch-action: manipulation` em todos os interativos (elimina 300ms tap delay iOS)
+- `font-size: 16px` em todos os inputs (previne zoom automático iOS)
+- `min-height: 100dvh` (considera barra de endereço Safari)
+- `padding-bottom: max(80px, safe-area + 72px)` no main (não sobrepõe tabbar)
+
+**Admin mobile:**
+- `AdminSidebar` usa `useState` + `position: fixed; transform: translateX(-100%)` → slide-in
+- Fechar: clicar no backdrop, pressionar Escape, ou navegar para outra rota
+- CSS `.admin-hamburger { display: none }` no desktop, `flex` no mobile
