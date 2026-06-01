@@ -256,34 +256,25 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
       `)
     }
 
-    // Calcular totais
-    const subtotalInCents = payload.cartItems.reduce((acc, item) => {
-      const price = item.pricePromoInCents != null && item.pricePromoInCents < item.priceInCents
-        ? item.pricePromoInCents : item.priceInCents
-      return acc + price * item.quantity
-    }, 0)
-
-    const couponDiscount = payload.couponDiscountInCents ?? 0
-    const pixDiscount    = payload.paymentMethod === 'pix' ? Math.round(subtotalInCents * 0.05) : 0
-    const totalDiscount  = couponDiscount + pixDiscount
-    const totalInCents   = subtotalInCents - totalDiscount + payload.shippingInCents
-
     // Número do pedido sequencial
     const countRows  = await db.all<{ n: number }>(sql`SELECT COUNT(*) as n FROM orders`)
     const nextNum    = (countRows[0]?.n ?? 0) + 1
     const orderNumber = `GS-${new Date().getFullYear()}-${String(nextNum).padStart(6, '0')}`
     const orderId    = crypto.randomUUID()
 
-    // Pré-busca única de todas as variantes (evita N+1 no loop abaixo)
+    // Buscar preços e estoque — fonte autoritativa é o banco, nunca o cliente
     const allVariantIds = payload.cartItems.map(i => i.variantId)
-    const variantRows = await db.all<{ id: string; stock: number; stock_reserved: number; sku: string }>(sql`
-      SELECT id, stock, stock_reserved, sku
+    const variantRows = await db.all<{
+      id: string; stock: number; stock_reserved: number; sku: string
+      price_in_cents: number; price_promo_in_cents: number | null
+    }>(sql`
+      SELECT id, stock, stock_reserved, sku, price_in_cents, price_promo_in_cents
       FROM product_variants
       WHERE id IN (${sql.join(allVariantIds.map(id => sql`${id}`), sql`,`)})
     `)
     const variantMap = new Map(variantRows.map(v => [v.id, v]))
 
-    // Validar estoque usando os dados já em memória
+    // Validar estoque
     for (const item of payload.cartItems) {
       const v = variantMap.get(item.variantId)
       if (!v) {
@@ -293,6 +284,25 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
         return { success: false, error: `Estoque insuficiente para ${item.productName} (tam. ${item.size}).` }
       }
     }
+
+    // Calcular totais com preços do banco — ignora preços vindos do cliente
+    const subtotalInCents = payload.cartItems.reduce((acc, item) => {
+      const v = variantMap.get(item.variantId)!
+      const price = v.price_promo_in_cents != null && v.price_promo_in_cents < v.price_in_cents
+        ? v.price_promo_in_cents : v.price_in_cents
+      return acc + price * item.quantity
+    }, 0)
+
+    // Re-validar cupom no servidor com o subtotal real do banco
+    let couponDiscount = 0
+    if (payload.couponCode && payload.couponId) {
+      const couponCheck = await validateCoupon(payload.couponCode, subtotalInCents)
+      couponDiscount = couponCheck.valid ? couponCheck.discountInCents : 0
+    }
+
+    const pixDiscount    = payload.paymentMethod === 'pix' ? Math.round(subtotalInCents * 0.05) : 0
+    const totalDiscount  = couponDiscount + pixDiscount
+    const totalInCents   = subtotalInCents - totalDiscount + payload.shippingInCents
 
     // Criar pedido
     await db.run(sql`
@@ -317,11 +327,12 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
       )
     `)
 
-    // Inserir itens em paralelo — SKU já está no variantMap, sem queries extras
+    // Inserir itens — preço unitário sempre do banco (variantMap)
     await Promise.all(payload.cartItems.map(item => {
-      const price = item.pricePromoInCents != null && item.pricePromoInCents < item.priceInCents
-        ? item.pricePromoInCents : item.priceInCents
-      const sku = variantMap.get(item.variantId)?.sku ?? item.variantId
+      const v   = variantMap.get(item.variantId)!
+      const price = v.price_promo_in_cents != null && v.price_promo_in_cents < v.price_in_cents
+        ? v.price_promo_in_cents : v.price_in_cents
+      const sku = v.sku
       return db.run(sql`
         INSERT INTO order_items (
           id, order_id, variant_id,
@@ -361,19 +372,22 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
       `)
     }
 
-    // Preparar dados comuns para e-mail (usados em todos os caminhos)
-    const emailItems = payload.cartItems.map(item => ({
-      productName:  item.productName,
-      brandName:    item.brandName,
-      variantSize:  item.size,
-      variantColor: item.color || null,
-      imageUrl:     item.imageUrl || null,
-      qty:          item.quantity,
-      unitInCents:  item.pricePromoInCents != null && item.pricePromoInCents < item.priceInCents
-        ? item.pricePromoInCents : item.priceInCents,
-      totalInCents: (item.pricePromoInCents != null && item.pricePromoInCents < item.priceInCents
-        ? item.pricePromoInCents : item.priceInCents) * item.quantity,
-    }))
+    // Preparar dados comuns para e-mail — preços sempre do variantMap (banco)
+    const emailItems = payload.cartItems.map(item => {
+      const v = variantMap.get(item.variantId)!
+      const unitPrice = v.price_promo_in_cents != null && v.price_promo_in_cents < v.price_in_cents
+        ? v.price_promo_in_cents : v.price_in_cents
+      return {
+        productName:  item.productName,
+        brandName:    item.brandName,
+        variantSize:  item.size,
+        variantColor: item.color || null,
+        imageUrl:     item.imageUrl || null,
+        qty:          item.quantity,
+        unitInCents:  unitPrice,
+        totalInCents: unitPrice * item.quantity,
+      }
+    })
 
     const emailTotals = {
       subtotalInCents,
