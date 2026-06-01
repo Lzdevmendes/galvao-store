@@ -133,6 +133,9 @@ export default async function ProdutoPage(
   const specs: Record<string, string> = JSON.parse(product.specs ?? '{}')
   const primaryImage = images.find(i => i.is_primary) ?? images[0]
   const initialFavorited = favRows.length > 0
+  // Stock indicator: avisa quando pouca quantidade disponível
+  const totalAvailable = variants.reduce((sum, v) => sum + Math.max(0, v.stock), 0)
+  const showStockWarn = totalAvailable > 0 && totalAvailable <= 3
 
   const badgeEl =
     product.badge === 'new'        ? <span style={{ background:'#0B0E12', color:'#fff', padding:'6px 14px', borderRadius:999, fontSize:12, fontWeight:700, fontFamily:'var(--font-ui)', letterSpacing:'.04em' }}>LANÇAMENTO</span>
@@ -223,6 +226,16 @@ export default async function ProdutoPage(
               isLoggedIn={isLoggedIn}
             />
           </div>
+
+          {/* Stock warning — aparece quando restam 3 ou menos unidades no total */}
+          {showStockWarn && (
+            <div className="stock-msg">
+              <span>⚡</span>
+              {totalAvailable === 1
+                ? 'Última unidade disponível!'
+                : `Apenas ${totalAvailable} unidades em estoque!`}
+            </div>
+          )}
 
           {/* Size picker + Price + CTAs (client component) */}
           <SizePicker
