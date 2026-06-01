@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { sql } from 'drizzle-orm'
-import { createHmac } from 'crypto'
+import { createHmac, timingSafeEqual } from 'crypto'
 import { sendPaymentConfirmedEmail } from '@/lib/email'
 import { waSendPaymentConfirmed } from '@/lib/whatsapp'
 
@@ -26,7 +26,12 @@ function validateSignature(req: NextRequest, _body: string): boolean {
   const manifest  = `id:${dataId};request-id:${requestId};ts:${ts};`
   const computed  = createHmac('sha256', secret).update(manifest).digest('hex')
 
-  return computed === expected
+  // timingSafeEqual previne timing attacks
+  try {
+    return timingSafeEqual(Buffer.from(computed, 'hex'), Buffer.from(expected, 'hex'))
+  } catch {
+    return false
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -90,21 +95,24 @@ export async function POST(req: NextRequest) {
 
     // Atualizar status do pedido
     if (newStatus === 'paid') {
-      await db.run(sql`
+      // UPDATE condicional — garante idempotência: só processa se o status ainda não é 'paid'
+      const updated = await db.run(sql`
         UPDATE orders
         SET status = 'paid', paid_at = datetime('now'), updated_at = datetime('now')
-        WHERE id = ${orderId}
+        WHERE id = ${orderId} AND status != 'paid'
       `)
+      // Se nenhuma linha foi alterada outro request já processou este evento
+      if (updated.rowsAffected === 0) return NextResponse.json({ ok: true })
 
-      // Decrementar estoque definitivo
+      // Decrementar estoque definitivo — só executa uma vez por pedido
       const items = await db.all<{ variant_id: string; qty: number }>(sql`
         SELECT variant_id, qty FROM order_items WHERE order_id = ${orderId}
       `)
       for (const item of items) {
         await db.run(sql`
           UPDATE product_variants
-          SET stock          = stock          - ${item.qty},
-              stock_reserved = stock_reserved - ${item.qty}
+          SET stock          = MAX(0, stock          - ${item.qty}),
+              stock_reserved = MAX(0, stock_reserved - ${item.qty})
           WHERE id = ${item.variant_id}
         `)
       }
