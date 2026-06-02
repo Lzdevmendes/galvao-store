@@ -1,50 +1,79 @@
 'use client'
 
 import { useState } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
+import { spring } from '@/lib/motion'
 
-export function WishlistButton({ productId, initialFavorited = false, isLoggedIn: _ = false }: {
+export function WishlistButton({
+  productId,
+  initialFavorited = false,
+  isLoggedIn: _ = false,
+}: {
   productId: string
   initialFavorited?: boolean
   isLoggedIn?: boolean
 }) {
   const [favorited, setFavorited] = useState(initialFavorited)
-  const router = useRouter()
+  const [animating, setAnimating]  = useState(false)
+  const router    = useRouter()
+  const reduced   = useReducedMotion()
 
   async function toggle(e?: React.MouseEvent) {
     e?.preventDefault()
     e?.stopPropagation()
     const next = !favorited
     setFavorited(next)
+    if (!reduced) setAnimating(true)
+
     try {
       const res = await fetch('/api/favoritos', {
         method: next ? 'POST' : 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId }),
       })
-      if (res.status === 401) { setFavorited(!next); router.push('/auth/login'); return }
+      if (res.status === 401) {
+        setFavorited(!next)
+        router.push('/auth/login')
+        return
+      }
       if (!res.ok) setFavorited(!next)
     } catch {
       setFavorited(!next)
+    } finally {
+      setTimeout(() => setAnimating(false), 400)
     }
   }
 
   return (
-    <button
+    <motion.button
       onClick={toggle}
       aria-label={favorited ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+      aria-pressed={favorited}
+      whileTap={reduced ? {} : { scale: 0.85 }}
+      transition={spring.snappy}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        width: 44, height: 44, borderRadius: '50%',
-        border: `1px solid ${favorited ? '#E23B3B44' : 'var(--border-default, #e5e7eb)'}`,
-        background: favorited ? '#E23B3B0A' : 'var(--bg-base, #fff)',
-        cursor: 'pointer',
-        fontSize: 20, transition: 'all .2s',
-        color: favorited ? '#E23B3B' : '#9CA3AF',
-        transform: favorited ? 'scale(1.1)' : 'scale(1)',
+        width: 36, height: 36, borderRadius: '50%', border: 'none',
+        background: favorited ? 'rgba(226,59,59,.1)' : 'rgba(255,255,255,.92)',
+        cursor: 'pointer', backdropFilter: 'blur(4px)',
+        boxShadow: '0 1px 4px rgba(0,0,0,.12)',
+        outline: 'none',
       }}
     >
-      {favorited ? '♥' : '♡'}
-    </button>
+      <motion.svg
+        width="18" height="18" viewBox="0 0 24 24"
+        strokeWidth="2"
+        stroke={favorited ? '#E23B3B' : '#9CA3AF'}
+        fill={favorited ? '#E23B3B' : 'none'}
+        animate={animating && !reduced ? {
+          scale: [1, 1.45, 0.9, 1.18, 1],
+          rotate: [0, -10, 8, -4, 0],
+        } : { scale: 1, rotate: 0 }}
+        transition={{ duration: 0.38, ease: 'easeOut' }}
+      >
+        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/>
+      </motion.svg>
+    </motion.button>
   )
 }
