@@ -70,7 +70,8 @@ export function WishlistButton({
           scale: [1, 1.45, 0.9, 1.18, 1],
           rotate: [0, -10, 8, -4, 0],
         } : { scale: 1, rotate: 0 }}
-        transition={{ duration: 0.38, ease: 'easeOut' }}
+        // type: 'tween' explícito — multi-keyframe não funciona com spring
+        transition={{ type: 'tween', duration: 0.38, ease: 'easeOut' }}
       >
         <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/>
       </motion.svg>

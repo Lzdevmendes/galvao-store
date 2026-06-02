@@ -136,8 +136,9 @@ export function SizePicker({ variants, productId, productSlug, productName, bran
                 onClick={() => setSelectedSize(v.size)}
                 title={!v.available ? `Tamanho ${v.size} esgotado` : v.stock === 1 ? 'Última unidade!' : undefined}
                 whileTap={reduced || !v.available ? {} : { scale: 0.88 }}
-                animate={isSelected && !reduced ? { scale: [1, 1.12, 1] } : { scale: 1 }}
-                transition={{ type: 'spring', stiffness: 500, damping: 22, duration: 0.25 }}
+                // Multi-keyframe requer type: 'tween' — spring só suporta 2 frames
+                animate={isSelected && !reduced ? { scale: [1, 1.14, 0.95, 1] } : { scale: 1 }}
+                transition={{ type: 'tween', duration: 0.32, ease: 'easeOut' }}
                 style={{
                   width:48, height:42, borderRadius:8, fontSize:13, fontFamily:'var(--font-mono)', fontWeight:600,
                   cursor:        v.available ? 'pointer' : 'not-allowed',
@@ -173,18 +174,16 @@ export function SizePicker({ variants, productId, productSlug, productName, bran
             disabled={!selectedSize}
             onClick={handleAddToCart}
             whileTap={reduced || !selectedSize ? {} : { scale: 0.97 }}
-            animate={addedFeedback && !reduced ? {
-              scale: [1, 1.03, 1],
-              backgroundColor: ['#F26B1F', '#2CB35A', '#2CB35A'],
-            } : {}}
-            transition={{ duration: 0.35 }}
+            // Usar tween para multi-keyframe (spring não suporta >2 frames)
+            animate={addedFeedback && !reduced ? { scale: [1, 1.04, 1] } : { scale: 1 }}
+            transition={{ type: 'tween', duration: 0.3, ease: 'easeOut' }}
             style={{
               width:'100%', padding:'18px', borderRadius:12, fontSize:16, fontFamily:'var(--font-ui)', fontWeight:700,
               cursor:     selectedSize ? 'pointer' : 'not-allowed',
               border:     'none',
               background: addedFeedback ? '#2CB35A' : selectedSize ? 'var(--brand-orange)' : 'var(--border)',
               color:      '#fff', opacity: selectedSize ? 1 : .6,
-              transition: 'background .25s',
+              transition: 'background .28s ease',
             }}
           >
             <AnimatePresence mode="wait" initial={false}>
