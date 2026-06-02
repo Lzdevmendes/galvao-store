@@ -1,9 +1,12 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { fmt } from '@/lib/utils'
 import { useCartStore } from '@/store/cart'
 import { NotifyMeButton } from '@/components/catalog/notify-me-button'
+// spring importado para uso futuro (size variants)
+import '@/lib/motion'
 
 interface Variant {
   id: string
@@ -28,10 +31,12 @@ interface SizePickerProps {
 export function SizePicker({ variants, productId, productSlug, productName, brandName, imageUrl }: SizePickerProps) {
   const router   = useRouter()
   const addItem  = useCartStore(s => s.addItem)
+  const reduced  = useReducedMotion()
 
   const colors = [...new Set(variants.map(v => v.color))]
   const [selectedColor, setSelectedColor] = useState(colors[0] ?? '')
   const [selectedSize,  setSelectedSize]  = useState<string | null>(null)
+  const [addedFeedback, setAddedFeedback] = useState(false)
 
   const colorVariants    = variants.filter(v => v.color === selectedColor)
   const selectedVariant  = colorVariants.find(v => v.size === selectedSize) ?? null
@@ -57,6 +62,11 @@ export function SizePicker({ variants, productId, productSlug, productName, bran
       priceInCents:      selectedVariant.price_in_cents,
       pricePromoInCents: selectedVariant.price_promo_in_cents,
     })
+    // Feedback visual — botão vira ✓ por 1.4s
+    if (!reduced) {
+      setAddedFeedback(true)
+      setTimeout(() => setAddedFeedback(false), 1400)
+    }
   }
 
   const handleBuyNow = () => {
@@ -118,26 +128,32 @@ export function SizePicker({ variants, productId, productSlug, productName, bran
           Tamanho{selectedSize ? `: ${selectedSize}` : ''}
         </div>
         <div className="sz-grid" style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-          {colorVariants.map(v => (
-            <button
-              key={v.size}
-              onClick={() => setSelectedSize(v.size)}
-              title={!v.available ? `Tamanho ${v.size} esgotado` : v.stock === 1 ? 'Última unidade!' : undefined}
-              style={{
-                width:48, height:42, borderRadius:8, fontSize:13, fontFamily:'var(--font-mono)', fontWeight:600,
-                cursor:        'pointer',
-                transition:    'all .15s',
-                opacity:       v.available ? 1 : .45,
-                textDecoration:v.available ? 'none' : 'line-through',
-                border:     selectedSize === v.size ? '2px solid var(--brand-orange)' : '2px solid var(--border-strong)',
-                background: selectedSize === v.size ? (v.available ? '#0B0E12' : '#1a0a00') : 'transparent',
-                color:      selectedSize === v.size ? '#fff' : v.available ? 'var(--fg)' : 'var(--fg-faint)',
-                boxShadow:  selectedSize === v.size ? '0 0 0 3px rgba(242,107,31,.18)' : 'none',
-              }}
-            >
-              {v.size}
-            </button>
-          ))}
+          {colorVariants.map(v => {
+            const isSelected = selectedSize === v.size
+            return (
+              <motion.button
+                key={v.size}
+                onClick={() => setSelectedSize(v.size)}
+                title={!v.available ? `Tamanho ${v.size} esgotado` : v.stock === 1 ? 'Última unidade!' : undefined}
+                whileTap={reduced || !v.available ? {} : { scale: 0.88 }}
+                animate={isSelected && !reduced ? { scale: [1, 1.12, 1] } : { scale: 1 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 22, duration: 0.25 }}
+                style={{
+                  width:48, height:42, borderRadius:8, fontSize:13, fontFamily:'var(--font-mono)', fontWeight:600,
+                  cursor:        v.available ? 'pointer' : 'not-allowed',
+                  opacity:       v.available ? 1 : .4,
+                  textDecoration:v.available ? 'none' : 'line-through',
+                  border:     isSelected ? '2px solid var(--brand-orange)' : '2px solid var(--border-strong)',
+                  background: isSelected ? (v.available ? '#0B0E12' : '#1a0a00') : 'transparent',
+                  color:      isSelected ? '#fff' : v.available ? 'var(--fg)' : 'var(--fg-faint)',
+                  boxShadow:  isSelected ? '0 0 0 3px rgba(242,107,31,.2)' : 'none',
+                  transition: 'border-color .12s, background .12s, color .12s, box-shadow .12s',
+                }}
+              >
+                {v.size}
+              </motion.button>
+            )
+          })}
         </div>
         {!selectedSize && (
           <div style={{ marginTop:8, fontFamily:'var(--font-ui)', fontSize:12, color:'var(--brand-orange)' }}>
@@ -153,32 +169,52 @@ export function SizePicker({ variants, productId, productSlug, productName, bran
         </div>
       ) : (
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-          <button
+          <motion.button
             disabled={!selectedSize}
             onClick={handleAddToCart}
+            whileTap={reduced || !selectedSize ? {} : { scale: 0.97 }}
+            animate={addedFeedback && !reduced ? {
+              scale: [1, 1.03, 1],
+              backgroundColor: ['#F26B1F', '#2CB35A', '#2CB35A'],
+            } : {}}
+            transition={{ duration: 0.35 }}
             style={{
               width:'100%', padding:'18px', borderRadius:12, fontSize:16, fontFamily:'var(--font-ui)', fontWeight:700,
               cursor:     selectedSize ? 'pointer' : 'not-allowed',
-              border:     'none', transition:'all .15s',
-              background: selectedSize ? 'var(--brand-orange)' : 'var(--border)',
+              border:     'none',
+              background: addedFeedback ? '#2CB35A' : selectedSize ? 'var(--brand-orange)' : 'var(--border)',
               color:      '#fff', opacity: selectedSize ? 1 : .6,
+              transition: 'background .25s',
             }}
           >
-            Adicionar ao carrinho
-          </button>
-          <button
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={addedFeedback ? 'added' : 'default'}
+                initial={reduced ? {} : { opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduced ? {} : { opacity: 0, y: 8 }}
+                transition={{ duration: 0.18 }}
+                style={{ display:'block' }}
+              >
+                {addedFeedback ? '✓ Adicionado!' : 'Adicionar ao carrinho'}
+              </motion.span>
+            </AnimatePresence>
+          </motion.button>
+
+          <motion.button
             disabled={!selectedSize}
             onClick={handleBuyNow}
+            whileTap={reduced || !selectedSize ? {} : { scale: 0.97 }}
             style={{
               width:'100%', padding:'18px', borderRadius:12, fontSize:16, fontFamily:'var(--font-ui)', fontWeight:700,
               cursor:     selectedSize ? 'pointer' : 'not-allowed',
-              border:     '2px solid var(--ink-950)', transition:'all .15s',
+              border:     '2px solid var(--ink-950)',
               background: selectedSize ? '#0B0E12' : 'transparent',
               color:      selectedSize ? '#fff' : 'var(--fg-muted)',
             }}
           >
             Comprar agora
-          </button>
+          </motion.button>
         </div>
       )}
 
