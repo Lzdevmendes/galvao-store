@@ -1,5 +1,10 @@
 // Configuração central de motion — todos os componentes importam daqui
 // Respeita prefers-reduced-motion automaticamente via Framer Motion
+//
+// ⚠️ REGRA FRAMER MOTION: spring e inertia só suportam 2 keyframes (from → to).
+// Para animações com arrays de >2 valores (ex: [1, 1.3, 0.9, 1]), usar:
+//   transition={{ type: 'tween', duration: 0.35, ease: 'easeOut' }}
+// O spring cria o "bounce" naturalmente com física — não precisa de keyframes.
 
 // ── Springs ──────────────────────────────────────────────────────────────────
 // Sport energy: rápido, preciso, decisivo

@@ -114,7 +114,24 @@ Mensagens de erro no checkout e APIs públicas são genéricas (`'Erro interno.'
 ### 7. E-mail não pode derrubar o fluxo de pedido
 Toda chamada de e-mail usa `void sendEmail(...).catch(e => console.error(...))` — falha silenciosa. Nunca `await` e-mail no caminho crítico do checkout ou webhook.
 
-### 8. Toda nova rota/action/upload exige checklist de segurança
+### 8. Framer Motion: spring ≠ keyframes — usar tween para arrays
+`type: 'spring'` e `type: 'inertia'` só suportam 2 frames (from → to). Para `scale: [1, 1.3, 0.9, 1]` ou qualquer array com mais de 2 valores, usar `type: 'tween'`. A física do spring já cria o overshoot naturalmente — não precisa de keyframes.
+
+```typescript
+// ❌ ERRO — spring com multi-keyframe
+animate={{ scale: [1, 1.2, 1] }}
+transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+
+// ✅ CORRETO — tween para multi-keyframe
+animate={{ scale: [1, 1.2, 1] }}
+transition={{ type: 'tween', duration: 0.3, ease: 'easeOut' }}
+
+// ✅ CORRETO — spring com 2 frames (deixa a física criar o bounce)
+animate={{ scale: 1.1 }}
+transition={{ type: 'spring', stiffness: 500, damping: 22 }}
+```
+
+### 9. Toda nova rota/action/upload exige checklist de segurança
 Ao criar qualquer nova funcionalidade verificar: (1) autenticação? (2) rate limit? (3) validação Zod no boundary? (4) IDOR — filtra por userId? (5) erros genéricos para o cliente? (6) upload valida magic bytes? E atualizar CLAUDE.md + agents/ com o que mudou.
 
 ## Estrutura de imports
