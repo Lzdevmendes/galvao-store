@@ -8,6 +8,7 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { CookieBanner } from "@/components/lgpd/cookie-banner";
 import { WhatsAppButton } from "@/components/whatsapp-button";
 import { CartSync } from "@/components/cart-sync";
+import { PageTransition } from "@/components/page-transition";
 import type { Metadata } from "next";
 import "./globals.css";
 
@@ -114,7 +115,9 @@ export default function RootLayout({
         <PromoBar />
         <SiteHeader />
         <BrandNav />
-        <main>{children}</main>
+        <main>
+          <PageTransition>{children}</PageTransition>
+        </main>
         <SiteFooter />
         <MobileTabBar />
         <CartDrawer />
