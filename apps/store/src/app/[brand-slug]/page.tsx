@@ -164,7 +164,7 @@ export default async function BrandPage({
         ) : (
           <>
             <div className="grid-products" data-density="4">
-              {products.map((p, i) => <ProductCard key={p.id} p={p} priority={i < 4} />)}
+              {products.map((p, i) => <ProductCard key={p.id} p={p} priority={i < 4} index={i} />)}
             </div>
             {totalPages > 1 && (
               <Pagination page={page} totalPages={totalPages} buildHref={buildHref} />

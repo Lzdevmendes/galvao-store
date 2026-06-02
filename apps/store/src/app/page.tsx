@@ -54,7 +54,7 @@ function SectionHead({ pre, title, accent, href, linkLabel }: {
   pre?: string; title: string; accent: string; href?: string; linkLabel?: string
 }) {
   return (
-    <div className="section-head">
+    <div className="section-head" data-animate>
       <div className="left">
         {pre && <div className="pre">{pre}</div>}
         <h2>{title}<span className="o">{accent}</span></h2>
@@ -172,7 +172,7 @@ export default async function HomePage() {
           <>
             <SectionHead pre="★ Recém-chegadas" title="LANÇA" accent="MENTOS." href="/busca?sort=lancamentos" />
             <div className="grid-products" data-density="4">
-              {arrivals.map((p, i) => <ProductCard key={p.id} p={p} priority={i < 4} />)}
+              {arrivals.map((p, i) => <ProductCard key={p.id} p={p} priority={i < 4} index={i} />)}
             </div>
           </>
         )}
@@ -211,7 +211,7 @@ export default async function HomePage() {
         {/* ── Mais vendidas ── */}
         <SectionHead pre="★ Top 8 da semana" title="MAIS " accent="VENDIDAS." href="/produtos" linkLabel="Ver catálogo completo →" />
         <div className="grid-products" data-density="4" style={{ marginBottom:96 }}>
-          {bestSellers.map(p => <ProductCard key={p.id} p={p} />)}
+          {bestSellers.map((p, i) => <ProductCard key={p.id} p={p} index={i} />)}
         </div>
       </div>
     </>
