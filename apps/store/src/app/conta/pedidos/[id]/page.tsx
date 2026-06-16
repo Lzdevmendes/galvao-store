@@ -156,7 +156,7 @@ export default async function PedidoDetailPage({ params }: { params: Promise<{ i
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {items.map((item, i) => (
                 <div key={i} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-                  <div style={{ width: 60, height: 60, background: 'var(--bg-sunk)', borderRadius: 10, flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: 60, height: 60, background: '#fff', borderRadius: 10, flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {item.image_url
                       ? <Image src={item.image_url} alt={item.product_name} width={54} height={54} style={{ objectFit: 'contain', mixBlendMode: 'multiply', width: '85%', height: '85%' }} />
                       : <span style={{ fontSize: 24 }}>👟</span>

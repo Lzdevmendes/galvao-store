@@ -309,7 +309,7 @@ export default async function PedidoPage({ params, searchParams }: PageProps) {
             <div style={{ display:'flex', flexDirection:'column' }}>
               {items.map((item, i) => (
                 <div key={i} style={{ display:'flex', gap:16, padding:'12px 0', borderBottom: i < items.length - 1 ? '1px solid var(--border)' : 'none', alignItems:'center' }}>
-                  <div style={{ width:64, height:64, background:'var(--ink-100)', borderRadius:'var(--r-sm)', padding:4, flexShrink:0 }}>
+                  <div style={{ width:64, height:64, background:'#fff', borderRadius:'var(--r-sm)', padding:4, flexShrink:0 }}>
                     {item.image_url && (
                       <Image src={item.image_url} alt={item.product_name} width={56} height={56}
                         style={{ width:'100%', height:'100%', objectFit:'contain', mixBlendMode:'multiply' }} />

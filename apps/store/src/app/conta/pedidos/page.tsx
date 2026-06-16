@@ -80,7 +80,7 @@ export default async function PedidosPage() {
               <Link key={order.id} href={`/conta/pedidos/${order.id}`} style={{ textDecoration: 'none' }}>
                 <div className="order-card" style={{ background: 'var(--bg-elev)', border: '1px solid var(--border)', borderRadius: 14, padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 20, transition: 'border-color .15s, transform .15s' }}>
                   {/* Thumbnail */}
-                  <div style={{ width: 64, height: 64, background: 'var(--bg-sunk)', borderRadius: 10, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                  <div style={{ width: 64, height: 64, background: '#fff', borderRadius: 10, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                     {order.first_image
                       ? <img src={order.first_image} alt="" style={{ width: '80%', height: '80%', objectFit: 'contain', mixBlendMode: 'multiply' }} />
                       : <span style={{ fontSize: 28 }}>👟</span>
