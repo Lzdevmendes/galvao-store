@@ -5,6 +5,12 @@ import { motion } from 'framer-motion'
 
 // Aplica classes de animação nos elementos da home via IntersectionObserver
 export function HomeAnimations() {
+  // Marca o home no <html> — ativa o hero full-bleed + header transparente (CSS escopado)
+  useEffect(() => {
+    document.documentElement.dataset.home = 'true'
+    return () => { delete document.documentElement.dataset.home }
+  }, [])
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       entries => {

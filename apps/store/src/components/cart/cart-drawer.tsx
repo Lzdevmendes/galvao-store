@@ -37,8 +37,12 @@ export function CartDrawer() {
         transition={{ type: 'spring', stiffness: 380, damping: 40 }}
         style={{
           position: 'fixed', top: 0, right: 0, height: '100vh', width: 420, maxWidth: '100vw',
-          background: 'var(--bg-elev)', zIndex: 201, display: 'flex', flexDirection: 'column',
-          boxShadow: '-8px 0 40px rgba(0,0,0,.2)',
+          background: 'var(--glass-sheen), var(--glass-bg-strong)',
+          backdropFilter: 'saturate(180%) blur(var(--glass-blur-lg))',
+          WebkitBackdropFilter: 'saturate(180%) blur(var(--glass-blur-lg))',
+          borderLeft: '1px solid var(--glass-border)',
+          zIndex: 201, display: 'flex', flexDirection: 'column',
+          boxShadow: 'var(--glass-shadow-lg)',
         }}>
 
         {/* Header */}
@@ -123,7 +127,7 @@ function CartItemRow({ item, onRemove, onQty }: {
   return (
     <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
       {/* Imagem */}
-      <div style={{ width:72, height:72, background:'var(--ink-100)', borderRadius:8, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
+      <div style={{ width:72, height:72, background:'#fff', borderRadius:8, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
         {item.imageUrl && (
           <Image src={item.imageUrl} alt={item.productName} width={68} height={68} style={{ width:'90%', height:'90%', objectFit:'contain', mixBlendMode:'multiply' }} />
         )}

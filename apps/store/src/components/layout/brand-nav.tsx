@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, useReducedMotion } from 'framer-motion'
@@ -16,6 +17,15 @@ const CATEGORY_LINKS: BrandNavItem[] = [
 export function BrandNav({ brands = [] }: { brands?: BrandNavItem[] }) {
   const pathname = usePathname()
   const reduced  = useReducedMotion()
+  const [scrolled, setScrolled] = useState(false)
+
+  // Ilha reativa ao scroll — assenta no topo, levanta/arredonda ao rolar
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   const links: BrandNavItem[] = [
     { label: 'PRODUTOS', href: '/produtos' },
@@ -29,7 +39,7 @@ export function BrandNav({ brands = [] }: { brands?: BrandNavItem[] }) {
       : pathname.startsWith(href)
 
   return (
-    <nav className="brands">
+    <nav className="brands" data-scrolled={scrolled}>
       <div className="container row">
         {links.map(l => {
           const active = isActive(l.href)
@@ -40,18 +50,19 @@ export function BrandNav({ brands = [] }: { brands?: BrandNavItem[] }) {
               className={active ? 'active' : undefined}
               style={{ position: 'relative' }}
             >
-              {l.label}
-              {/* Indicador laranja que desliza suavemente para o item ativo */}
+              {/* Pill que desliza suavemente para o item ativo */}
               {active && !reduced && (
                 <motion.span
                   layoutId="brand-nav-indicator"
                   style={{
-                    position: 'absolute', bottom: -1, left: 0, right: 0,
-                    height: 2, background: 'var(--brand-orange)', borderRadius: 1,
+                    position: 'absolute', inset: 0, zIndex: 0,
+                    background: 'rgba(242,107,31,.14)', borderRadius: 999,
+                    boxShadow: 'inset 0 0 0 1px rgba(242,107,31,.18)',
                   }}
                   transition={{ type: 'spring', stiffness: 500, damping: 38 }}
                 />
               )}
+              <span>{l.label}</span>
             </Link>
           )
         })}

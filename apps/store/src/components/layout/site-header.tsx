@@ -12,11 +12,20 @@ export function SiteHeader() {
   const router                  = useRouter()
   const itemCount               = useCartStore(cartTotalItems)
   const toggleCart              = useCartStore(s => s.toggleCart)
+  const [scrolled, setScrolled] = useState(false)
 
   // Focar no input quando a search abre no mobile
   useEffect(() => {
     if (searchOpen) searchRef.current?.focus()
   }, [searchOpen])
+
+  // Estado de scroll — header transparente sobre o hero (home) vira frosted ao rolar
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,7 +37,7 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="site">
+    <header className="site" data-scrolled={scrolled}>
       <div className="container">
         {/* ── Linha principal: logo + search + actions ── */}
         <div className="row" style={{ gap: 16 }}>

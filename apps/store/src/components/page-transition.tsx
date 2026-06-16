@@ -5,9 +5,10 @@ import { usePathname } from 'next/navigation'
 import type { Variants } from 'framer-motion'
 
 const pageVariants: Variants = {
-  hidden:  { opacity: 0, y: 8  },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.28, ease: 'easeOut' } },
-  exit:    { opacity: 0, y: -4, transition: { duration: 0.16, ease: 'easeIn' } },
+  hidden:  { opacity: 0, y: 6  },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' } },
+  // exit curto — não bloquear a navegação para a próxima página
+  exit:    { opacity: 0, y: -3, transition: { duration: 0.08, ease: 'easeIn' } },
 }
 
 export function PageTransition({ children }: { children: React.ReactNode }) {
