@@ -9,6 +9,7 @@ import { CookieBanner } from "@/components/lgpd/cookie-banner";
 import { WhatsAppButton } from "@/components/whatsapp-button";
 import { CartSync } from "@/components/cart-sync";
 import { PageTransition } from "@/components/page-transition";
+import { queryBrandsForNav } from "@/lib/catalog-query";
 import type { Metadata } from "next";
 import "./globals.css";
 
@@ -61,11 +62,16 @@ export const metadata: Metadata = {
   verification: { google: "" },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const navBrands = (await queryBrandsForNav()).map((b) => ({
+    label: b.name.toUpperCase(),
+    href: `/${b.slug}`,
+  }));
+
   return (
     <html lang="pt-BR" data-theme="light">
       <head>
@@ -114,7 +120,7 @@ export default function RootLayout({
 
         <PromoBar />
         <SiteHeader />
-        <BrandNav />
+        <BrandNav brands={navBrands} />
         <main>
           <PageTransition>{children}</PageTransition>
         </main>

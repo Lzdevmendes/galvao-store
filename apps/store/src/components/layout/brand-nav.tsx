@@ -4,20 +4,24 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, useReducedMotion } from 'framer-motion'
 
-const links = [
-  { label: 'PRODUTOS', href: '/produtos'         },
-  { label: 'NIKE',     href: '/nike'              },
-  { label: 'ADIDAS',   href: '/adidas'            },
-  { label: 'PUMA',     href: '/puma'              },
-  { label: 'UMBRO',    href: '/umbro'             },
+export interface BrandNavItem { label: string; href: string }
+
+// Core category links — sempre presentes (categorias-base do catálogo)
+const CATEGORY_LINKS: BrandNavItem[] = [
   { label: 'CAMPO',    href: '/categoria/campo'   },
   { label: 'SOCIETY',  href: '/categoria/society' },
   { label: 'FUTSAL',   href: '/categoria/futsal'  },
 ]
 
-export function BrandNav() {
+export function BrandNav({ brands = [] }: { brands?: BrandNavItem[] }) {
   const pathname = usePathname()
   const reduced  = useReducedMotion()
+
+  const links: BrandNavItem[] = [
+    { label: 'PRODUTOS', href: '/produtos' },
+    ...brands,
+    ...CATEGORY_LINKS,
+  ]
 
   const isActive = (href: string) =>
     href === '/produtos'

@@ -136,6 +136,19 @@ export async function queryBrandsWithCount(limit = 4) {
   `)
 }
 
+// Brands with at least one published product — used by the sticky BrandNav
+export async function queryBrandsForNav() {
+  return await db.all<{ slug: string; name: string }>(sql`
+    SELECT b.slug, b.name
+    FROM   brands b
+    JOIN   products p ON p.brand_id = b.id AND p.status = 'published'
+    WHERE  b.active = 1
+    GROUP  BY b.id
+    HAVING COUNT(p.id) > 0
+    ORDER  BY COUNT(p.id) DESC, b.name
+  `)
+}
+
 export async function queryCategoriesWithCount() {
   return await db.all<{
     id: string; slug: string; name: string; surface_type: string | null; sort_order: number; count: number
