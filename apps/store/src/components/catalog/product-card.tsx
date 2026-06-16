@@ -37,10 +37,10 @@ export function ProductCard({
   const inst          = Math.round(active / 12)
 
   const badgeEl =
-    p.badge === 'new'        ? <span style={{ background:'#0B0E12', color:'#fff', padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, fontFamily:'var(--font-ui)', letterSpacing:'.04em' }}>LANÇAMENTO</span>
-  : p.badge === 'sale'       ? <span style={{ background:'#E23B3B', color:'#fff', padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, fontFamily:'var(--font-ui)' }}>OFERTA</span>
-  : p.badge === 'bestseller' ? <span style={{ background:'#FFC83A', color:'#0B0E12', padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, fontFamily:'var(--font-ui)' }}>★ TOP</span>
-  : p.badge === 'exclusive'  ? <span style={{ background:'#0B0E12', color:'#fff', border:'1px solid #F26B1F', padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, fontFamily:'var(--font-ui)' }}>EXCLUSIVO</span>
+    p.badge === 'new'        ? <span style={{ background:'#0B0E12', color:'#fff', padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, fontFamily:'var(--font-ui)', whiteSpace:'nowrap', letterSpacing:'.04em' }}>LANÇAMENTO</span>
+  : p.badge === 'sale'       ? <span style={{ background:'#E23B3B', color:'#fff', padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, fontFamily:'var(--font-ui)', whiteSpace:'nowrap' }}>OFERTA</span>
+  : p.badge === 'bestseller' ? <span style={{ background:'#FFC83A', color:'#0B0E12', padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, fontFamily:'var(--font-ui)', whiteSpace:'nowrap' }}>★ TOP</span>
+  : p.badge === 'exclusive'  ? <span style={{ background:'#0B0E12', color:'#fff', border:'1px solid #F26B1F', padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, fontFamily:'var(--font-ui)', whiteSpace:'nowrap' }}>EXCLUSIVO</span>
   : null
 
   return (
