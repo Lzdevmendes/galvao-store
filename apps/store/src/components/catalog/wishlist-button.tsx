@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { spring } from '@/lib/motion'
 
 export function WishlistButton({
@@ -17,6 +17,7 @@ export function WishlistButton({
   const [favorited, setFavorited] = useState(initialFavorited)
   const [animating, setAnimating]  = useState(false)
   const router    = useRouter()
+  const pathname  = usePathname()
   const reduced   = useReducedMotion()
 
   async function toggle(e?: React.MouseEvent) {
@@ -34,7 +35,8 @@ export function WishlistButton({
       })
       if (res.status === 401) {
         setFavorited(!next)
-        router.push('/auth/login')
+        // Convidado → login, voltando para a página atual depois de autenticar
+        router.push(`/auth/login?redirect=${encodeURIComponent(pathname)}`)
         return
       }
       if (!res.ok) setFavorited(!next)
