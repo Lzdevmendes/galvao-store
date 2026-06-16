@@ -13,7 +13,8 @@ interface GalleryImage {
 }
 
 export function ProductGallery({ images }: { images: GalleryImage[] }) {
-  const [active, setActive] = useState(images.findIndex(i => i.is_primary) ?? 0)
+  // findIndex retorna -1 (não undefined) quando nenhuma imagem é primária — Math.max protege
+  const [active, setActive] = useState(Math.max(0, images.findIndex(i => i.is_primary)))
   const [zoomed, setZoomed] = useState(false)
   const [lightbox, setLightbox] = useState(false)
   const [cursor, setCursor] = useState({ x: 50, y: 50 })
