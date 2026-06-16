@@ -19,7 +19,7 @@ export function BrandNav({ brands = [] }: { brands?: BrandNavItem[] }) {
   const reduced  = useReducedMotion()
   const [scrolled, setScrolled] = useState(false)
 
-  // Ilha reativa ao scroll — assenta no topo, levanta/arredonda ao rolar
+  // Estado de scroll por threshold — só a elevação muda (geometria fica fixa = sem engasgo)
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
     onScroll()
@@ -59,7 +59,7 @@ export function BrandNav({ brands = [] }: { brands?: BrandNavItem[] }) {
                     background: 'rgba(242,107,31,.14)', borderRadius: 999,
                     boxShadow: 'inset 0 0 0 1px rgba(242,107,31,.18)',
                   }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 38 }}
+                  transition={{ type: 'spring', stiffness: 480, damping: 40 }}
                 />
               )}
               <span>{l.label}</span>

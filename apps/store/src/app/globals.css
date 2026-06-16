@@ -50,14 +50,24 @@
   --glass-bg-soft:   rgba(255,255,255,.38);
   --glass-border:    rgba(255,255,255,.7);
   --glass-hairline:  rgba(11,14,18,.06);
-  --glass-blur:      22px;
-  --glass-blur-lg:   34px;
-  /* rim light: highlight superior brilhante + anel interno luminoso + base suave */
-  --glass-highlight: inset 0 1px 0 rgba(255,255,255,.9), inset 0 0 0 1px rgba(255,255,255,.16), inset 0 -10px 24px -12px rgba(11,14,18,.05);
-  --glass-shadow:    0 10px 36px -8px rgba(11,14,18,.14), 0 3px 10px -4px rgba(11,14,18,.06);
-  --glass-shadow-lg: 0 28px 72px -16px rgba(11,14,18,.22), 0 10px 28px -10px rgba(11,14,18,.10);
-  /* sheen diagonal — luz a deslizar na superfície de vidro */
-  --glass-sheen: linear-gradient(135deg, rgba(255,255,255,.18), rgba(255,255,255,0) 42%);
+  --glass-blur:      24px;
+  --glass-blur-lg:   36px;
+  /* Filtro de vidro — blur + brilho/saturação/contraste = refração viva e nítida da "gota de água" */
+  --glass-filter:    saturate(190%) brightness(1.07) contrast(1.04) blur(var(--glass-blur));
+  --glass-filter-lg: saturate(190%) brightness(1.07) contrast(1.04) blur(var(--glass-blur-lg));
+  /* Vidro real: aresta molhada + anel luminoso + DISPERSÃO CROMÁTICA (luz a partir-se, tingida
+     pela marca: teal canto sup-esq, laranja canto inf-dir) + glow no topo + sombra de espessura */
+  --glass-highlight:
+    inset 0 1.5px 0.5px rgba(255,255,255,1),
+    inset 0 0 0 1px rgba(255,255,255,.26),
+    inset 2px 3px 9px -6px rgba(31,181,168,.20),
+    inset -2px -3px 9px -6px rgba(242,107,31,.18),
+    inset 0 15px 24px -18px rgba(255,255,255,.78),
+    inset 0 -18px 30px -16px rgba(11,14,18,.12);
+  --glass-shadow:    0 10px 36px -8px rgba(11,14,18,.16), 0 3px 10px -4px rgba(11,14,18,.07);
+  --glass-shadow-lg: 0 30px 76px -16px rgba(11,14,18,.24), 0 12px 30px -10px rgba(11,14,18,.12);
+  /* sheen — estria de luz specular definida a bater no vidro */
+  --glass-sheen: linear-gradient(118deg, rgba(255,255,255,.55) -8%, rgba(255,255,255,.12) 15%, rgba(255,255,255,0) 38%);
   --bg-ambient: #F3F4F8;
   /* Easing premium (Expo.out) — micro-interações fluidas estilo Apple */
   --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
@@ -76,8 +86,8 @@
 /* Utilitário reutilizável de superfície de vidro */
 .glass {
   background: var(--glass-bg);
-  -webkit-backdrop-filter: saturate(180%) blur(var(--glass-blur));
-  backdrop-filter: saturate(180%) blur(var(--glass-blur));
+  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--glass-filter);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow), var(--glass-highlight);
 }
@@ -148,8 +158,8 @@ a { color: inherit; text-decoration: none; }
 /* ── Header ── */
 header.site {
   background: var(--glass-sheen), var(--glass-bg-strong);
-  -webkit-backdrop-filter: saturate(180%) blur(var(--glass-blur));
-  backdrop-filter: saturate(180%) blur(var(--glass-blur));
+  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--glass-filter);
   /* sem border-bottom — flui contínuo para a brand-nav (sem linha de costura) */
   box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
   padding: 12px 0; position: sticky; top: 0; z-index: 50;
@@ -225,39 +235,38 @@ header.site .search-mobile { display: none; }
 }
 
 /* ── Brand nav ── */
-/* Wrapper transparente — ilha de vidro reativa ao scroll (com separação clara do header) */
-nav.brands { background: transparent; position: sticky; top: 78px; z-index: 40; padding: 18px 0 14px; transition: padding .45s var(--ease-premium); }
-nav.brands[data-scrolled="true"] { padding: 12px 0; }
-
-/* A ilha de vidro — estado base (TOPO): barra arredondada e estruturada */
+/* Wrapper transparente — ilha de vidro. Encolher via transform:scale (GPU, sem reflow) +
+   border-radius constante (pill, sem troca de borda visível) = encolher fluido com vidro real. */
+nav.brands { background: transparent; position: sticky; top: 78px; z-index: 40; padding: 16px 0; }
 nav.brands .row {
   gap: 4px; overflow-x: auto; scrollbar-width: none;
   background: var(--glass-sheen), var(--glass-bg-strong);
-  -webkit-backdrop-filter: saturate(180%) blur(var(--glass-blur));
-  backdrop-filter: saturate(180%) blur(var(--glass-blur));
+  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--glass-filter);
   border: 1px solid var(--glass-border);
-  border-radius: 18px;
+  border-radius: var(--r-pill);
   box-shadow: var(--glass-shadow), var(--glass-highlight);
   padding: 6px 8px;
-  will-change: transform, border-radius, box-shadow;
-  transition: border-radius .45s var(--ease-premium), box-shadow .45s var(--ease-premium),
-              transform .45s var(--ease-premium), max-width .45s var(--ease-premium);
-  max-width: 1232px; margin: 0 auto;
+  max-width: 1100px; margin: 0 auto;
+  transform-origin: center center;
+  transition: transform .55s var(--ease-premium), box-shadow .55s var(--ease-premium);
 }
 nav.brands .row::-webkit-scrollbar { display: none; }
-
-/* Estado ROLADO: ilha levanta, vira pill total, encolhe e centra (flutua) */
-nav.brands[data-scrolled="true"] .row {
-  border-radius: var(--r-pill);
-  box-shadow: var(--glass-shadow-lg), var(--glass-highlight);
-  transform: scale(.985);
-  max-width: 920px;
-}
+/* Rolado: encolhe (scale) e levanta (sombra) — transform é GPU, não engasga */
+nav.brands[data-scrolled="true"] .row { transform: scale(.9); box-shadow: var(--glass-shadow-lg), var(--glass-highlight); }
 nav.brands .row::-webkit-scrollbar { display: none; }
 /* Links em pills — sem underline, com indicador deslizante (brand-nav.tsx) */
-nav.brands a { position: relative; padding: 9px 18px; color: var(--fg-muted); font-family: var(--font-stencil); font-size: 19px; letter-spacing: .06em; border-radius: var(--r-pill); transition: color .2s var(--ease-premium); white-space: nowrap; flex-shrink: 0; }
+nav.brands a { position: relative; padding: 9px 18px; color: var(--fg-muted); font-family: var(--font-stencil); font-size: 19px; letter-spacing: .06em; border-radius: var(--r-pill); transition: color .25s var(--ease-premium); white-space: nowrap; flex-shrink: 0; }
 nav.brands a:hover { color: var(--fg); }
 nav.brands a.active { color: var(--brand-orange); }
+/* Pill fantasma — preenche suave no hover (escala + fade), micro-interação premium */
+nav.brands a:not(.active)::before {
+  content: ""; position: absolute; inset: 0; border-radius: var(--r-pill); z-index: 0;
+  background: var(--fg); opacity: 0; transform: scale(.86);
+  transition: opacity .25s var(--ease-premium), transform .25s var(--ease-premium);
+}
+nav.brands a:not(.active):hover::before { opacity: .06; transform: scale(1); }
+nav.brands a:not(.active):active::before { opacity: .1; transform: scale(.97); }
 /* Fallback (reduced-motion / sem JS) — pill estática; com JS o indicador desliza (brand-nav.tsx) */
 @media (prefers-reduced-motion: reduce) {
   nav.brands a.active::before { content: ""; position: absolute; inset: 0; border-radius: var(--r-pill); background: rgba(242,107,31,.12); z-index: 0; }
@@ -280,26 +289,28 @@ nav.brands a.offer { color: var(--brand-orange); }
 .hero .price-tag { position: absolute; bottom: 32px; left: 32px; background: var(--brand-orange); color: #fff; padding: 16px 24px; border-radius: var(--r-md); font-family: var(--font-display); font-size: 24px; transform: rotate(-4deg); box-shadow: var(--sh-lg); }
 .hero .price-tag .small { font-family: var(--font-ui); font-size: 11px; letter-spacing: .2em; display: block; }
 
-/* ── Home: hero full-bleed atrás do header/nav + header transparente sobre o hero ── */
+/* ── Hero full-bleed (home + marcas) atrás do header/nav + header transparente sobre o hero ── */
 @media (min-width: 769px) {
   /* O hero sobe atrás do header+nav (margin e padding cancelam-se → conteúdo fica no lugar) */
-  html[data-home] .hero-desktop { margin-top: -220px; padding-top: 220px; }
+  html[data-hero] .hero-desktop { margin-top: -220px; padding-top: 220px; }
+  /* Brand hero (.bhero) — padding-top original é 80px, logo 220+80 mantém o respiro do conteúdo */
+  html[data-hero] .bhero { margin-top: -220px; padding-top: 300px; }
 
   /* Header transparente no topo (sobre o hero escuro) — vira frosted ao rolar */
-  html[data-home] header.site:not([data-scrolled="true"]) {
+  html[data-hero] header.site:not([data-scrolled="true"]) {
     background: transparent;
     -webkit-backdrop-filter: none; backdrop-filter: none;
     box-shadow: none;
   }
-  html[data-home] header.site:not([data-scrolled="true"]) .logo-sub { color: rgba(255,255,255,.7); }
-  html[data-home] header.site:not([data-scrolled="true"]) .icon-btn { color: #fff; }
-  html[data-home] header.site:not([data-scrolled="true"]) .icon-btn:hover { background: rgba(255,255,255,.14); }
-  html[data-home] header.site:not([data-scrolled="true"]) .icon-btn .small { color: rgba(255,255,255,.78); }
-  html[data-home] header.site:not([data-scrolled="true"]) .search input {
+  html[data-hero] header.site:not([data-scrolled="true"]) .logo-sub { color: rgba(255,255,255,.7); }
+  html[data-hero] header.site:not([data-scrolled="true"]) .icon-btn { color: #fff; }
+  html[data-hero] header.site:not([data-scrolled="true"]) .icon-btn:hover { background: rgba(255,255,255,.14); }
+  html[data-hero] header.site:not([data-scrolled="true"]) .icon-btn .small { color: rgba(255,255,255,.78); }
+  html[data-hero] header.site:not([data-scrolled="true"]) .search input {
     background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.24); color: #fff;
   }
-  html[data-home] header.site:not([data-scrolled="true"]) .search input::placeholder { color: rgba(255,255,255,.62); }
-  html[data-home] header.site:not([data-scrolled="true"]) .search .ico { color: rgba(255,255,255,.7); }
+  html[data-hero] header.site:not([data-scrolled="true"]) .search input::placeholder { color: rgba(255,255,255,.62); }
+  html[data-hero] header.site:not([data-scrolled="true"]) .search .ico { color: rgba(255,255,255,.7); }
 }
 
 /* ── Trust bar ── */
@@ -400,7 +411,7 @@ footer.site ul li a:hover { color: #fff; }
 footer.site .legal { padding-top: 24px; display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 11px; color: var(--ink-500); }
 
 /* ── Mobile tabbar ── */
-.mobile-tabbar { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; background: var(--glass-sheen), var(--glass-bg-strong); -webkit-backdrop-filter: saturate(180%) blur(var(--glass-blur-lg)); backdrop-filter: saturate(180%) blur(var(--glass-blur-lg)); border-top: 1px solid var(--glass-hairline); grid-template-columns: repeat(5,1fr); padding: 6px 0 max(6px,env(safe-area-inset-bottom)); box-shadow: 0 -8px 32px rgba(11,14,18,.10); }
+.mobile-tabbar { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; background: var(--glass-sheen), var(--glass-bg-strong); -webkit-backdrop-filter: var(--glass-filter-lg); backdrop-filter: var(--glass-filter-lg); border-top: 1px solid var(--glass-hairline); grid-template-columns: repeat(5,1fr); padding: 6px 0 max(6px,env(safe-area-inset-bottom)); box-shadow: 0 -8px 32px rgba(11,14,18,.10); }
 .mobile-tabbar a { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; color: var(--fg-muted); padding: 4px 0; font-family: var(--font-ui); font-weight: 500; text-decoration: none; transition: color .15s; }
 .mobile-tabbar a svg { width: 22px; height: 22px; }
 .mobile-tabbar a.active { color: var(--brand-orange); font-weight: 700; }

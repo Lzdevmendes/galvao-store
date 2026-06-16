@@ -136,6 +136,12 @@ export async function queryBrandsWithCount(limit = 4) {
   `)
 }
 
+// Todos os slugs de marcas ativas — páginas /[brand-slug] com hero escuro (overlay)
+export async function queryActiveBrandSlugs(): Promise<string[]> {
+  const rows = await db.all<{ slug: string }>(sql`SELECT slug FROM brands WHERE active = 1`)
+  return rows.map(r => r.slug)
+}
+
 // Brands with at least one published product — used by the sticky BrandNav
 export async function queryBrandsForNav() {
   return await db.all<{ slug: string; name: string }>(sql`

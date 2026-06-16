@@ -9,7 +9,8 @@ import { CookieBanner } from "@/components/lgpd/cookie-banner";
 import { WhatsAppButton } from "@/components/whatsapp-button";
 import { CartSync } from "@/components/cart-sync";
 import { PageTransition } from "@/components/page-transition";
-import { queryBrandsForNav } from "@/lib/catalog-query";
+import { HeroMarker } from "@/components/layout/hero-marker";
+import { queryBrandsForNav, queryActiveBrandSlugs } from "@/lib/catalog-query";
 import type { Metadata } from "next";
 import "./globals.css";
 
@@ -72,12 +73,21 @@ export default async function RootLayout({
     href: `/${b.slug}`,
   }));
 
+  // Páginas com hero escuro (overlay): home + todas as marcas
+  const heroPaths = ["/", ...(await queryActiveBrandSlugs()).map((s) => `/${s}`)];
+
   return (
-    <html lang="pt-BR" data-theme="light">
+    <html lang="pt-BR" data-theme="light" suppressHydrationWarning>
       <head>
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
+        {/* Marca data-hero ANTES do paint (home + marcas) — evita flash do header/ilha no load */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var p=${JSON.stringify(heroPaths)};if(p.indexOf(location.pathname)>-1)document.documentElement.setAttribute('data-hero','true')}catch(e){}`,
+          }}
         />
         {/* Preconnect para Google Fonts — reduz TTFB das fontes */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -128,6 +138,7 @@ export default async function RootLayout({
         <MobileTabBar />
         <CartDrawer />
         <CartSync />
+        <HeroMarker paths={heroPaths} />
         <TrackingScripts />
         <CookieBanner />
         <WhatsAppButton />

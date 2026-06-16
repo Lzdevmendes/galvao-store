@@ -38,8 +38,8 @@ export function CartDrawer() {
         style={{
           position: 'fixed', top: 0, right: 0, height: '100vh', width: 420, maxWidth: '100vw',
           background: 'var(--glass-sheen), var(--glass-bg-strong)',
-          backdropFilter: 'saturate(180%) blur(var(--glass-blur-lg))',
-          WebkitBackdropFilter: 'saturate(180%) blur(var(--glass-blur-lg))',
+          backdropFilter: 'var(--glass-filter-lg)',
+          WebkitBackdropFilter: 'var(--glass-filter-lg)',
           borderLeft: '1px solid var(--glass-border)',
           zIndex: 201, display: 'flex', flexDirection: 'column',
           boxShadow: 'var(--glass-shadow-lg)',
