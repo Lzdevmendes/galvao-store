@@ -41,7 +41,7 @@ export function ProductGallery({ images }: { images: GalleryImage[] }) {
     <>
       {/* Main image */}
       <div
-        style={{ background: 'var(--ink-100)', borderRadius: 16, aspectRatio: '1', overflow: 'hidden', cursor: zoomed ? 'zoom-out' : 'zoom-in', position: 'relative', marginBottom: 12 }}
+        style={{ background: '#fff', borderRadius: 16, aspectRatio: '1', overflow: 'hidden', cursor: zoomed ? 'zoom-out' : 'zoom-in', position: 'relative', marginBottom: 12 }}
         onMouseEnter={() => setZoomed(true)}
         onMouseLeave={() => setZoomed(false)}
         onMouseMove={handleMouseMove}
@@ -108,7 +108,7 @@ export function ProductGallery({ images }: { images: GalleryImage[] }) {
               whileTap={{ scale: .95 }}
               style={{
                 width: 72, height: 72, padding: 0,
-                background: 'var(--ink-100)', borderRadius: 10, overflow: 'hidden',
+                background: '#fff', borderRadius: 10, overflow: 'hidden',
                 border: `2.5px solid ${i === active ? 'var(--brand-orange)' : 'var(--border)'}`,
                 cursor: 'pointer', flexShrink: 0,
                 boxShadow: i === active ? '0 0 0 2px rgba(242,107,31,.25)' : 'none',
