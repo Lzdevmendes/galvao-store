@@ -95,6 +95,44 @@
   .glass { background: var(--bg-elev); }
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   LIQUID GLASS — realismo extra: GLINT specular que segue o ponteiro.
+   Uma mancha de luz desliza pela superfície conforme o cursor se move,
+   como vidro real a apanhar luz. Puro CSS/JS (sem SVG displacement) —
+   funciona igual em Chrome, Safari e iOS. Vars escritas por glass-light.tsx.
+   ────────────────────────────────────────────────────────────────── */
+header.site, nav.brands .row, .pcard, .mobile-tabbar {
+  position: relative;
+  --gx: 50%; --gy: 0%; --glint: 0;
+}
+@media (hover: hover) {
+  header.site::after, nav.brands .row::after,
+  .pcard::after, .mobile-tabbar::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit;
+    pointer-events: none; z-index: 2;
+    background:
+      /* núcleo specular nítido + halo suave = brilho de vidro polido */
+      radial-gradient(80px circle at var(--gx) var(--gy),
+        rgba(255,255,255,.34), transparent 70%),
+      radial-gradient(240px circle at var(--gx) var(--gy),
+        rgba(255,255,255,.12), transparent 66%);
+    mix-blend-mode: soft-light;
+    opacity: var(--glint);
+    transition: opacity .55s var(--ease-premium);
+  }
+  [data-theme="dark"] header.site::after, [data-theme="dark"] nav.brands .row::after,
+  [data-theme="dark"] .pcard::after, [data-theme="dark"] .mobile-tabbar::after {
+    background:
+      radial-gradient(80px circle at var(--gx) var(--gy),
+        rgba(255,255,255,.18), transparent 70%),
+      radial-gradient(240px circle at var(--gx) var(--gy),
+        rgba(255,255,255,.06), transparent 66%);
+    mix-blend-mode: screen;
+  }
+  /* Sem glint no header transparente sobre o hero — não há vidro para refletir */
+  html[data-hero] header.site:not([data-scrolled="true"])::after { opacity: 0; }
+}
+
 [data-theme="dark"] {
   --bg:            #0B0E12; --bg-elev: #14181F; --bg-sunk: #1F252E;
   --fg:            #F8F9FB; --fg-muted: #9AA3AF; --fg-faint: #6B7280;

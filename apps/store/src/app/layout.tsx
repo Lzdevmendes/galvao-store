@@ -10,6 +10,7 @@ import { WhatsAppButton } from "@/components/whatsapp-button";
 import { CartSync } from "@/components/cart-sync";
 import { PageTransition } from "@/components/page-transition";
 import { HeroMarker } from "@/components/layout/hero-marker";
+import { GlassLight } from "@/components/layout/glass-light";
 import { queryBrandsForNav, queryActiveBrandSlugs } from "@/lib/catalog-query";
 import type { Metadata } from "next";
 import "./globals.css";
@@ -139,6 +140,7 @@ export default async function RootLayout({
         <CartDrawer />
         <CartSync />
         <HeroMarker paths={heroPaths} />
+        <GlassLight />
         <TrackingScripts />
         <CookieBanner />
         <WhatsAppButton />
