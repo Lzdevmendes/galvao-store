@@ -35,7 +35,7 @@ pnpm --filter @galvao/store test:e2e  # playwright
 | `<Badge variant="orange\|teal\|sale\|new\|stock\|soft">` | `src/components/ui/badge.tsx` | Tags/status em qualquer contexto |
 | `<MobileTabBar>` | `src/components/layout/mobile-tab-bar.tsx` | Barra de navegação fixa no bottom (só ≤768px) |
 | `<SiteHeader>` | `src/components/layout/site-header.tsx` | Header com search collapsível no mobile |
-| `.bhero.{nike\|adidas\|puma\|umbro}` | globals.css | Hero de marca com stripe colorida + meta stats |
+| `.bhero.{nike\|adidas\|puma\|umbro\|new-balance}` | globals.css | Hero de marca com stripe colorida + meta stats |
 | `.brandlines` + `.brandlines-row` | globals.css | Nav de linhas de produto (scroll horizontal) |
 | `.stock-msg` | globals.css | Aviso "⚡ Última unidade" (≤3 unidades) |
 | `.main-img-zoom` | globals.css | Botão zoom circular SVG na galeria PDP |
