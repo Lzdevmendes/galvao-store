@@ -158,8 +158,17 @@ export default async function BrandPage({
       <div className="container" style={{ paddingTop:40, paddingBottom:96 }}>
         {products.length === 0 ? (
           <div style={{ textAlign:'center', padding:'80px 0', color:'var(--fg-muted)' }}>
-            <p style={{ fontSize:40, marginBottom:12 }}>😕</p>
-            <p>Nenhum produto com esses filtros. <a href={`/${slug}`} style={{ color:'var(--brand-orange)' }}>Ver todos</a></p>
+            {linha || tamanho ? (
+              <>
+                <p style={{ fontSize:40, marginBottom:12 }}>😕</p>
+                <p>Nenhum produto com esses filtros. <a href={`/${slug}`} style={{ color:'var(--brand-orange)' }}>Ver todos</a></p>
+              </>
+            ) : (
+              <>
+                <p style={{ fontSize:40, marginBottom:12 }}>⚽</p>
+                <p>Em breve, novidades {brand.name} na Galvão&apos;s. <a href="/produtos" style={{ color:'var(--brand-orange)' }}>Ver catálogo completo</a></p>
+              </>
+            )}
           </div>
         ) : (
           <>

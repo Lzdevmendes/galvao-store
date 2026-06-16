@@ -682,11 +682,14 @@ html { scroll-behavior: smooth; }
 .bhero.puma::after    { background: radial-gradient(ellipse,rgba(31,181,168,.35),transparent 60%); }
 .bhero.umbro   { background: linear-gradient(135deg,#003366,#0B1A2E); }
 .bhero.umbro::after   { background: radial-gradient(ellipse,rgba(31,181,168,.25),transparent 60%); }
+.bhero.new-balance { background: linear-gradient(135deg,#CC0000,#0B0E12); }
+.bhero.new-balance::after { background: radial-gradient(ellipse,rgba(204,0,0,.3),transparent 60%); }
 
 .bhero-stripe { position: absolute; left: 0; right: 0; bottom: 0; height: 8px; background: var(--brand-orange); z-index: 1; }
 .bhero.adidas .bhero-stripe { background: repeating-linear-gradient(90deg,#fff 0 30px,transparent 30px 60px); height: 6px; }
 .bhero.puma   .bhero-stripe { background: var(--brand-teal,#1FB5A8); }
 .bhero.umbro  .bhero-stripe { background: repeating-linear-gradient(90deg,var(--brand-orange) 0 20px,#fff 20px 40px,#003366 40px 60px); }
+.bhero.new-balance .bhero-stripe { background: repeating-linear-gradient(90deg,#CC0000 0 30px,#fff 30px 60px); }
 
 .bhero-meta { display: flex; gap: 24px; margin-top: 32px; flex-wrap: wrap; }
 .bhero-meta-item .k { font-family: var(--font-mono); font-size: 10px; letter-spacing: .18em; color: rgba(255,255,255,.5); text-transform: uppercase; }
