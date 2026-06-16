@@ -130,8 +130,12 @@ export function AdminSidebar({ userEmail, storeUrl }: AdminSidebarProps) {
         className="admin-sidebar"
         data-open={open}
         style={{
-          width: 220, flexShrink: 0, background: '#0F1318',
-          borderRight: '1px solid #1E2530',
+          width: 220, flexShrink: 0,
+          background: 'rgba(15,19,24,.62)',
+          backdropFilter: 'saturate(160%) blur(20px)',
+          WebkitBackdropFilter: 'saturate(160%) blur(20px)',
+          borderRight: '1px solid rgba(255,255,255,.08)',
+          boxShadow: 'inset -1px 0 0 rgba(255,255,255,.04)',
           display: 'flex', flexDirection: 'column',
           position: 'sticky', top: 0, height: '100vh', overflow: 'hidden',
         }}

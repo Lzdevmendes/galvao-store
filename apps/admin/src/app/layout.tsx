@@ -21,7 +21,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           html { -webkit-tap-highlight-color: transparent; }
           body {
             font-family: 'Space Grotesk', system-ui, sans-serif;
-            background: #0B0E12; color: #F8F9FB;
+            background-color: #0B0E12; color: #F8F9FB;
+            /* Glows ambiente da marca — base para o dark glass refratar */
+            background-image:
+              radial-gradient(52vw 42vh at 0% -6%,   rgba(242,107,31,.12), transparent 56%),
+              radial-gradient(46vw 46vh at 100% 0%,  rgba(31,181,168,.09), transparent 56%);
+            background-attachment: fixed;
             -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
           }
@@ -35,7 +40,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
           /* ── Topbar ── */
           .admin-topbar {
-            background: #0F1318; border-bottom: 1px solid #1E2530;
+            background: rgba(15,19,24,.62);
+            -webkit-backdrop-filter: saturate(160%) blur(20px);
+            backdrop-filter: saturate(160%) blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,.08);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
             padding: 14px 32px; display: flex; align-items: center; gap: 16px;
             position: sticky; top: 0; z-index: 100;
           }
