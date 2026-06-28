@@ -62,6 +62,8 @@ export default withSentryConfig(config, {
   project: process.env.SENTRY_PROJECT,
   silent:  !process.env.CI,
   widenClientFileUpload: true,
-  disableLogger: true,
-  automaticVercelMonitors: true,
+  webpack: {
+    automaticVercelMonitors: true,
+    treeshake: { removeDebugLogging: true },
+  },
 })
