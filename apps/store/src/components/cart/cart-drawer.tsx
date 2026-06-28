@@ -50,7 +50,7 @@ export function CartDrawer() {
           <div style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:900 }}>
             Carrinho {items.length > 0 && <span style={{ fontFamily:'var(--font-ui)', fontSize:13, fontWeight:600, color:'var(--fg-muted)', marginLeft:6 }}>({items.length} {items.length === 1 ? 'item' : 'itens'})</span>}
           </div>
-          <button onClick={closeCart} style={{ background:'none', border:'none', cursor:'pointer', padding:8, color:'var(--fg-muted)', fontSize:20, lineHeight:1 }}>✕</button>
+          <button onClick={closeCart} aria-label="Fechar carrinho" style={{ background:'none', border:'none', cursor:'pointer', padding:8, color:'var(--fg-muted)', fontSize:20, lineHeight:1 }}>✕</button>
         </div>
 
         {/* Frete grátis bar */}
@@ -148,9 +148,9 @@ function CartItemRow({ item, onRemove, onQty }: {
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           {/* Qty controls */}
           <div style={{ display:'flex', alignItems:'center', gap:0, border:'1px solid var(--border-strong)', borderRadius:8, overflow:'hidden' }}>
-            <button onClick={() => onQty(item.variantId, item.quantity - 1)} style={{ width:32, height:30, background:'none', border:'none', cursor:'pointer', fontSize:16, color:'var(--fg)', fontFamily:'var(--font-ui)' }}>−</button>
+            <button onClick={() => onQty(item.variantId, item.quantity - 1)} aria-label="Diminuir quantidade" style={{ width:32, height:30, background:'none', border:'none', cursor:'pointer', fontSize:16, color:'var(--fg)', fontFamily:'var(--font-ui)' }}>−</button>
             <span style={{ width:28, textAlign:'center', fontFamily:'var(--font-mono)', fontSize:13 }}>{item.quantity}</span>
-            <button onClick={() => onQty(item.variantId, item.quantity + 1)} style={{ width:32, height:30, background:'none', border:'none', cursor:'pointer', fontSize:16, color:'var(--fg)', fontFamily:'var(--font-ui)' }}>+</button>
+            <button onClick={() => onQty(item.variantId, item.quantity + 1)} aria-label="Aumentar quantidade" style={{ width:32, height:30, background:'none', border:'none', cursor:'pointer', fontSize:16, color:'var(--fg)', fontFamily:'var(--font-ui)' }}>+</button>
           </div>
 
           {/* Preço */}
@@ -168,7 +168,7 @@ function CartItemRow({ item, onRemove, onQty }: {
       </div>
 
       {/* Remove */}
-      <button onClick={() => onRemove(item.variantId)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--fg-faint)', padding:4, fontSize:16, flexShrink:0, marginTop:2 }} title="Remover">
+      <button onClick={() => onRemove(item.variantId)} aria-label="Remover item" style={{ background:'none', border:'none', cursor:'pointer', color:'var(--fg-faint)', padding:4, fontSize:16, flexShrink:0, marginTop:2 }} title="Remover">
         ✕
       </button>
     </div>
