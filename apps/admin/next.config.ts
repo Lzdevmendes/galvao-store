@@ -1,5 +1,10 @@
 import type { NextConfig } from 'next'
 import { withSentryConfig } from '@sentry/nextjs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+// Monorepo root — impede que o Next infira o workspace pelo lockfile errado
+const monorepoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 
 const CSP = [
   "default-src 'self'",
@@ -28,6 +33,7 @@ const securityHeaders = [
 ]
 
 const config: NextConfig = {
+  outputFileTracingRoot: monorepoRoot,
   transpilePackages: ['@galvao/ui', '@galvao/db'],
   serverExternalPackages: ['@libsql/client'],
   async headers() {
