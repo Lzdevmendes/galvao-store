@@ -92,7 +92,25 @@ pnpm --filter @galvao/store test:e2e  # playwright
 | `/api/newsletter` (email) | 1 | 24h | email |
 | `/api/avise-me` | 5 | 10min | IP |
 | `/api/cart/sync` | 30 | 1min | userId |
+| `/api/consent` | 30 | 10min | IP |
+| `/api/conta/exportar` | 3 | 1h | userId |
+| `/api/conta/deletar` | 3 | 1h | userId |
 | `/api/webhooks/mercadopago` | **Sem limite** | — | (nunca bloquear) |
+
+## Conformidade LGPD — arquivos chave
+
+| Peça | Arquivo | Responsabilidade |
+|------|---------|------------------|
+| Consentimento prévio | `store/components/analytics/tracking-scripts.tsx` | GA4/GTM/Clarity **só** carregam após consentimento (lê localStorage + ouve `consent:analytics`). NUNCA injetar tracking sem consentir. |
+| Banner de cookies | `store/components/lgpd/cookie-banner.tsx` | Toggles analytics/marketing; ao salvar, dispara eventos + `POST /api/consent` (registo auditável). |
+| Registo auditável | `store/app/api/consent/route.ts` + tabela `user_consents` | Grava cada decisão (anónimo ou logado) com IP/UA/origem. |
+| Direitos do titular | `store/app/conta/privacidade/` + `api/conta/exportar` + `api/conta/deletar` | Página com toggles + exportar dados (JSON) + apagar conta (anonimiza PII, desvincula pedidos por fisco, apaga auth user). |
+| Newsletter | `store/app/api/newsletter/{route,confirmar,unsubscribe}` | Double opt-in (status `pending`→`confirmed` via token) + descadastro por token. |
+| Anonimização | `store/app/api/cron/anonymize-data/route.ts` (cron diário) | Remove PII de pedidos > 5 anos; purga consentimentos antigos. Protegido por `CRON_SECRET`. |
+
+**Tabelas novas no schema** (`packages/db/src/schema/commerce.ts`): `newsletter_subscriptions`,
+`stock_alerts`, `checkout_idempotency`, `user_consents`. Antes estavam só no SQLite local (não no schema)
+— qualquer DB criada do schema agora as inclui.
 
 ## 5 Regras Invioláveis
 
