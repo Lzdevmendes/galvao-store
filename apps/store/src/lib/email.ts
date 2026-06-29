@@ -35,7 +35,7 @@ async function sendEmail({
     console.error('[email] send error:', JSON.stringify(error))
     throw new Error(`Resend error: ${JSON.stringify(error)}`)
   }
-  console.log(`[email] ✓ enviado para ${to} — id: ${data?.id}`)
+  if (process.env.NODE_ENV !== 'production') console.log(`[email] ✓ enviado para ${to} — id: ${data?.id}`)
   return data
 }
 

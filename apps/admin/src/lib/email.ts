@@ -12,7 +12,7 @@ async function sendEmail({ to, subject, component }: { to: string; subject: stri
   const html = await render(component)
   const { data, error } = await resend.emails.send({ from: FROM, to: to.toLowerCase(), subject, html })
   if (error) { console.error('[admin/email]', JSON.stringify(error)); throw new Error(JSON.stringify(error)) }
-  console.log('[admin/email] enviado para', to, '— id:', data?.id)
+  if (process.env.NODE_ENV !== 'production') console.log('[admin/email] enviado para', to, '— id:', data?.id)
   return data
 }
 

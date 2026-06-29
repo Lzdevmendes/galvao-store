@@ -3,7 +3,7 @@ const WA_PHONE_ID = process.env.WHATSAPP_PHONE_ID
 
 async function sendWaMessage(to: string, body: string): Promise<void> {
   if (!WA_TOKEN || !WA_PHONE_ID) {
-    console.log('[whatsapp] não configurado — mensagem não enviada:', body.slice(0, 60))
+    if (process.env.NODE_ENV !== 'production') console.log('[whatsapp] não configurado — mensagem não enviada:', body.slice(0, 60))
     return
   }
 
