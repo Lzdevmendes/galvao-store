@@ -31,24 +31,34 @@ export async function POST(req: NextRequest) {
   const blockedEmail = await checkRateLimit(limiters.newsletterEmail, `newsletter_email:${key}`, 1, 24 * 60 * 60 * 1000, 86400)
   if (blockedEmail) return NextResponse.json({ ok: true, already: true }) // silencioso — não revelar o limite
 
-  const existing = await db.all(sql`SELECT id FROM newsletter_subscriptions WHERE email = ${key} LIMIT 1`)
-  if (existing.length > 0) {
+  const existing = await db.all<{ status: string }>(sql`SELECT status FROM newsletter_subscriptions WHERE email = ${key} LIMIT 1`)
+  // Já confirmado — nada a fazer (resposta silenciosa, não revela se o e-mail existe)
+  if (existing.length > 0 && existing[0].status === 'confirmed') {
     return NextResponse.json({ ok: true, already: true })
   }
 
-  await db.run(sql`INSERT INTO newsletter_subscriptions (id, email) VALUES (${crypto.randomUUID()}, ${key})`)
+  // LGPD: double opt-in. Grava como 'pending' e envia e-mail de confirmação.
+  const confirmToken     = crypto.randomUUID()
+  const unsubscribeToken = crypto.randomUUID()
+
+  if (existing.length > 0) {
+    await db.run(sql`UPDATE newsletter_subscriptions SET status = 'pending', confirm_token = ${confirmToken}, unsubscribe_token = ${unsubscribeToken} WHERE email = ${key}`)
+  } else {
+    await db.run(sql`INSERT INTO newsletter_subscriptions (id, email, status, confirm_token, unsubscribe_token) VALUES (${crypto.randomUUID()}, ${key}, 'pending', ${confirmToken}, ${unsubscribeToken})`)
+  }
 
   resend.emails.send({
     from: FROM,
     to: key,
-    subject: "Bem-vindo ao time Galvão's Store! ⚽",
-    html: welcomeHtml(key),
+    subject: "Confirme sua inscrição — Galvão's Store ⚽",
+    html: confirmHtml(confirmToken),
   }).catch(() => { /* silent */ })
 
   return NextResponse.json({ ok: true })
 }
 
-function welcomeHtml(_email: string) {
+function confirmHtml(token: string) {
+  const confirmUrl = `${APP_URL}/api/newsletter/confirmar?token=${token}`
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
@@ -61,22 +71,17 @@ function welcomeHtml(_email: string) {
     <div style="height:4px;background:${brand.orange}"></div>
     <div style="padding:40px 32px">
       <h1 style="font-size:26px;font-weight:900;color:${brand.dark};margin:0 0 16px;letter-spacing:.5px">
-        BEM-VINDO AO TIME! ⚽
+        CONFIRME SUA INSCRIÇÃO ⚽
       </h1>
       <p style="font-size:15px;color:#374151;line-height:1.7;margin:0 0 16px">
-        Olá! Você agora faz parte da lista VIP da Galvão's Store.
+        Falta um passo para entrar na lista VIP da Galvão's Store. Clique no botão abaixo para confirmar que é você.
       </p>
-      <p style="font-size:15px;color:#374151;line-height:1.7;margin:0 0 28px">
-        Vai receber em primeira mão:
-      </p>
-      <ul style="font-size:14px;color:#374151;line-height:2;margin:0 0 28px;padding-left:20px">
-        <li>🚀 Lançamentos antes de todo mundo</li>
-        <li>🏷️ Ofertas exclusivas e relâmpago</li>
-        <li>🎁 Cupons especiais para assinantes</li>
-      </ul>
-      <a href="${APP_URL}/produtos" style="display:inline-block;background:${brand.orange};color:${brand.white};font-size:15px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:8px;letter-spacing:.3px">
-        Explorar produtos →
+      <a href="${confirmUrl}" style="display:inline-block;background:${brand.orange};color:${brand.white};font-size:15px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:8px;letter-spacing:.3px;margin:8px 0 28px">
+        Confirmar inscrição →
       </a>
+      <p style="font-size:13px;color:#6B7280;line-height:1.6;margin:0">
+        Se não foi você que pediu, ignore este e-mail — nenhuma inscrição será feita sem esta confirmação.
+      </p>
     </div>
     <div style="background:${brand.dark};padding:24px;text-align:center">
       <p style="font-size:12px;color:#6B7280;margin:0">
