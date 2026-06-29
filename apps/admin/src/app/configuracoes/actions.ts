@@ -19,9 +19,9 @@ export async function saveSettings(formData: FormData) {
     const value = formData.get(key)
     if (value === null) continue
     await db.run(sql`
-      INSERT INTO app_settings (key, value_json)
-      VALUES (${key}, ${JSON.stringify(String(value))})
-      ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json
+      INSERT INTO app_settings (key, value, updated_by)
+      VALUES (${key}, ${JSON.stringify(String(value))}, ${auth.userId})
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')
     `)
   }
 
@@ -31,8 +31,8 @@ export async function saveSettings(formData: FormData) {
 
 export async function getSettings(): Promise<Record<string, string>> {
   try {
-    const rows = await db.all<{ key: string; value_json: string }>(sql`SELECT key, value_json FROM app_settings`)
-    return Object.fromEntries(rows.map(r => [r.key, JSON.parse(r.value_json)]))
+    const rows = await db.all<{ key: string; value: string }>(sql`SELECT key, value FROM app_settings`)
+    return Object.fromEntries(rows.map(r => [r.key, JSON.parse(r.value)]))
   } catch {
     return {}
   }
