@@ -8,6 +8,20 @@
       "when": 1779803440139,
       "tag": "0000_far_screwball",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1782741162612,
+      "tag": "0001_outgoing_doctor_faustus",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1782741288513,
+      "tag": "0002_harsh_wendell_rand",
+      "breakpoints": true
     }
   ]
 }

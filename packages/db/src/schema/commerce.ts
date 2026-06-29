@@ -1,4 +1,4 @@
-import { text, integer } from 'drizzle-orm/sqlite-core'
+import { text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { sqliteTable } from 'drizzle-orm/sqlite-core'
 import { relations, sql } from 'drizzle-orm'
 import { users } from './users'
@@ -90,6 +90,34 @@ export const appSettings = sqliteTable('app_settings', {
   value:     text('value', { mode: 'json' }).notNull(),
   updatedBy: text('updated_by'),
   updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+})
+
+// Inscrições de newsletter (usada por /api/newsletter)
+export const newsletterSubscriptions = sqliteTable('newsletter_subscriptions', {
+  id:        text('id').primaryKey(),
+  email:     text('email').notNull().unique(),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+})
+
+// Alertas "avise-me quando voltar" (usada por /api/avise-me + admin/estoque)
+export const stockAlerts = sqliteTable('stock_alerts', {
+  id:          text('id').primaryKey(),
+  email:       text('email').notNull(),
+  variantId:   text('variant_id').notNull(),
+  productName: text('product_name').notNull(),
+  notifiedAt:  text('notified_at'),
+  createdAt:   text('created_at').notNull().default(sql`(datetime('now'))`),
+}, (t) => ({
+  // ON CONFLICT(email, variant_id) DO NOTHING em avise-me/route.ts depende disto
+  emailVariantUnq: uniqueIndex('stock_alerts_email_variant_unq').on(t.email, t.variantId),
+}))
+
+// Idempotência do checkout (evita double-submit em createOrder)
+export const checkoutIdempotency = sqliteTable('checkout_idempotency', {
+  key:        text('key').primaryKey(),
+  orderId:    text('order_id').notNull(),
+  resultJson: text('result_json').notNull(),
+  createdAt:  text('created_at').notNull().default(sql`(datetime('now'))`),
 })
 
 // ── Relations ──────────────────────────────────────────────
