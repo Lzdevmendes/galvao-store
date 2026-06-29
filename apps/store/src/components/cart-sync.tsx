@@ -34,6 +34,7 @@ export function CartSync() {
     })
 
     return () => subscription.unsubscribe()
+  // Subscreve auth uma única vez no mount; `items` é lido via getState dentro do callback.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

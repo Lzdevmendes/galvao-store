@@ -41,6 +41,7 @@ export function PixTimer({ expiresAt }: { expiresAt: string }) {
       })
     }, 1000)
     return () => clearInterval(id)
+  // Arranca o countdown do PIX uma única vez no mount.
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const m = String(Math.floor(diff / 60)).padStart(2, '0')

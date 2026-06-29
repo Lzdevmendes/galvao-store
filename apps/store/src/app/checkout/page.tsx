@@ -111,6 +111,7 @@ export default function CheckoutPage() {
         phone: meta.phone     ?? f.phone,
       }))
     })
+  // Inicialização única no mount (hidrata o formulário com user/carrinho).
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = useCallback((key: keyof FormData, value: string | number) => {
