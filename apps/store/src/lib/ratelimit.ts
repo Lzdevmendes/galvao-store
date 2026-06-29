@@ -45,6 +45,12 @@ export const limiters = {
   frete:       makeLimiter(20,  '1 m',  'rl:frete'),
   // API global — 300 req por IP / 1min (DDoS geral, aplicado no middleware)
   apiGlobal:   makeLimiter(300, '1 m',  'rl:api_global'),
+  // LGPD — registo de consentimento (cookie banner pode disparar várias vezes)
+  consent:     makeLimiter(30,  '10 m', 'rl:consent'),
+  // LGPD — exportar dados pessoais (custoso; 3 por hora por user)
+  accountExport: makeLimiter(3, '1 h',  'rl:account_export'),
+  // LGPD — apagar conta (irreversível; 3 por hora por user)
+  accountDelete: makeLimiter(3, '1 h',  'rl:account_delete'),
 }
 
 // ── IP anti-spoofing ────────────────────────────────────────────────────────

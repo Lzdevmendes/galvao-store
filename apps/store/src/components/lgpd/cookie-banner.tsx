@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 
 const STORAGE_KEY = 'galvao_cookie_consent'
+const ANON_KEY    = 'galvao_anon_id'
 
 interface CookieConsent {
   necessary:  true
@@ -31,6 +32,14 @@ export function CookieBanner() {
     // Dispara evento para activar scripts de analytics se consentido
     if (consent.analytics) window.dispatchEvent(new Event('consent:analytics'))
     if (consent.marketing) window.dispatchEvent(new Event('consent:marketing'))
+    // LGPD: regista a decisão no servidor (auditável). Best-effort — não bloqueia a UI.
+    let anonId = localStorage.getItem(ANON_KEY)
+    if (!anonId) { anonId = crypto.randomUUID(); localStorage.setItem(ANON_KEY, anonId) }
+    fetch('/api/consent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ analytics: consent.analytics, marketing: consent.marketing, anonId }),
+    }).catch(() => { /* silent */ })
   }
 
   const acceptAll     = () => save({ analytics: true,     marketing: true     })

@@ -93,9 +93,29 @@ export const appSettings = sqliteTable('app_settings', {
 })
 
 // Inscrições de newsletter (usada por /api/newsletter)
+// LGPD: double opt-in (status pending→confirmed) + token de descadastro.
+export type NewsletterStatus = 'pending' | 'confirmed' | 'unsubscribed'
 export const newsletterSubscriptions = sqliteTable('newsletter_subscriptions', {
+  id:               text('id').primaryKey(),
+  email:            text('email').notNull().unique(),
+  status:           text('status', { enum: ['pending','confirmed','unsubscribed'] }).$type<NewsletterStatus>().notNull().default('pending'),
+  confirmToken:     text('confirm_token'),
+  unsubscribeToken: text('unsubscribe_token'),
+  confirmedAt:      text('confirmed_at'),
+  createdAt:        text('created_at').notNull().default(sql`(datetime('now'))`),
+})
+
+// Registo auditável de consentimento (LGPD art. 8) — cookie banner + conta.
+export type ConsentType = 'necessary' | 'analytics' | 'marketing'
+export const userConsents = sqliteTable('user_consents', {
   id:        text('id').primaryKey(),
-  email:     text('email').notNull().unique(),
+  userId:    text('user_id').references(() => users.id),   // null = visitante anónimo
+  anonId:    text('anon_id'),                               // agrupa decisões de visitante
+  type:      text('type', { enum: ['necessary','analytics','marketing'] }).$type<ConsentType>().notNull(),
+  granted:   integer('granted', { mode: 'boolean' }).notNull(),
+  source:    text('source').notNull(),                     // 'cookie_banner' | 'account_settings'
+  ip:        text('ip'),
+  userAgent: text('user_agent'),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
 })
 
