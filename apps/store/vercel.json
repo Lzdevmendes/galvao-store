@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/clear-reservations",
       "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/anonymize-data",
+      "schedule": "0 3 * * *"
     }
   ]
 }
