@@ -99,6 +99,7 @@ Tabelas importantes:
 | `newsletter_subscriptions` | Newsletter |
 | `stock_alerts` | Avisos de reposição |
 | `checkout_idempotency` | Prevenção de double-submit |
+| `user_consents` | Registo auditável de consentimento (LGPD) |
 | `stock_movements` | Histórico de estoque |
 
 ---

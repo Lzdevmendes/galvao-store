@@ -86,6 +86,11 @@ pnpm --filter @galvao/db db:push           # ou aplicar migrations de packages/d
 pnpm --filter @galvao/db db:seed
 ```
 
+> **Importante:** o schema agora inclui `newsletter_subscriptions`, `stock_alerts`,
+> `checkout_idempotency` e `user_consents` (antes só existiam no SQLite local). O `db:push`/
+> migrations criam-nas — sem isso, newsletter, avise-me, checkout e consentimento quebram em prod.
+> Teste de garantia: `pnpm --filter @galvao/db test` (aplica as migrations numa DB limpa).
+
 ---
 
 ## 5. Wiring pós-deploy (configurar nos painéis externos)
@@ -95,7 +100,8 @@ pnpm --filter @galvao/db db:seed
 - [ ] **Supabase → Storage:** confirmar bucket de imagens de produto existe e está acessível (upload do admin escreve nele).
 - [ ] **Resend → Domains:** verificar `galvaosstore.com.br` (DNS TXT) — sem isto, e-mails saem de `onboarding@resend.dev`.
 - [ ] **DNS / Domínio:** apontar `galvaosstore.com.br` → Vercel store; subdomínio admin → Vercel admin.
-- [ ] **Cron:** garantir `CRON_SECRET` igual nos dois lados; o cron da store (`/api/cron/clear-reservations`) já está em `apps/store/vercel.json`.
+- [ ] **Cron:** garantir `CRON_SECRET` igual nos dois lados; os crons da store (`/api/cron/clear-reservations` a cada 30min e `/api/cron/anonymize-data` diário às 03:00 — anonimização LGPD pós-5-anos) já estão em `apps/store/vercel.json`.
+- [ ] **LGPD:** confirmar que os scripts de analytics só carregam após consentimento (banner de cookies) e que `/conta/privacidade` (exportar/apagar dados) está acessível.
 
 ---
 

@@ -49,13 +49,19 @@ galvao-store/
 
 | Rota | Método | Autenticação | Rate limit |
 |------|--------|-------------|-----------|
-| `/api/newsletter` | POST | - | ❌ (adicionar) |
-| `/api/avise-me` | POST | - | ❌ (adicionar) |
-| `/api/cart/sync` | POST/DELETE | Supabase session | - |
+| `/api/newsletter` | POST | - | 3/10min IP + 1/24h email |
+| `/api/newsletter/confirmar` | GET | token | global |
+| `/api/newsletter/unsubscribe` | GET | token | global |
+| `/api/avise-me` | POST | - | 5/10min IP |
+| `/api/consent` | POST | opcional | 30/10min IP |
+| `/api/cart/sync` | POST/DELETE | Supabase session | 30/1min userId |
 | `/api/conta/enderecos` | GET | Supabase session | - |
+| `/api/conta/exportar` | GET | Supabase session | 3/1h userId |
+| `/api/conta/deletar` | POST | Supabase session | 3/1h userId |
 | `/api/favoritos` | GET/POST/DELETE | Supabase session | - |
 | `/api/webhooks/mercadopago` | POST | HMAC x-signature | NÃO aplicar |
 | `/api/cron/clear-reservations` | GET | Bearer CRON_SECRET | - |
+| `/api/cron/anonymize-data` | GET | Bearer CRON_SECRET | - |
 | `/api/frete` | POST | - | - |
 
 **Middleware** (`src/middleware.ts`):
