@@ -7,12 +7,17 @@ import {
   quoteMelhorEnvio,
   type MEProduct,
 } from "@/lib/melhor-envio";
+import { checkMemory, getRealIpFromHeaders, limiters } from "@/lib/ratelimit";
 import { createClient } from "@/lib/supabase/server";
 import { fmt } from "@/lib/utils";
+import {
+  isValidCep,
+  isValidCpf,
+  isValidPhone,
+  sanitizeText,
+} from "@/lib/validate";
 import { waSendOrderCreated } from "@/lib/whatsapp";
 import { sql } from "drizzle-orm";
-import { limiters, getRealIpFromHeaders, checkMemory } from "@/lib/ratelimit";
-import { isValidCpf, isValidCep, isValidPhone, sanitizeText } from "@/lib/validate";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -304,27 +309,44 @@ export async function createOrder(
   try {
     // Rate limiting anti-fraude — 5 tentativas por IP / 5min
     // Impede bots de testar cartões roubados em loop
-    const ip = await getRealIpFromHeaders()
-    const limitKey = `checkout:${ip}`
+    const ip = await getRealIpFromHeaders();
+    const limitKey = `checkout:${ip}`;
     if (limiters.checkout) {
-      const { success } = await limiters.checkout.limit(limitKey)
-      if (!success) return { success: false, error: 'Muitas tentativas. Tente novamente em alguns minutos.' }
+      const { success } = await limiters.checkout.limit(limitKey);
+      if (!success)
+        return {
+          success: false,
+          error: "Muitas tentativas. Tente novamente em alguns minutos.",
+        };
     } else if (!checkMemory(limitKey, 5, 5 * 60 * 1000)) {
-      return { success: false, error: 'Muitas tentativas. Tente novamente em alguns minutos.' }
+      return {
+        success: false,
+        error: "Muitas tentativas. Tente novamente em alguns minutos.",
+      };
     }
 
     // Validação dos dados pessoais no servidor (o frontend já valida, mas o server é autoritativo)
-    const name = sanitizeText(payload.name)
-    if (!name || name.length < 3 || name.length > 120) return { success: false, error: 'Nome inválido.' }
-    if (!payload.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) return { success: false, error: 'E-mail inválido.' }
-    if (payload.cpf && !isValidCpf(payload.cpf)) return { success: false, error: 'CPF inválido.' }
-    if (payload.phone && !isValidPhone(payload.phone)) return { success: false, error: 'Telefone inválido.' }
-    if (!isValidCep(payload.cep)) return { success: false, error: 'CEP inválido.' }
-    if (!payload.street || payload.street.length > 200) return { success: false, error: 'Endereço inválido.' }
-    if (!payload.city || payload.city.length > 100) return { success: false, error: 'Cidade inválida.' }
-    if (!payload.state || payload.state.length !== 2) return { success: false, error: 'Estado inválido.' }
-    if (!['pix', 'credit_card', 'boleto'].includes(payload.paymentMethod)) return { success: false, error: 'Método de pagamento inválido.' }
-    if (!payload.cartItems?.length || payload.cartItems.length > 50) return { success: false, error: 'Carrinho inválido.' }
+    const name = sanitizeText(payload.name);
+    if (!name || name.length < 3 || name.length > 120)
+      return { success: false, error: "Nome inválido." };
+    if (!payload.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email))
+      return { success: false, error: "E-mail inválido." };
+    if (payload.cpf && !isValidCpf(payload.cpf))
+      return { success: false, error: "CPF inválido." };
+    if (payload.phone && !isValidPhone(payload.phone))
+      return { success: false, error: "Telefone inválido." };
+    if (!isValidCep(payload.cep))
+      return { success: false, error: "CEP inválido." };
+    if (!payload.street || payload.street.length > 200)
+      return { success: false, error: "Endereço inválido." };
+    if (!payload.city || payload.city.length > 100)
+      return { success: false, error: "Cidade inválida." };
+    if (!payload.state || payload.state.length !== 2)
+      return { success: false, error: "Estado inválido." };
+    if (!["pix", "credit_card", "boleto"].includes(payload.paymentMethod))
+      return { success: false, error: "Método de pagamento inválido." };
+    if (!payload.cartItems?.length || payload.cartItems.length > 50)
+      return { success: false, error: "Carrinho inválido." };
 
     // Idempotência: evita double-submit se o user clicar duas vezes
     if (payload.idempotencyKey) {
@@ -927,12 +949,22 @@ export async function createOrder(
       // Desfaz o pedido para o utilizador poder tentar novamente
       await rollbackOrder();
       // Log interno completo — mensagem para o cliente nunca revela detalhes internos
-      console.error("[createOrder] MP ERRO:", mpErr instanceof Error ? mpErr.message : JSON.stringify(mpErr));
-      return { success: false, error: 'Erro ao processar pagamento. Tente novamente ou escolha outra forma de pagamento.' };
+      console.error(
+        "[createOrder] MP ERRO:",
+        mpErr instanceof Error ? mpErr.message : JSON.stringify(mpErr),
+      );
+      return {
+        success: false,
+        error:
+          "Erro ao processar pagamento. Tente novamente ou escolha outra forma de pagamento.",
+      };
     }
   } catch (err) {
     // Log interno completo — cliente vê mensagem genérica (não vazamos stack trace)
     console.error("[createOrder] ERRO INTERNO:", err);
-    return { success: false, error: 'Erro interno. Por favor tente novamente em alguns instantes.' };
+    return {
+      success: false,
+      error: "Erro interno. Por favor tente novamente em alguns instantes.",
+    };
   }
 }
