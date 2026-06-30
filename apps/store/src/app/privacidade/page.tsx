@@ -258,7 +258,15 @@ export default function PrivacidadePage() {
           <Li><Strong>Informação sobre compartilhamento:</Strong> saber com quais terceiros seus dados foram compartilhados.</Li>
         </ul>
         <p>
-          Para exercer qualquer direito, envie e-mail para <Strong>{EMAIL_PRIVACY}</Strong> com o assunto
+          <Strong>Self-service:</Strong> na sua conta, em{' '}
+          <a href="/conta/privacidade" style={{ color: 'var(--brand-orange)' }}>Privacidade e dados</a>, você pode
+          imediatamente <Strong>baixar uma cópia</Strong> dos seus dados (portabilidade), <Strong>apagar sua conta</Strong>{' '}
+          (anonimizamos seus dados pessoais, mantendo apenas o necessário por obrigação fiscal) e ajustar suas
+          <Strong> preferências de cookies e marketing</Strong>. Para cancelar a newsletter, use o link
+          &quot;Descadastrar&quot; presente em cada e-mail.
+        </p>
+        <p>
+          Para exercer qualquer outro direito, envie e-mail para <Strong>{EMAIL_PRIVACY}</Strong> com o assunto
           &quot;[LGPD] Exercício de Direito&quot;. Responderemos em até <Strong>15 dias úteis</Strong>, conforme exigido pela lei.
           Podemos solicitar verificação de identidade antes de processar seu pedido.
         </p>
