@@ -30,6 +30,8 @@ export async function saveSettings(formData: FormData) {
 }
 
 export async function getSettings(): Promise<Record<string, string>> {
+  const auth = await requireAdmin()
+  if (auth instanceof NextResponse) return {}
   try {
     const rows = await db.all<{ key: string; value: string }>(sql`SELECT key, value FROM app_settings`)
     return Object.fromEntries(rows.map(r => [r.key, JSON.parse(r.value)]))

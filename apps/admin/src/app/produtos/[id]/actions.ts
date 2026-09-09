@@ -43,6 +43,8 @@ export async function updateVariantPrice(
   promoInCents: number | null,
   costInCents: number | null,
 ) {
+  const auth = await requireAdmin()
+  if (auth instanceof NextResponse) return { error: 'Não autorizado.' }
   if (priceInCents <= 0) return { error: 'Preço inválido.' }
 
   await db.run(sql`
