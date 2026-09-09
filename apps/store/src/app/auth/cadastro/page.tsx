@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { AuthShell, Field, ErrorMsg, SuccessMsg, SubmitBtn, Divider, GoogleBtn } from '../shared'
+import { signUp } from './actions'
 
 export default function CadastroPage() {
   const searchParams = useSearchParams()
@@ -24,15 +25,9 @@ export default function CadastroPage() {
     if (password.length < 8)  { setError('A senha deve ter no mínimo 8 caracteres.'); return }
 
     setLoading(true)
-    const supabase = createClient()
-    const { error } = await supabase.auth.signUp({
-      email, password,
-      options: { data: { full_name: name } },
-    })
-    if (error) {
-      setError(error.message === 'User already registered'
-        ? 'Este e-mail já está cadastrado. Faça login.'
-        : 'Erro ao criar conta. Tente novamente.')
+    const result = await signUp(name, email, password)
+    if (!result.success) {
+      setError(result.error)
       setLoading(false)
       return
     }

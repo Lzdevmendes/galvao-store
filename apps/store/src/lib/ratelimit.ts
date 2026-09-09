@@ -32,6 +32,10 @@ export const limiters = {
   login:       makeLimiter(5,   '15 m', 'rl:login'),
   // Auth — 10 tentativas por e-mail / 1h (protege conta específica de brute force)
   loginEmail:  makeLimiter(10,  '1 h',  'rl:login_email'),
+  // Auth — 5 cadastros por IP / 15min (anti-spam de contas)
+  signup:      makeLimiter(5,   '15 m', 'rl:signup'),
+  // Auth — 5 pedidos de redefinição de senha por IP / 15min (anti-enumeração/spam de e-mail)
+  passwordReset: makeLimiter(5, '15 m', 'rl:password_reset'),
   // Newsletter — 3 inscrições por IP / 10min + 1 por e-mail / 24h
   newsletter:  makeLimiter(3,   '10 m', 'rl:newsletter_ip'),
   newsletterEmail: makeLimiter(1, '24 h', 'rl:newsletter_email'),

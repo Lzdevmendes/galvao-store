@@ -1,8 +1,8 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 import { AuthShell, Field, ErrorMsg, SuccessMsg, SubmitBtn } from '../shared'
+import { requestPasswordReset } from './actions'
 
 export default function EsqueciSenhaPage() {
   const [email,   setEmail]   = useState('')
@@ -14,11 +14,8 @@ export default function EsqueciSenhaPage() {
     e.preventDefault()
     setError('')
     setLoading(true)
-    const supabase = createClient()
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${location.origin}/auth/callback?type=recovery`,
-    })
-    if (error) { setError('Erro ao enviar e-mail. Verifique o endereço.'); setLoading(false); return }
+    const result = await requestPasswordReset(email, `${location.origin}/auth/callback?type=recovery`)
+    if (!result.success) { setError(result.error); setLoading(false); return }
     setSuccess(true)
     setLoading(false)
   }
