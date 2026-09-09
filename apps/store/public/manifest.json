@@ -1,0 +1,26 @@
+{
+  "name": "Galvão's Store — Chuteiras de Alta Performance",
+  "short_name": "Galvão's Store",
+  "description": "Nike, Adidas, Puma, Umbro e mais. Frete grátis acima de R$ 399. 12x sem juros. 5% OFF no Pix.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#FFFFFF",
+  "theme_color": "#F26B1F",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
