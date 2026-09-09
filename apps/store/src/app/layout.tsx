@@ -3,6 +3,7 @@ import { CartDrawer } from "@/components/cart/cart-drawer";
 import { BrandNav } from "@/components/layout/brand-nav";
 import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 import { PromoBar } from "@/components/layout/promo-bar";
+import { SiteChrome } from "@/components/layout/site-chrome";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { CookieBanner } from "@/components/lgpd/cookie-banner";
@@ -12,13 +13,31 @@ import { PageTransition } from "@/components/page-transition";
 import { HeroMarker } from "@/components/layout/hero-marker";
 import { GlassLight } from "@/components/layout/glass-light";
 import { queryBrandsForNav, queryActiveBrandSlugs } from "@/lib/catalog-query";
-import type { Metadata } from "next";
+import { SWRegister } from "@/components/sw-register";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 const BASE = process.env.NEXT_PUBLIC_APP_URL ?? "https://galvaosstore.com.br";
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#F26B1F",
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(BASE),
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Galvão's Store",
+  },
+  icons: {
+    icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   title: {
     default: "Galvão's Store — Chuteiras de Alta Performance",
     template: "%s — Galvão's Store",
@@ -80,10 +99,6 @@ export default async function RootLayout({
   return (
     <html lang="pt-BR" data-theme="light" suppressHydrationWarning>
       <head>
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1, viewport-fit=cover"
-        />
         {/* Marca data-hero ANTES do paint (home + marcas) — evita flash do header/ilha no load */}
         <script
           dangerouslySetInnerHTML={{
@@ -129,14 +144,18 @@ export default async function RootLayout({
           }}
         />
 
-        <PromoBar />
-        <SiteHeader />
-        <BrandNav brands={navBrands} />
+        <SiteChrome>
+          <PromoBar />
+          <SiteHeader />
+          <BrandNav brands={navBrands} />
+        </SiteChrome>
         <main>
           <PageTransition>{children}</PageTransition>
         </main>
         <SiteFooter />
-        <MobileTabBar />
+        <SiteChrome>
+          <MobileTabBar />
+        </SiteChrome>
         <CartDrawer />
         <CartSync />
         <HeroMarker paths={heroPaths} />
@@ -144,6 +163,7 @@ export default async function RootLayout({
         <TrackingScripts />
         <CookieBanner />
         <WhatsAppButton />
+        <SWRegister />
       </body>
     </html>
   );
