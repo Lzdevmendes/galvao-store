@@ -35,5 +35,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!login|_next/static|_next/image|favicon.ico|logo.svg).*)'],
+  // `icon`/`apple-icon` são as rotas dinâmicas do favicon (app/icon.tsx) —
+  // sem excluir aqui, o middleware redirecionava o pedido de favicon pro
+  // /login (HTML, não imagem) e a aba ficava sem ícone algum.
+  matcher: ['/((?!login|_next/static|_next/image|favicon.ico|logo.svg|icon|apple-icon).*)'],
 }
