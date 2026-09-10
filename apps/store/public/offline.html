@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Você está offline — Galvão's Store</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+    background: #0B0E12;
+    color: #F8F9FB;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    text-align: center;
+  }
+  .wrap { max-width: 360px; }
+  .icon {
+    width: 72px; height: 72px; margin: 0 auto 20px;
+    border-radius: 50%;
+    background: rgba(242,107,31,.15);
+    display: flex; align-items: center; justify-content: center;
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 800;
+    margin: 0 0 8px;
+    letter-spacing: -.01em;
+  }
+  p {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #9AA3AF;
+    margin: 0 0 24px;
+  }
+  button {
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    padding: 14px 28px;
+    border-radius: 10px;
+    background: #F26B1F;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: inherit;
+    touch-action: manipulation;
+  }
+  button:active { transform: scale(.97); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="icon">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#F26B1F" stroke-width="1.8">
+        <path d="M1 9a17 17 0 0 1 22 0M5 13a11 11 0 0 1 14 0M8.5 17a6.5 6.5 0 0 1 7 0" stroke-opacity=".35"/>
+        <line x1="1" y1="1" x2="23" y2="23"/>
+        <circle cx="12" cy="20" r="1.2" fill="#F26B1F" stroke="none"/>
+      </svg>
+    </div>
+    <h1>Você está offline</h1>
+    <p>Não conseguimos carregar esta página sem conexão. Verifique sua internet e tente de novo — páginas já visitadas continuam disponíveis.</p>
+    <button onclick="location.reload()">Tentar de novo</button>
+  </div>
+</body>
+</html>
