@@ -1,4 +1,4 @@
-import { text, integer } from 'drizzle-orm/sqlite-core'
+import { text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { sqliteTable } from 'drizzle-orm/sqlite-core'
 import { relations, sql } from 'drizzle-orm'
 
@@ -49,9 +49,16 @@ export const products = sqliteTable('products', {
   metaImage:       text('meta_image'),
   // Status
   status:    text('status', { enum: ['draft','published','archived'] }).notNull().default('draft'),
+  // Origem — preenchido só quando o produto veio do pipeline de import automático
+  // (packages/db/src/schema/imports.ts). Par único: permite re-rodar o import e
+  // fazer UPDATE (estoque/disponibilidade) em vez de duplicar o produto.
+  externalSourceId: text('external_source_id'),
+  externalRef:      text('external_ref'),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
   updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
-})
+}, (t) => ({
+  externalSourceRefUnq: uniqueIndex('products_external_source_ref_unq').on(t.externalSourceId, t.externalRef),
+}))
 
 // Variantes — a unidade real de venda (tamanho × cor)
 // TODOS os preços em CENTAVOS (integer). R$ 529,99 = 52999

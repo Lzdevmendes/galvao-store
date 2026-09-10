@@ -1,0 +1,1 @@
+ALTER TABLE `import_pending_items` ADD `raw_category` text;

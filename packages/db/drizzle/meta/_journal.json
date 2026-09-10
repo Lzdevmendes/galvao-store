@@ -29,6 +29,20 @@
       "when": 1782742482211,
       "tag": "0003_daily_slipstream",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1789046258335,
+      "tag": "0004_groovy_rage",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1789046444299,
+      "tag": "0005_fantastic_spyke",
+      "breakpoints": true
     }
   ]
 }
