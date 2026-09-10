@@ -43,11 +43,12 @@ pnpm --filter @galvao/store test:e2e  # playwright
 | `.pdp-mobile-cta` | globals.css | CTA bar fixo mobile (coração + comprar + preço) |
 | `.mhero-wrap` | globals.css | Hero mobile com foto rotacionada (só ≤768px) |
 | `.mcats` + `.mcat` | globals.css | Category circles scroll horizontal (só ≤768px) |
-| `.lhead-m` | globals.css | Header compacto da listagem em mobile |
-| `.ltools .chip` | globals.css | Filter chips scroll horizontal (só ≤768px) |
+| `.lhead-m` | globals.css | Header compacto da listagem em mobile — usado em `/produtos`, `/categoria/[slug]`, `/ofertas`, `/busca`, `/[brand-slug]` |
+| `.pdp-dots` / `.pdp-thumbs` | globals.css | Galeria do PDP: dots no mobile, thumbnails no desktop (`product-gallery.tsx`) |
 | `.sz-grid` | globals.css | Size grid 4-col no mobile |
-| `.acc-mobile-head` | globals.css | Header dark da conta no mobile |
-| `.chk-steps-bar .stp` | globals.css | Barra de steps do checkout (só ≤768px) |
+| `.acc-mobile-head` | globals.css | Header dark da conta no mobile — KPIs (pedidos/em rota/favoritos/cupons) vêm de query real, não placeholder |
+| `.addr-grid` / `.addr-card` | globals.css | Form de novo endereço 1-col + card de endereço empilhado no mobile |
+| Checkout steps | `checkout/page.tsx` (custom, inline `<style>`) | Indicador de etapas é próprio da página, não usa classe global — não existe `.chk-steps-bar`/`.chk-grid` (removidos por serem CSS morto) |
 | Skeletons `loading.tsx` | Todos usam `.skeleton` | Shimmer automático durante RSC fetch |
 
 ### Admin (`apps/admin`)
@@ -67,6 +68,17 @@ pnpm --filter @galvao/store test:e2e  # playwright
 |--------|---------|-----------|
 | Confirmação de pedido | `store/src/app/pedido/[id]/page.tsx` | Banner gradiente adaptativo (orange/verde/vermelho), tracker 5 etapas, PIX grid |
 | Admin cliente 360° | `admin/src/app/clientes/[id]/page.tsx` | Hero dark com avatar+tags, score, KPIs 5-col, sidebar com preferências de marca |
+
+## PWA — arquivos chave
+
+| Arquivo | Responsabilidade |
+|---------|-----------------|
+| `store/public/manifest.json` | `icons` (192/512 `any` + 192/512 `maskable`), `shortcuts` (Ofertas/Buscar/Meus pedidos), `theme_color` deve bater com `layout.tsx` |
+| `store/public/sw.js` | Network-first páginas/API, cache-first assets estáticos, fallback `/offline.html` em navegação sem rede |
+| `store/public/offline.html` | Página autocontida (sem fontes/CDN externos) servida pelo SW quando offline + sem cache |
+| `store/src/components/sw-register.tsx` | Só registra o SW em produção; em dev desregistra qualquer instalação anterior |
+
+**🔴 Regra crítica do SW:** `IS_DEV_HOST` em `sw.js` detecta localhost/IP de LAN e faz o próprio SW se autodesregistrar + limpar caches no `activate`. Sem isso, um SW cache-first fica preso servindo JS antigo contra HTML novo do SSR em dev (hydration mismatch que "nunca se resolve sozinho" mesmo depois de corrigir o código — o JS que corrigiria o problema também fica preso no cache). Nunca remover essa checagem.
 
 ## Camada de Segurança — arquivos chave
 
@@ -152,6 +164,9 @@ transition={{ type: 'spring', stiffness: 500, damping: 22 }}
 ### 9. Toda nova rota/action/upload exige checklist de segurança
 Ao criar qualquer nova funcionalidade verificar: (1) autenticação? (2) rate limit? (3) validação Zod no boundary? (4) IDOR — filtra por userId? (5) erros genéricos para o cliente? (6) upload valida magic bytes? E atualizar CLAUDE.md + agents/ com o que mudou.
 
+### 10. Toda tela nova/revisão de mobile usa a skill `pwa-mobile-first-audit`
+Skill pessoal (`~/.claude/skills/pwa-mobile-first-audit`) com os bugs recorrentes já encontrados neste projeto (seletor CSS por tag que não bate em `<button>`, fixed empilhado sem offset, breakpoints desalinhados, KPI placeholder nunca ligado a query real, CSS morto). Ao revisar responsividade, cobrir **todas** as rotas de `apps/store/src/app/**/page.tsx`, não só as mais visitadas — bug de dado-placeholder e CSS morto se escondem justamente nas telas menos testadas.
+
 ## Estrutura de imports
 
 - `apps/store` → `@galvao/db` (schema + client) e `@galvao/ui` (componentes)
@@ -201,12 +216,16 @@ const STATUS_TRACKER: Record<string, number> = {
 **Breakpoints:**
 - `≤768px` — mobile (tabbar fixa, hero mobile, search collapsível, tables→cards)
 - `769px+` — desktop (sidebar fixa, hero desktop, search inline, tables)
+- **Importante:** `.mobile-tabbar` e `nav.brands` (desktop) são mutuamente exclusivas e TÊM que trocar no mesmo breakpoint (768px) — já aconteceu de ficarem dessincronizadas (768 vs 1024) e as duas navs apareceram juntas entre 769-1024px. Se mexer num dos dois, confirma o outro.
 
 **Fundações globais (globals.css):**
 - `touch-action: manipulation` em todos os interativos (elimina 300ms tap delay iOS)
 - `font-size: 16px` em todos os inputs (previne zoom automático iOS)
 - `min-height: 100dvh` (considera barra de endereço Safari)
 - `padding-bottom: max(80px, safe-area + 72px)` no main (não sobrepõe tabbar)
+- `.mobile-tabbar` tem fundo **sólido** (`var(--bg-elev)`), não vidro/glass — já teve `backdrop-filter` translúcido e vazava cor dos glows ambiente + fotos de produto atrás
+- Elementos `position:fixed` no rodapé (tabbar, `.pdp-mobile-cta`, `.wa-fab`) empilham por `bottom: calc(<altura do que está abaixo> + safe-area)`, nunca todos em `bottom:0` — senão o de maior z-index cobre o outro
+- `.wa-fab`/`.cart-badge` são compartilhados entre header e demais componentes (não duplicar estilo por contexto)
 
 **Admin mobile:**
 - `AdminSidebar` usa `useState` + `position: fixed; transform: translateX(-100%)` → slide-in
