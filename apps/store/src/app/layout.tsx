@@ -34,10 +34,6 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Galvão's Store",
   },
-  icons: {
-    icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
-    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
-  },
   title: {
     default: "Galvão's Store — Chuteiras de Alta Performance",
     template: "%s — Galvão's Store",
