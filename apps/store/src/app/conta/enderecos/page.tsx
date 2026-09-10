@@ -83,7 +83,7 @@ export default function EnderecosPage() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {addresses.map(addr => (
-          <div key={addr.id} style={{ background: 'var(--bg-elev)', border: `1.5px solid ${addr.is_default ? 'var(--brand-orange)' : 'var(--border)'}`, borderRadius: 14, padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+          <div key={addr.id} className="addr-card" style={{ background: 'var(--bg-elev)', border: `1.5px solid ${addr.is_default ? 'var(--brand-orange)' : 'var(--border)'}`, borderRadius: 14, padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <span style={{ fontFamily: 'var(--font-ui)', fontWeight: 700, fontSize: 14 }}>{addr.label}</span>
@@ -116,7 +116,7 @@ export default function EnderecosPage() {
           <p style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 900, marginBottom: 20 }}>NOVO ENDEREÇO</p>
           {error && <p style={{ fontFamily: 'var(--font-ui)', fontSize: 13, color: '#EF4444', padding: '10px 14px', background: 'rgba(239,68,68,.08)', borderRadius: 8, marginBottom: 16 }}>{error}</p>}
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="addr-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
               <label style={lbl}>Rótulo</label>
               <select style={inp} value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value }))}>

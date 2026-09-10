@@ -70,12 +70,16 @@ export function FilterSortBar({
           </div>
         )}
 
-        {/* Sort + resultado */}
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '10px 0', flexWrap: 'wrap' }}>
-          <span style={{ fontFamily: 'var(--font-ui)', fontSize: 13, color: 'var(--fg-muted)', marginRight: 'auto' }}>
+        {/* Resultado */}
+        <div style={{ padding: '10px 0 0' }}>
+          <span style={{ fontFamily: 'var(--font-ui)', fontSize: 13, color: 'var(--fg-muted)' }}>
             {total} {total === 1 ? 'produto' : 'produtos'}
           </span>
-          <span style={{ fontFamily: 'var(--font-ui)', fontSize: 12, color: 'var(--fg-muted)', fontWeight: 600 }}>
+        </div>
+
+        {/* Sort — scroll horizontal no mobile em vez de quebrar linha */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '10px 0', overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+          <span style={{ fontFamily: 'var(--font-ui)', fontSize: 12, color: 'var(--fg-muted)', fontWeight: 600, flexShrink: 0 }}>
             Ordenar:
           </span>
           {SORT_OPTIONS.map(opt => (
@@ -89,10 +93,10 @@ export function FilterSortBar({
           ))}
         </div>
 
-        {/* Filtro de tamanho */}
+        {/* Filtro de tamanho — scroll horizontal no mobile em vez de quebrar linha */}
         {availableSizes.length > 0 && (
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', paddingBottom: 12, flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: 'var(--font-ui)', fontSize: 12, color: 'var(--fg-muted)', fontWeight: 600, marginRight: 2 }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', paddingBottom: 12, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+            <span style={{ fontFamily: 'var(--font-ui)', fontSize: 12, color: 'var(--fg-muted)', fontWeight: 600, marginRight: 2, flexShrink: 0 }}>
               Tamanho:
             </span>
             {availableSizes.map(s => (
@@ -107,7 +111,7 @@ export function FilterSortBar({
             {hasFilters && (
               <button
                 onClick={clearAll}
-                style={{ marginLeft: 4, padding: '4px 10px', borderRadius: 6, fontSize: 11, fontFamily: 'var(--font-ui)', fontWeight: 600, cursor: 'pointer', border: '1px solid var(--border-strong)', background: 'transparent', color: 'var(--fg-muted)' }}
+                style={{ marginLeft: 4, flexShrink: 0, padding: '4px 10px', borderRadius: 6, fontSize: 11, fontFamily: 'var(--font-ui)', fontWeight: 600, cursor: 'pointer', border: '1px solid var(--border-strong)', background: 'transparent', color: 'var(--fg-muted)' }}
               >
                 ✕ Limpar
               </button>

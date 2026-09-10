@@ -1,70 +1,112 @@
-import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
-import { db } from '@/lib/db'
-import { sql } from 'drizzle-orm'
-import { queryProducts, queryAvailableSizes, type CatalogFilters } from '@/lib/catalog-query'
-import { ProductCard } from '@/components/catalog/product-card'
-import { FilterSortBar } from '@/components/catalog/filter-sort-bar'
+import { FilterSortBar } from "@/components/catalog/filter-sort-bar";
+import { ProductCard } from "@/components/catalog/product-card";
+import {
+  queryAvailableSizes,
+  queryProducts,
+  type CatalogFilters,
+} from "@/lib/catalog-query";
+import { db } from "@/lib/db";
+import { sql } from "drizzle-orm";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 
-export const revalidate = 300
+export const revalidate = 300;
 
 interface CategoryRow {
-  id: string; slug: string; name: string; surface_type: string | null
+  id: string;
+  slug: string;
+  name: string;
+  surface_type: string | null;
 }
 
-type SearchParams = Promise<{ tamanho?: string; sort?: string }>
+type SearchParams = Promise<{ tamanho?: string; sort?: string }>;
 
 export async function generateStaticParams() {
-  const rows = await db.all<{ slug: string }>(sql`SELECT slug FROM categories`)
-  return rows.map(c => ({ slug: c.slug }))
+  const rows = await db.all<{ slug: string }>(sql`SELECT slug FROM categories`);
+  return rows.map((c) => ({ slug: c.slug }));
 }
 
-export async function generateMetadata(
-  { params }: { params: Promise<{ slug: string }> }
-): Promise<Metadata> {
-  const { slug } = await params
-  const [cat] = await db.all<CategoryRow>(sql`SELECT * FROM categories WHERE slug = ${slug}`)
-  if (!cat) return {}
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const [cat] = await db.all<CategoryRow>(
+    sql`SELECT * FROM categories WHERE slug = ${slug}`,
+  );
+  if (!cat) return {};
   return {
     title: `${cat.name} — Galvão's Store`,
     description: `Melhores ${cat.name.toLowerCase()} Nike, Adidas, Puma na Galvão's Store. Frete grátis acima de R$ 399.`,
-  }
+  };
 }
 
 export default async function CategoriaPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ slug: string }>
-  searchParams: SearchParams
+  params: Promise<{ slug: string }>;
+  searchParams: SearchParams;
 }) {
-  const { slug } = await params
-  const { tamanho = '', sort = 'relevancia' } = await searchParams
+  const { slug } = await params;
+  const { tamanho = "", sort = "relevancia" } = await searchParams;
 
-  const [cat] = await db.all<CategoryRow>(sql`SELECT * FROM categories WHERE slug = ${slug}`)
-  if (!cat) notFound()
+  const [cat] = await db.all<CategoryRow>(
+    sql`SELECT * FROM categories WHERE slug = ${slug}`,
+  );
+  if (!cat) notFound();
 
   const filters: CatalogFilters = {
     categoryId: cat.id,
-    size:       tamanho || undefined,
+    size: tamanho || undefined,
     sort,
-  }
+  };
 
   const [products, sizes] = await Promise.all([
     queryProducts(filters),
     queryAvailableSizes({ categoryId: cat.id }),
-  ])
+  ]);
 
   return (
     <>
-      <div style={{ background:'linear-gradient(135deg,#0B0E12,#1F252E)', color:'#fff', padding:'48px 0 40px' }}>
+      {/* Header Mobile compacto */}
+      <div className="lhead-m">
+        <div className="crumb">CATEGORIA</div>
+        <h1>{cat.name.toUpperCase()}<span className="o">.</span></h1>
+        <div className="sub">{products.length} {products.length === 1 ? "modelo" : "modelos"}</div>
+      </div>
+
+      <div
+        style={{
+          background: "linear-gradient(135deg,#0B0E12,#1F252E)",
+          color: "#fff",
+          padding: "48px 0 40px",
+        }}
+      >
         <div className="container">
           {cat.surface_type && (
-            <div style={{ fontFamily:'var(--font-mono)', fontSize:11, letterSpacing:'.28em', color:'var(--brand-teal)', marginBottom:12, fontWeight:700 }}>
+            <div
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                letterSpacing: ".28em",
+                color: "var(--brand-teal)",
+                marginBottom: 12,
+                fontWeight: 700,
+              }}
+            >
               {cat.surface_type}
             </div>
           )}
-          <h1 style={{ fontFamily:'var(--font-stencil)', fontSize:'clamp(56px,8vw,108px)', lineHeight:.9, margin:0 }}>
+          <h1
+            style={{
+              fontFamily: "var(--font-stencil)",
+              fontSize: "clamp(56px,8vw,108px)",
+              lineHeight: 0.9,
+              margin: 0,
+            }}
+          >
             {cat.name.toUpperCase()}
           </h1>
         </div>
@@ -77,17 +119,25 @@ export default async function CategoriaPage({
         currentSort={sort}
       />
 
-      <div className="container" style={{ paddingTop:40, paddingBottom:96 }}>
+      <div className="container" style={{ paddingTop: 40, paddingBottom: 96 }}>
         {products.length === 0 ? (
-          <div style={{ textAlign:'center', padding:'80px 0', color:'var(--fg-muted)' }}>
+          <div
+            style={{
+              textAlign: "center",
+              padding: "80px 0",
+              color: "var(--fg-muted)",
+            }}
+          >
             <p>Nenhum produto nesta categoria ainda.</p>
           </div>
         ) : (
           <div className="grid-products" data-density="4">
-            {products.map(p => <ProductCard key={p.id} p={p} />)}
+            {products.map((p) => (
+              <ProductCard key={p.id} p={p} />
+            ))}
           </div>
         )}
       </div>
     </>
-  )
+  );
 }

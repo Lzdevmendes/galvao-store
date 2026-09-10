@@ -41,7 +41,7 @@ export function ReviewForm({ orderId, items }: { orderId: string; items: Item[] 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       {items.map(item => (
-        <div key={item.product_id} className="rounded-xl border border-border bg-card p-5">
+        <div key={item.product_id} className="rounded-xl p-5" style={{ border: '1px solid var(--border)', background: 'var(--bg-elev)' }}>
           <div className="mb-3 flex items-center gap-3">
             {item.image_url && (
               <img src={item.image_url} alt={item.product_name}
@@ -49,7 +49,7 @@ export function ReviewForm({ orderId, items }: { orderId: string; items: Item[] 
             )}
             <div>
               <p className="font-semibold">{item.product_name}</p>
-              <p className="text-sm text-muted-foreground">{item.brand_name}</p>
+              <p className="text-sm" style={{ color: 'var(--fg-muted)' }}>{item.brand_name}</p>
             </div>
           </div>
           <Stars
@@ -61,13 +61,14 @@ export function ReviewForm({ orderId, items }: { orderId: string; items: Item[] 
             onChange={e => setBodies(p => ({ ...p, [item.product_id]: e.target.value }))}
             placeholder="Conte como foi sua experiência... (opcional)"
             rows={3}
-            className="mt-3 w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand-orange"
+            className="mt-3 w-full resize-none rounded-lg px-3 py-2 text-sm outline-none"
+            style={{ border: '1px solid var(--border)', background: 'var(--bg)' }}
           />
         </div>
       ))}
 
       <button type="submit" disabled={pending || items.some(i => !ratings[i.product_id])}
-        className="rounded-xl bg-brand-orange py-3 font-bold text-white disabled:opacity-50">
+        className="rounded-xl py-3 font-bold text-white disabled:opacity-50" style={{ background: 'var(--brand-orange)' }}>
         {pending ? 'Enviando...' : 'Enviar avaliações'}
       </button>
     </form>

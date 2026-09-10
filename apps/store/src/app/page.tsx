@@ -122,7 +122,7 @@ export default async function HomePage() {
           <div className="pre">PRONTA ENTREGA · 2026</div>
           <h1>JOGO<br /><span className="t">RÁPIDO.</span></h1>
           <p style={{ maxWidth:180 }}>Phantom GX III, F50 Elite e Future 8. Já tão aqui.</p>
-          <Link href="/produtos" className="btn">Comprar →</Link>
+          <Link href="/produtos" className="btn btn-primary">Comprar →</Link>
           {heroProduct && (
             <div className="mhero-photo">
               <Image src={heroProduct.image_url} alt={heroProduct.image_alt} width={200} height={200} priority />

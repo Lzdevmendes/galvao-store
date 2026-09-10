@@ -16,7 +16,7 @@ export function WhatsAppButton() {
   const href = `https://wa.me/${WA_PHONE}?text=${encodeURIComponent(WA_MESSAGE)}`
 
   return (
-    <div style={{ position: 'fixed', bottom: 88, right: 20, zIndex: 500 }}>
+    <div className="wa-fab" style={{ position: 'fixed', zIndex: 500 }}>
       <AnimatePresence>
         {showTooltip && (
           <motion.div
@@ -59,11 +59,15 @@ export function WhatsAppButton() {
         transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 2 }}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: .92 }}
+        className="wa-fab-btn"
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 52, height: 52, borderRadius: '50%',
+          borderRadius: '50%',
           background: '#25D366',
-          boxShadow: '0 4px 20px rgba(37,211,102,.4)',
+          // Anel na cor do fundo da página — separa visualmente o botão de
+          // qualquer conteúdo que role por trás dele (cards, ícones, etc.),
+          // já que um FAB fixo sempre vai ficar "em cima" de algo ao rolar.
+          boxShadow: '0 0 0 4px var(--bg), 0 4px 20px rgba(37,211,102,.4)',
           textDecoration: 'none',
         }}
       >

@@ -1,4 +1,5 @@
 'use client'
+import { useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -13,6 +14,14 @@ export function CartDrawer() {
   const remaining = FREE_SHIPPING_THRESHOLD - subtotal
   const freeShipping = remaining <= 0
   const progress = Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100)
+
+  useEffect(() => {
+    if (isOpen) {
+      const prev = document.body.style.overflow
+      document.body.style.overflow = 'hidden'
+      return () => { document.body.style.overflow = prev }
+    }
+  }, [isOpen])
 
   return (
     <>
@@ -88,7 +97,7 @@ export function CartDrawer() {
 
         {/* Footer */}
         {items.length > 0 && (
-          <div style={{ padding:'20px 24px', borderTop:'1px solid var(--border)', display:'flex', flexDirection:'column', gap:12 }}>
+          <div style={{ padding:'20px 24px max(20px, env(safe-area-inset-bottom))', borderTop:'1px solid var(--border)', display:'flex', flexDirection:'column', gap:12 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
               <span style={{ fontFamily:'var(--font-ui)', fontSize:13, color:'var(--fg-muted)' }}>Subtotal</span>
               <span style={{ fontFamily:'var(--font-stencil)', fontSize:28, color:'var(--brand-green)' }}>{fmt(subtotal)}</span>

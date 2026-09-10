@@ -53,7 +53,17 @@ export function BuscaClient({
   const setTam    = (v?: string) => navigate({ marca: currentMarca, categoria: currentCategoria, tamanho: v, sort: currentSort })
 
   return (
-    <div className="container" style={{ paddingTop: 48, paddingBottom: 96 }}>
+    <>
+      {/* Header Mobile compacto */}
+      <div className="lhead-m">
+        <div className="crumb">Busca</div>
+        <h1>{q ? `"${q}"` : 'BUSCA'}<span className="o">.</span></h1>
+        {q && (
+          <div className="sub">{pending ? 'Buscando...' : total > 0 ? `${total} ${total > 1 ? 'resultados' : 'resultado'}` : 'Nenhum resultado'}</div>
+        )}
+      </div>
+
+      <div className="container" style={{ paddingTop: 48, paddingBottom: 96 }}>
 
       {/* ── Header ── */}
       <motion.div
@@ -192,6 +202,7 @@ export function BuscaClient({
           </p>
         </motion.div>
       )}
-    </div>
+      </div>
+    </>
   )
 }

@@ -21,7 +21,15 @@ export default async function OfertasPage() {
   `)
 
   return (
-    <div className="container page-pad" style={{ paddingTop: 40, paddingBottom: 96 }}>
+    <>
+      {/* Header Mobile compacto */}
+      <div className="lhead-m">
+        <div className="crumb">Promoções</div>
+        <h1>OFERTAS<span className="o">.</span></h1>
+        <div className="sub">{products.length} {products.length === 1 ? 'produto' : 'produtos'} em promoção</div>
+      </div>
+
+      <div className="container page-pad" style={{ paddingTop: 40, paddingBottom: 96 }}>
       <div style={{ marginBottom: 36 }}>
         <div style={{ fontFamily: 'var(--font-ui)', fontSize: 11, letterSpacing: '.2em', textTransform: 'uppercase', color: 'var(--brand-orange)', marginBottom: 8, fontWeight: 700 }}>
           Promoções
@@ -47,6 +55,7 @@ export default async function OfertasPage() {
           {products.map(p => <ProductCard key={p.id} p={p} />)}
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }

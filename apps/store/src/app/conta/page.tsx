@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { db } from '@/lib/db'
+import { sql } from 'drizzle-orm'
 import { LogoutButton } from './logout-button'
 
 export default async function ContaPage() {
@@ -11,6 +13,21 @@ export default async function ContaPage() {
 
   const name  = user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'Cliente'
   const email = user.email ?? ''
+
+  const [[orderStats], [{ favoritos: favoritosCount }], [{ cupons: cuponsCount }]] = await Promise.all([
+    db.all<{ pedidos: number; em_rota: number }>(sql`
+      SELECT COUNT(*) AS pedidos, SUM(CASE WHEN status = 'shipped' THEN 1 ELSE 0 END) AS em_rota
+      FROM orders WHERE user_id = ${user.id} OR customer_email = ${email}
+    `),
+    db.all<{ favoritos: number }>(sql`
+      SELECT COUNT(*) AS favoritos FROM wishlists WHERE user_id = ${user.id}
+    `),
+    db.all<{ cupons: number }>(sql`
+      SELECT COUNT(*) AS cupons FROM coupons
+      WHERE active = 1 AND (expires_at IS NULL OR expires_at > datetime('now'))
+        AND (max_uses IS NULL OR used_count < max_uses)
+    `),
+  ])
 
   const menuItems = [
     { href:'/conta/pedidos',   icon:<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/></svg>, label:'Meus pedidos',   desc:'Histórico e rastreio' },
@@ -44,13 +61,13 @@ export default async function ContaPage() {
             <div style={{ fontFamily:'var(--font-mono)', fontSize:11, color:'rgba(255,255,255,.5)', marginTop:2 }}>{email}</div>
           </div>
         </div>
-        {/* KPI grid — 4 colunas */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, position:'relative', zIndex:1 }}>
+        {/* KPI grid — 4 colunas (responsivo via .acc-kpi-row no globals.css) */}
+        <div className="acc-kpi-row" style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, position:'relative', zIndex:1 }}>
           {[
-            { v:'—', l:'Pedidos' },
-            { v:'—', l:'Em rota', color:'var(--brand-orange)' },
-            { v:'—', l:'Favoritos' },
-            { v:'—', l:'Cupons' },
+            { v: String(orderStats?.pedidos ?? 0), l:'Pedidos' },
+            { v: String(orderStats?.em_rota ?? 0), l:'Em rota', color:'var(--brand-orange)' },
+            { v: String(favoritosCount ?? 0), l:'Favoritos' },
+            { v: String(cuponsCount ?? 0), l:'Cupons' },
           ].map(({ v, l, color }) => (
             <div key={l} style={{ background:'rgba(255,255,255,.07)', borderRadius:8, padding:'8px 6px', textAlign:'center' }}>
               <div style={{ fontFamily:'var(--font-display)', fontSize:20, color: color ?? '#fff' }}>{v}</div>
@@ -76,11 +93,11 @@ export default async function ContaPage() {
         </div>
       </div>
 
-      {/* Menu */}
+      {/* Menu — responsivo via .acc-menu-grid/.acc-menu-item no globals.css */}
       <div className="container" style={{ paddingTop:0, paddingBottom:24 }}>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:16 }}>
+        <div className="acc-menu-grid" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:16 }}>
           {menuItems.map(item => (
-            <Link key={item.href} href={item.href} style={{ background:'var(--bg-elev)', border:'1px solid var(--border)', borderRadius:14, padding:'24px', display:'flex', gap:16, alignItems:'flex-start', textDecoration:'none' }}>
+            <Link key={item.href} href={item.href} className="acc-menu-item" style={{ background:'var(--bg-elev)', border:'1px solid var(--border)', borderRadius:14, padding:'24px', display:'flex', gap:16, alignItems:'flex-start', textDecoration:'none' }}>
               <span style={{ color:'var(--brand-orange)', flexShrink:0, marginTop:2 }}>{item.icon}</span>
               <div>
                 <div style={{ fontFamily:'var(--font-ui)', fontWeight:700, fontSize:15, color:'var(--fg)', marginBottom:4 }}>{item.label}</div>

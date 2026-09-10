@@ -226,7 +226,9 @@ header.site .icon-btn svg { width: 22px; height: 22px; }
 header.site .icon-btn.cart-btn { background: var(--brand-orange); color: #fff; border-radius: var(--r-md); position: relative; }
 header.site .icon-btn.cart-btn:hover { background: var(--brand-orange-600); }
 header.site .icon-btn.cart-btn .small { color: rgba(255,255,255,.8); }
-header.site .cart-badge { position: absolute; top: -5px; right: -5px; background: #0B0E12; color: #fff; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid var(--brand-orange); min-height: auto; }
+/* Contador de itens do carrinho — compartilhado entre header e tabbar,
+   para não haver dois estilos de badge diferentes na mesma UI. */
+.cart-badge { position: absolute; top: -5px; right: -5px; background: #0B0E12; color: #fff; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid var(--brand-orange); min-height: auto; }
 
 /* Botão de lupa no mobile (search-toggle): só visível em mobile */
 header.site .search-toggle { display: none; }
@@ -413,6 +415,7 @@ nav.brands a.offer { color: var(--brand-orange); }
 .brand-banner.adidas { background: linear-gradient(135deg,#1F252E,#0B0E12); }
 .brand-banner.puma   { background: linear-gradient(135deg,#14181F,#2A323D); }
 .brand-banner.umbro  { background: linear-gradient(135deg,#003366,#14181F); }
+.brand-banner.new-balance { background: linear-gradient(135deg,#CC0000,#0B0E12); }
 
 /* ── Category tiles ── */
 .cat-row { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; }
@@ -448,11 +451,30 @@ footer.site ul li a { display: block; padding: 4px 0; font-size: 13px; color: va
 footer.site ul li a:hover { color: #fff; }
 footer.site .legal { padding-top: 24px; display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 11px; color: var(--ink-500); }
 
-/* ── Mobile tabbar ── */
-.mobile-tabbar { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; background: var(--glass-sheen), var(--glass-bg-strong); -webkit-backdrop-filter: var(--glass-filter-lg); backdrop-filter: var(--glass-filter-lg); border-top: 1px solid var(--glass-hairline); grid-template-columns: repeat(5,1fr); padding: 6px 0 max(6px,env(safe-area-inset-bottom)); box-shadow: 0 -8px 32px rgba(11,14,18,.10); }
+/* ── Mobile tabbar ──
+   Fundo sólido (não vidro): a tabbar fica sobre fotos de produto + glows
+   ambiente a rolar por trás, e qualquer backdrop-filter translúcido
+   refractava essas cores num borrão multicolor inconsistente com o resto
+   do site. Sólido = mesma legibilidade em qualquer conteúdo por trás. */
+.mobile-tabbar { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; background: var(--bg-elev); border-top: 1px solid var(--border); grid-template-columns: repeat(5,1fr); padding: 6px 0 max(6px,env(safe-area-inset-bottom)); box-shadow: 0 -8px 32px rgba(11,14,18,.10); }
 .mobile-tabbar a { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; color: var(--fg-muted); padding: 4px 0; font-family: var(--font-ui); font-weight: 500; text-decoration: none; transition: color .15s; }
 .mobile-tabbar a svg { width: 22px; height: 22px; }
 .mobile-tabbar a.active { color: var(--brand-orange); font-weight: 700; }
+
+/* ── Botão flutuante do WhatsApp ──
+   Desktop: canto inferior direito sem tabbar por perto.
+   Mobile: folga acima da tabbar fixa (safe-area incluída) E do lado
+   ESQUERDO — o coração de favoritar de cada ProductCard fica no canto
+   superior direito (.top-tags), e a grade mobile é 2 colunas, então
+   qualquer FAB no canto direito acaba sempre em cima do coração de
+   algum card ao rolar a página. À esquerda não há ícone flutuante de
+   card nenhum. */
+.wa-fab { bottom: 32px; right: 20px; }
+.wa-fab-btn { width: 52px; height: 52px; }
+@media (max-width: 768px) {
+  .wa-fab { bottom: calc(64px + env(safe-area-inset-bottom) + 16px); right: auto; left: 16px; }
+  .wa-fab-btn { width: 46px; height: 46px; }
+}
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -480,9 +502,6 @@ footer.site .legal { padding-top: 24px; display: flex; justify-content: space-be
   .hero .photo { position: absolute; right: -40px; top: 50%; transform: translateY(-60%) rotate(-15deg); width: 200px; padding: 0; background: transparent; aspect-ratio: auto; }
   .hero .price-tag { display: none; }
   .cta-banner  { grid-template-columns: 1fr; }
-  .mobile-tabbar { display: grid; }
-  /* Padding bottom = altura tabbar (72px) + safe area iOS */
-  main { padding-bottom: max(80px, calc(72px + env(safe-area-inset-bottom))); }
   /* Touch targets mínimos 44px em todos os botões/links do mobile */
   button, a, [role="button"] { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
   /* Exceções: links de texto inline e breadcrumbs */
@@ -521,7 +540,6 @@ footer.site .legal { padding-top: 24px; display: flex; justify-content: space-be
   .cat-row { grid-template-columns: repeat(2,1fr); }
   .section-head .left h2 { font-size: 36px; }
   .hero h1 { font-size: 64px; }
-  .foot-grid { grid-template-columns: 1fr 1fr !important; }
   header.site .search { display: none; }
   header.site .actions .icon-btn:not(.cart-btn) span.small { display: none; }
   header.site .actions .icon-btn:not(.cart-btn) { padding: 8px; }
@@ -538,8 +556,6 @@ footer.site .legal { padding-top: 24px; display: flex; justify-content: space-be
   .rg-stats-5  { grid-template-columns: repeat(2,1fr); gap: 8px; }
   /* Product card grid */
   .grid-products { gap: 10px; }
-  /* Footer simplificado */
-  .foot-grid { gap: 24px !important; }
 }
 
 /* ── Microinterações globais ── */
@@ -614,19 +630,12 @@ footer.site .legal { padding-top: 24px; display: flex; justify-content: space-be
 [data-animate][data-delay="3"] { transition-delay: .3s; }
 [data-animate][data-delay="4"] { transition-delay: .4s; }
 
-/* ── Trust bar items: stagger ────────────────────────────────────── */
-.trust .item {
-  opacity: 0;
-  transform: translateY(16px);
-  transition: opacity .4s ease, transform .4s ease;
-}
-.trust .item.in-view {
-  opacity: 1;
-  transform: translateY(0);
-}
-.trust .item:nth-child(2) { transition-delay: .08s; }
-.trust .item:nth-child(3) { transition-delay: .16s; }
-.trust .item:nth-child(4) { transition-delay: .24s; }
+/* ── Trust bar items ──────────────────────────────────────────────
+   Nota: a trust bar fica acima da dobra no carregamento, por isso
+   não usa scroll-reveal (evita ficar invisível quando o IntersectionObserver
+   não a alcança a tempo — ela não tem [data-animate], então nunca recebia
+   a classe .in-view e ficava permanentemente com opacity:0). */
+.trust .item { opacity: 1; transform: none; }
 
 /* ── Cart item add: desliza da direita ──────────────────────────── */
 @keyframes cartItemIn {
@@ -718,14 +727,9 @@ html { scroll-behavior: smooth; }
   /* Account mobile — mostrar header escuro */
   .acc-mobile-head { display: block; }
   .acc-desktop-head { display: none; }
-
-  /* Cart mobile — padding bottom para nav */
-  .cart-page { padding-bottom: 80px; }
-
-  /* Checkout mobile */
-  .chk-grid { grid-template-columns: 1fr !important; }
-  .chk-summary-col { display: none; }
-  .chk-steps-bar { display: flex; }
+  .acc-kpi-row { gap: 6px !important; }
+  .acc-menu-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+  .acc-menu-item { padding: 18px !important; }
 
   /* ── PDP: padding-bottom para CTA fixo ─── */
   .rg-pdp + * { padding-bottom: 80px; }
@@ -739,9 +743,6 @@ html { scroll-behavior: smooth; }
   .trust .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .trust .item { flex-direction: column; text-align: center; gap: 8px; }
 
-  /* ── Conta: menu grid 1-col ────────────── */
-  .conta-menu { grid-template-columns: 1fr !important; }
-
   /* ── Pedidos mobile: cards ─────────────── */
   .order-card { padding: 14px 16px !important; }
   .order-card .order-header { gap: 8px !important; }
@@ -749,6 +750,8 @@ html { scroll-behavior: smooth; }
 
   /* ── Endereços mobile ──────────────────── */
   .addr-grid { grid-template-columns: 1fr !important; }
+  .addr-card { flex-direction: column; align-items: stretch !important; }
+  .addr-card > div:last-child { flex-wrap: wrap; }
 
   /* ── Inputs mobile — 44px altura mínima ─ */
   input[type="text"], input[type="email"], input[type="tel"], input[type="password"],
@@ -759,6 +762,9 @@ html { scroll-behavior: smooth; }
 
   /* ── Header: nav brands scroll compacto ─ */
   nav.brands { display: none; } /* brand nav some no mobile — tabbar cobre */
+  .mobile-tabbar { display: grid; }
+  /* Padding bottom = altura tabbar (72px) + safe area iOS */
+  main { padding-bottom: max(80px, calc(72px + env(safe-area-inset-bottom))); }
 
   /* ── Promo bar mobile ──────────────────── */
   .promo-bar { font-size: 11px; padding: 6px 8px; }
@@ -769,7 +775,6 @@ html { scroll-behavior: smooth; }
   .mhero-wrap { display: none; }
   .mcats { display: none; }
   .acc-mobile-head { display: none; }
-  .chk-steps-bar { display: none; }
 }
 
 /* ── PDP: dots no mobile ────────────────────────────────────── */
@@ -788,28 +793,6 @@ html { scroll-behavior: smooth; }
   .lhead-m h1 { font-family: var(--font-stencil); font-size: 40px; line-height: .95; margin: 0; }
   .lhead-m .sub { font-size: 11px; color: var(--fg-muted); margin-top: 6px; }
 }
-
-/* ── Filter chips (ltools) mobile ──────────────────────────── */
-.ltools { display: none; }
-@media (max-width: 768px) {
-  .ltools { display: flex; gap: 6px; padding: 10px 12px; background: var(--bg-elev); border-bottom: 1px solid var(--border); overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-  .ltools::-webkit-scrollbar { display: none; }
-  .ltools .chip { flex-shrink: 0; padding: 6px 12px; background: var(--bg-sunk); border-radius: 99px; font-size: 11px; font-weight: 600; display: flex; gap: 4px; align-items: center; white-space: nowrap; color: var(--fg); }
-  .ltools .chip.active { background: var(--ink-950); color: #fff; }
-  [data-theme="dark"] .ltools .chip.active { background: #fff; color: var(--ink-950); }
-}
-
-/* ── Cart items mobile ──────────────────────────────────────── */
-@media (max-width: 768px) {
-  .cart-item-row { grid-template-columns: 56px 1fr auto !important; gap: 10px !important; }
-  .cart-pix-banner { display: flex; gap: 8px; align-items: center; padding: 10px; background: rgba(31,181,168,.12); border-radius: 8px; color: var(--brand-teal,#1FB5A8); font-size: 11px; font-weight: 600; margin: 12px 0; }
-}
-
-/* ── Checkout steps bar ─────────────────────────────────────── */
-.chk-steps-bar { padding: 12px 16px; background: var(--bg-elev); border-bottom: 1px solid var(--border); gap: 4px; overflow: hidden; }
-.chk-steps-bar .stp { flex: 1; text-align: center; font-family: var(--font-ui); font-size: 9px; font-weight: 700; letter-spacing: .04em; color: var(--fg-muted); padding-bottom: 8px; border-bottom: 2px solid var(--border); }
-.chk-steps-bar .stp.done { color: var(--brand-green); border-color: var(--brand-green); }
-.chk-steps-bar .stp.active { color: var(--brand-orange); border-color: var(--brand-orange); }
 
 /* ════════════════════════════════════════════════════════════════
    DESIGN SYSTEM — novos componentes do handoff visual
@@ -877,7 +860,14 @@ html { scroll-behavior: smooth; }
 .brandlines a.active { background: var(--ink-950); color: #fff; }
 [data-theme="dark"] .brandlines a.active { background: #fff; color: var(--ink-950); }
 
-/* ── Mobile hero — foto do produto rotacionada ──────────────────── */
+/* ── Mobile hero — card escuro compacto + foto do produto rotacionada ── */
+.mhero { background: linear-gradient(135deg,#0B0E12 0%,#1F252E 100%); color: #fff; padding: 28px 20px 32px; }
+.mhero::after { content: ""; position: absolute; right: -15%; top: -30%; width: 75%; height: 170%; background: radial-gradient(ellipse,rgba(242,107,31,.35) 0%,transparent 60%); pointer-events: none; }
+.mhero .pre { font-family: var(--font-ui); font-size: 10px; letter-spacing: .28em; text-transform: uppercase; color: var(--brand-orange); margin-bottom: 10px; font-weight: 700; position: relative; z-index: 1; }
+.mhero h1 { font-family: var(--font-stencil); font-size: clamp(38px,11vw,52px); line-height: .92; margin: 0 0 10px; max-width: 62%; position: relative; z-index: 1; }
+.mhero h1 .t { color: var(--brand-teal); }
+.mhero p { color: var(--ink-300); line-height: 1.5; margin: 0 0 18px; position: relative; z-index: 1; }
+.mhero .btn { position: relative; z-index: 1; }
 .mhero-photo { position: absolute; right: -30px; top: 50%; transform: translateY(-50%) rotate(-15deg); width: 180px; z-index: 0; opacity: .95; pointer-events: none; }
 .mhero-photo img { width: 100%; filter: drop-shadow(0 12px 24px rgba(0,0,0,.5)); }
 
@@ -891,7 +881,7 @@ html { scroll-behavior: smooth; }
 /* ── PDP mobile — CTA bar fixa ──────────────────────────────────── */
 .pdp-mobile-cta { display: none; }
 @media (max-width: 768px) {
-  .pdp-mobile-cta { display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 90; background: var(--bg-elev); border-top: 1px solid var(--border); padding: 12px 16px max(12px,env(safe-area-inset-bottom)); gap: 10px; align-items: center; box-shadow: 0 -4px 20px rgba(0,0,0,.1); }
+  .pdp-mobile-cta { display: flex; position: fixed; bottom: calc(64px + env(safe-area-inset-bottom)); left: 0; right: 0; z-index: 90; background: var(--bg-elev); border-top: 1px solid var(--border); padding: 12px 16px; gap: 10px; align-items: center; box-shadow: 0 -4px 20px rgba(0,0,0,.1); }
   .pdp-mobile-cta .wish { flex-shrink: 0; width: 48px; height: 48px; border-radius: var(--r-md); border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; background: transparent; color: var(--fg); cursor: pointer; }
   .pdp-mobile-cta .buy { flex: 1; height: 48px; border-radius: var(--r-md); background: var(--brand-orange); color: #fff; font-family: var(--font-ui); font-weight: 700; font-size: 15px; border: none; cursor: pointer; }
 }

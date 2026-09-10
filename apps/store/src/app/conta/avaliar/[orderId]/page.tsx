@@ -34,8 +34,8 @@ export default async function AvaliarPage({ params }: { params: Promise<{ orderI
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="mb-2 font-bebas text-3xl tracking-wide">Avaliar pedido</h1>
-      <p className="mb-8 text-sm text-muted-foreground">Pedido {order.order_number} · Sua avaliação ajuda outros clientes</p>
+      <h1 className="mb-2 text-3xl tracking-wide" style={{ fontFamily: 'var(--font-stencil)' }}>Avaliar pedido</h1>
+      <p className="mb-8 text-sm" style={{ color: 'var(--fg-muted)' }}>Pedido {order.order_number} · Sua avaliação ajuda outros clientes</p>
       <ReviewForm orderId={orderId} items={pending} />
     </div>
   )

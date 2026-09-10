@@ -97,9 +97,24 @@ export function ProductGallery({ images }: { images: GalleryImage[] }) {
         )}
       </div>
 
+      {/* Dots — mobile replacement for thumbnails */}
+      {images.length > 1 && (
+        <div className="pdp-dots">
+          {images.map((img, i) => (
+            <span
+              key={img.id}
+              className={i === active ? 'active' : undefined}
+              onClick={() => setActive(i)}
+              role="button"
+              aria-label={`Ver imagem ${i + 1}`}
+            />
+          ))}
+        </div>
+      )}
+
       {/* Thumbnails */}
       {images.length > 1 && (
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div className="pdp-thumbs" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {images.map((img, i) => (
             <motion.button
               key={img.id}

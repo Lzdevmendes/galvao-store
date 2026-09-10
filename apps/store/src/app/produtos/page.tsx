@@ -66,6 +66,13 @@ export default async function ProdutosPage({
 
   return (
     <>
+      {/* Header Mobile compacto */}
+      <div className="lhead-m">
+        <div className="crumb">CATÁLOGO COMPLETO</div>
+        <h1>PRODUTOS<span className="o">.</span></h1>
+        <div className="sub">{total} {total === 1 ? 'produto' : 'produtos'}</div>
+      </div>
+
       {/* Header */}
       <div style={{ background:'linear-gradient(135deg,#0B0E12,#1F252E)', color:'#fff', padding:'48px 0 40px' }}>
         <div className="container">
