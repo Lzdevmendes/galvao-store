@@ -28,3 +28,8 @@ out
 
 # Misc
 *.log
+
+# Claude Code — cache local de skills instaladas
+.agents/
+.claude/
+skills-lock.json
