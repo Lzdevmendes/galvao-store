@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = { title: 'Contato — Galvão\'s Store' }
 
 export default function ContatoPage() {
-  const PHONE = '5512999999999' // Substituir pelo número real
+  const PHONE = process.env.NEXT_PUBLIC_WHATSAPP_PHONE ?? ''
 
   return (
     <div className="container" style={{ paddingTop: 48, paddingBottom: 96, maxWidth: 700 }}>

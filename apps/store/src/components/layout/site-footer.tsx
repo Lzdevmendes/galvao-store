@@ -181,7 +181,8 @@ export function SiteFooter() {
         </div>
 
         <div className="legal">
-          <span>© 2026 Galvão&apos;s Store · CNPJ 00.000.000/0001-00</span>
+          {/* CNPJ real pendente do cliente — não exibir placeholder falso em produção (ver blockers do projeto) */}
+          <span>© 2026 Galvão&apos;s Store</span>
           <div style={{ display: "flex", gap: 6 }}>
             {["Pix", "Visa", "Master", "Boleto"].map((m) => (
               <span

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { maskPhone } from '@/lib/utils'
 
 export const metadata: Metadata = {
   title: 'Política de Privacidade — Galvão\'s Store',
@@ -8,7 +9,8 @@ export const metadata: Metadata = {
 const UPDATED = 'Junho de 2026'
 const EMAIL_PRIVACY = 'privacidade@galvaosstore.com.br'
 const EMAIL_CONTACT = 'contato@galvaosstore.com.br'
-const WHATSAPP = '(12) 9 9999-9999'
+// Mesmo número real usado no botão flutuante/API de WhatsApp
+const WHATSAPP = maskPhone((process.env.NEXT_PUBLIC_WHATSAPP_PHONE ?? '').replace(/^55/, ''))
 
 function Section({ id, title, children }: { id?: string; title: string; children: React.ReactNode }) {
   return (
@@ -154,7 +156,7 @@ export default function PrivacidadePage() {
           <Li><Strong>Resend Inc.:</Strong> envio de e-mails transacionais. Dados armazenados nos EUA (cláusulas contratuais padrão).</Li>
           <Li><Strong>Supabase Inc.:</Strong> autenticação e armazenamento de imagens. Dados armazenados nos EUA (cláusulas contratuais padrão).</Li>
           <Li><Strong>Google LLC:</Strong> Analytics (com anonimização de IP). Sujeito a transferência internacional (EUA).</Li>
-          <Li><Strong>Meta Platforms Inc.:</Strong> publicidade (com consentimento). Sujeito a transferência internacional (EUA).</Li>
+          <Li><Strong>Meta Platforms Inc.:</Strong> publicidade (com consentimento) e envio de notificações transacionais do pedido (confirmação, pagamento aprovado, envio e entrega) via WhatsApp Business API — nome, telefone e status do pedido. Sujeito a transferência internacional (EUA).</Li>
           <Li><Strong>Sentry (Functional Software Inc.):</Strong> monitoramento de erros técnicos. Sem dados pessoais identificáveis.</Li>
         </ul>
         <p><Strong>Não vendemos, alugamos nem cedemos seus dados pessoais a terceiros para fins comerciais.</Strong></p>

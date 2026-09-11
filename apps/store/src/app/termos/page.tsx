@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { maskPhone } from '@/lib/utils'
 
 export const metadata: Metadata = {
   title: 'Termos de Uso — Galvão\'s Store',
@@ -7,7 +8,9 @@ export const metadata: Metadata = {
 
 const UPDATED = 'Junho de 2026'
 const EMAIL = 'contato@galvaosstore.com.br'
-const WHATSAPP = '(12) 9 9999-9999'
+// Mesmo número real usado no botão flutuante/API de WhatsApp (NEXT_PUBLIC_WHATSAPP_PHONE
+// vem com DDI 55 — removido aqui pra bater com o formato de maskPhone, que espera DDD+número)
+const WHATSAPP = maskPhone((process.env.NEXT_PUBLIC_WHATSAPP_PHONE ?? '').replace(/^55/, ''))
 const CIDADE = 'Caraguatatuba/SP'
 
 function Section({ id, title, children }: { id?: string; title: string; children: React.ReactNode }) {
