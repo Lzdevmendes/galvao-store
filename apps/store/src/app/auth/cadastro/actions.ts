@@ -3,10 +3,14 @@
 import { checkMemory, getRealIpFromHeaders, limiters } from '@/lib/ratelimit'
 import { createClient } from '@/lib/supabase/server'
 import { normalizeEmail, sanitizeText } from '@/lib/validate'
+import { TERMS_VERSION } from '@/lib/legal'
 
 export type SignUpResult = { success: true } | { success: false; error: string }
 
-export async function signUp(name: string, email: string, password: string): Promise<SignUpResult> {
+export async function signUp(name: string, email: string, password: string, acceptedTerms: boolean): Promise<SignUpResult> {
+  if (!acceptedTerms) {
+    return { success: false, error: 'É necessário aceitar os Termos de Uso e a Política de Privacidade.' }
+  }
   const ip = await getRealIpFromHeaders()
   const limitKey = `signup:${ip}`
   if (limiters.signup) {
@@ -26,7 +30,13 @@ export async function signUp(name: string, email: string, password: string): Pro
   const { error } = await supabase.auth.signUp({
     email: cleanEmail,
     password,
-    options: { data: { full_name: cleanName } },
+    options: {
+      data: {
+        full_name: cleanName,
+        terms_accepted_at: new Date().toISOString(),
+        terms_version: TERMS_VERSION,
+      },
+    },
   })
 
   if (error) {

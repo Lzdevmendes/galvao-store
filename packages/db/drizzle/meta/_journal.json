@@ -43,6 +43,13 @@
       "when": 1789046444299,
       "tag": "0005_fantastic_spyke",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1789148129652,
+      "tag": "0006_lying_squadron_sinister",
+      "breakpoints": true
     }
   ]
 }

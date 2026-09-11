@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCartStore, cartSubtotal } from '@/store/cart'
 import { fmt, installment, maskCep, maskPhone, maskCpf, isCpfValid } from '@/lib/utils'
@@ -97,6 +98,7 @@ export default function CheckoutPage() {
   const [couponInput, setCouponInput]   = useState('')
   const [couponMsg, setCouponMsg]       = useState('')
   const [couponOk, setCouponOk]         = useState(false)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
 
   useEffect(() => {
     if (items.length === 0) { router.push('/'); return }
@@ -207,6 +209,10 @@ export default function CheckoutPage() {
       setSubmitError('CPF obrigatório para pagamento via boleto.')
       return
     }
+    if (!acceptedTerms) {
+      setSubmitError('Você precisa aceitar os Termos de Uso e a Política de Privacidade para continuar.')
+      return
+    }
     setLoading(true)
     setSubmitError('')
     const result = await createOrder({
@@ -221,6 +227,7 @@ export default function CheckoutPage() {
       couponDiscountInCents: form.couponDiscountInCents || undefined,
       couponId:              form.couponId              || undefined,
       idempotencyKey,
+      acceptedTerms,
     })
     if (!result.success) { setSubmitError(result.error); setLoading(false); return }
     clear()
@@ -231,7 +238,7 @@ export default function CheckoutPage() {
     if (result.boletoUrl)     params.set('burl',  result.boletoUrl)
     if (result.boletoBarCode) params.set('bcode', result.boletoBarCode)
     router.push(`/pedido/${result.orderId}?${params}`)
-  }, [form, items, clear, router])
+  }, [form, items, clear, router, acceptedTerms])
 
   // ── Totais ─────────────────────────────────────────────────────────────
 
@@ -480,17 +487,35 @@ export default function CheckoutPage() {
                 <InfoBox color="indigo" text="Pagamento com cartão em breve. Por enquanto use PIX ou Boleto." />
               )}
 
+              <label style={{
+                display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 20,
+                fontFamily: 'var(--font-ui)', fontSize: 13, color: 'var(--fg-muted)', cursor: 'pointer',
+              }}>
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={e => setAcceptedTerms(e.target.checked)}
+                  style={{ marginTop: 2, width: 16, height: 16, flexShrink: 0 }}
+                />
+                <span>
+                  Li e concordo com os{' '}
+                  <Link href="/termos" target="_blank" style={{ color: 'var(--brand-orange)', fontWeight: 600 }}>Termos de Uso</Link>
+                  {' '}e a{' '}
+                  <Link href="/privacidade" target="_blank" style={{ color: 'var(--brand-orange)', fontWeight: 600 }}>Política de Privacidade</Link>.
+                </span>
+              </label>
+
               {submitError && <ErrMsg msg={submitError} style={{ marginTop: 16 }} />}
 
               <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
                 <BtnGhost label="← Voltar" onClick={() => setStep(3)} />
                 <button
                   onClick={submitOrder}
-                  disabled={loading || form.paymentMethod === 'credit_card'}
+                  disabled={loading || form.paymentMethod === 'credit_card' || !acceptedTerms}
                   style={{
                     flex: 1, padding: 16, borderRadius: 12, border: 'none',
-                    cursor: loading || form.paymentMethod === 'credit_card' ? 'not-allowed' : 'pointer',
-                    background: loading || form.paymentMethod === 'credit_card' ? 'var(--border)' : 'var(--brand-orange)',
+                    cursor: loading || form.paymentMethod === 'credit_card' || !acceptedTerms ? 'not-allowed' : 'pointer',
+                    background: loading || form.paymentMethod === 'credit_card' || !acceptedTerms ? 'var(--border)' : 'var(--brand-orange)',
                     color: '#fff', fontFamily: 'var(--font-ui)', fontWeight: 700, fontSize: 16,
                   }}
                 >

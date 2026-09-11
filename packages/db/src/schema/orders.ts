@@ -65,6 +65,13 @@ export const orders = sqliteTable('orders', {
 
   // Notas
   notes:     text('notes'),
+
+  // Aceite explícito de Termos de Uso / Política de Privacidade na finalização
+  // da compra — cobre também guest checkout (user_id null), que o aceite do
+  // cadastro (users.terms_accepted_at) não cobre.
+  termsAcceptedAt: text('terms_accepted_at'),
+  termsVersion:    text('terms_version'),
+
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
   updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
 })

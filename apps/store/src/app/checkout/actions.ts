@@ -17,6 +17,7 @@ import {
   sanitizeText,
 } from "@/lib/validate";
 import { waSendOrderCreated } from "@/lib/whatsapp";
+import { TERMS_VERSION } from "@/lib/legal";
 import { sql } from "drizzle-orm";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -65,6 +66,7 @@ export type CheckoutPayload = {
   couponId?: string;
   cartItems: CartItemData[];
   idempotencyKey?: string;
+  acceptedTerms: boolean;
 };
 
 export type CreateOrderResult =
@@ -95,6 +97,21 @@ export async function calculateShipping(
   cep: string,
   items: ShippingInput[],
 ): Promise<ShippingOption[]> {
+  // Rate limit — 20/min por IP (anti-scraping de tabela de frete/CEP).
+  // O limiter já existia em ratelimit.ts mas nunca era chamado aqui.
+  const ip = await getRealIpFromHeaders();
+  const limitKey = `frete:${ip}`;
+  if (limiters.frete) {
+    const { success } = await limiters.frete.limit(limitKey);
+    if (!success) {
+      console.error(`[calculateShipping] rate limit excedido: ${limitKey}`);
+      return [];
+    }
+  } else if (!checkMemory(limitKey, 20, 60 * 1000)) {
+    console.error(`[calculateShipping] rate limit excedido (memoria): ${limitKey}`);
+    return [];
+  }
+
   const cleanCep = cep.replace(/\D/g, "");
   const options: ShippingOption[] = [];
 
@@ -347,6 +364,11 @@ export async function createOrder(
       return { success: false, error: "Método de pagamento inválido." };
     if (!payload.cartItems?.length || payload.cartItems.length > 50)
       return { success: false, error: "Carrinho inválido." };
+    if (!payload.acceptedTerms)
+      return {
+        success: false,
+        error: "É necessário aceitar os Termos de Uso e a Política de Privacidade.",
+      };
 
     // Idempotência: evita double-submit se o user clicar duas vezes
     if (payload.idempotencyKey) {
@@ -466,7 +488,7 @@ export async function createOrder(
         delivery_method, shipping_in_cents, estimated_days,
         payment_method,
         subtotal_in_cents, discount_in_cents, total_in_cents,
-        coupon_code, created_at, updated_at
+        coupon_code, terms_accepted_at, terms_version, created_at, updated_at
       ) VALUES (
         ${orderId}, ${user?.id ?? null}, ${orderNumber}, 'pending_payment',
         ${payload.name}, ${payload.email}, ${payload.phone || null}, ${payload.cpf || null},
@@ -475,7 +497,7 @@ export async function createOrder(
         ${payload.shippingMethod}, ${payload.shippingInCents}, ${payload.estimatedDays},
         ${payload.paymentMethod},
         ${subtotalInCents}, ${totalDiscount}, ${totalInCents},
-        ${payload.couponCode || null}, datetime('now'), datetime('now')
+        ${payload.couponCode || null}, datetime('now'), ${TERMS_VERSION}, datetime('now'), datetime('now')
       )
     `);
 

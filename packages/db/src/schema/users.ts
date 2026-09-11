@@ -13,6 +13,10 @@ export const users = sqliteTable('users', {
   birthday:  text('birthday'),             // YYYY-MM-DD
   isClubMember:   integer('is_club_member', { mode: 'boolean' }).notNull().default(false),
   marketingOptIn: integer('marketing_opt_in', { mode: 'boolean' }).notNull().default(false),
+  // Aceite explícito de Termos de Uso / Política de Privacidade no cadastro —
+  // nullable porque contas criadas antes deste campo existir não têm esse registo.
+  termsAcceptedAt: text('terms_accepted_at'),
+  termsVersion:    text('terms_version'),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
   updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
 })

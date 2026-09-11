@@ -53,9 +53,10 @@ export function SuccessMsg({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function SubmitBtn({ loading, children }: { loading: boolean; children: React.ReactNode }) {
+export function SubmitBtn({ loading, disabled, children }: { loading: boolean; disabled?: boolean; children: React.ReactNode }) {
+  const isDisabled = loading || !!disabled
   return (
-    <button type="submit" disabled={loading} style={{ width:'100%', padding:'16px', borderRadius:12, border:'none', background:'var(--brand-orange)', color:'#fff', fontFamily:'var(--font-ui)', fontWeight:700, fontSize:16, cursor:loading ? 'not-allowed' : 'pointer', opacity:loading ? .7 : 1, transition:'opacity .15s' }}>
+    <button type="submit" disabled={isDisabled} style={{ width:'100%', padding:'16px', borderRadius:12, border:'none', background:'var(--brand-orange)', color:'#fff', fontFamily:'var(--font-ui)', fontWeight:700, fontSize:16, cursor:isDisabled ? 'not-allowed' : 'pointer', opacity:isDisabled ? .7 : 1, transition:'opacity .15s' }}>
       {loading ? 'Aguarde...' : children}
     </button>
   )

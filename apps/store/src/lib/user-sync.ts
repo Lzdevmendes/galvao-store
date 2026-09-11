@@ -37,9 +37,13 @@ export async function ensureLocalUser(user: User): Promise<void> {
   }
 
   const name = user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? ''
+  // Só vem preenchido se o cadastro passou pelo form próprio (checkbox de
+  // aceite) — login via Google não captura isso, fica null de propósito.
+  const termsAcceptedAt = user.user_metadata?.terms_accepted_at ?? null
+  const termsVersion    = user.user_metadata?.terms_version ?? null
   await db.run(sql`
-    INSERT INTO users (id, email, name, created_at, updated_at)
-    VALUES (${user.id}, ${user.email!}, ${name}, datetime('now'), datetime('now'))
+    INSERT INTO users (id, email, name, terms_accepted_at, terms_version, created_at, updated_at)
+    VALUES (${user.id}, ${user.email!}, ${name}, ${termsAcceptedAt}, ${termsVersion}, datetime('now'), datetime('now'))
   `)
 }
 

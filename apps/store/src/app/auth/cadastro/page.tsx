@@ -14,6 +14,7 @@ export default function CadastroPage() {
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
   const [confirm,  setConfirm]  = useState('')
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [error,    setError]    = useState('')
   const [success,  setSuccess]  = useState(false)
   const [loading,  setLoading]  = useState(false)
@@ -23,9 +24,10 @@ export default function CadastroPage() {
     setError('')
     if (password !== confirm) { setError('As senhas não coincidem.'); return }
     if (password.length < 8)  { setError('A senha deve ter no mínimo 8 caracteres.'); return }
+    if (!acceptedTerms) { setError('Você precisa aceitar os Termos de Uso e a Política de Privacidade.'); return }
 
     setLoading(true)
-    const result = await signUp(name, email, password)
+    const result = await signUp(name, email, password, acceptedTerms)
     if (!result.success) {
       setError(result.error)
       setLoading(false)
@@ -64,13 +66,34 @@ export default function CadastroPage() {
         <Field label="Senha"         type="password" value={password} onChange={setPassword} placeholder="Mínimo 8 caracteres" />
         <Field label="Confirmar senha" type="password" value={confirm} onChange={setConfirm} placeholder="••••••••" />
 
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontFamily: 'var(--font-ui)', fontSize: 13, color: 'var(--fg-muted)', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={acceptedTerms}
+            onChange={e => setAcceptedTerms(e.target.checked)}
+            style={{ marginTop: 2, width: 16, height: 16, flexShrink: 0 }}
+          />
+          <span>
+            Li e concordo com os{' '}
+            <Link href="/termos" target="_blank" style={{ color: 'var(--brand-orange)', fontWeight: 700 }}>Termos de Uso</Link>
+            {' '}e a{' '}
+            <Link href="/privacidade" target="_blank" style={{ color: 'var(--brand-orange)', fontWeight: 700 }}>Política de Privacidade</Link>.
+          </span>
+        </label>
+
         {error && <ErrorMsg>{error}</ErrorMsg>}
 
-        <SubmitBtn loading={loading}>Criar conta</SubmitBtn>
+        <SubmitBtn loading={loading} disabled={!acceptedTerms}>Criar conta</SubmitBtn>
       </form>
 
       <Divider />
       <GoogleBtn onClick={handleGoogle} />
+      <p style={{ textAlign: 'center', fontFamily: 'var(--font-ui)', fontSize: 11, color: 'var(--fg-muted)', marginTop: 8 }}>
+        Ao continuar com o Google, você concorda com nossos{' '}
+        <Link href="/termos" target="_blank" style={{ color: 'var(--brand-orange)' }}>Termos</Link>
+        {' '}e{' '}
+        <Link href="/privacidade" target="_blank" style={{ color: 'var(--brand-orange)' }}>Privacidade</Link>.
+      </p>
 
       <p style={{ textAlign:'center', fontFamily:'var(--font-ui)', fontSize:13, color:'var(--fg-muted)', marginTop:24 }}>
         Já tem conta?{' '}
